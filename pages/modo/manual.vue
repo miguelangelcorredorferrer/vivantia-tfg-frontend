@@ -6,17 +6,13 @@
         <ol class="inline-flex items-center space-x-1 md:space-x-3">
           <li class="inline-flex items-center">
             <NuxtLink to="/modo" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
-              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-              </svg>
+              <HomeIcon />
               Modos de Riego
             </NuxtLink>
           </li>
           <li>
             <div class="flex items-center">
-              <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-              </svg>
+              <ChevronRightIcon />
               <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Modo Manual</span>
             </div>
           </li>
@@ -27,9 +23,7 @@
       <div class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 mb-8 hover:bg-gray-900/80 transition-colors">
         <div class="flex items-center mb-4">
           <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mr-4 shadow-lg">
-            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+            <ManualIcon />
           </div>
           <div>
             <h1 class="text-2xl font-bold text-white">Modo Manual</h1>
@@ -59,12 +53,8 @@
               'w-24 h-24 rounded-full flex items-center justify-center shadow-lg',
               isPaused ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
             ]">
-              <svg v-if="isPaused" class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-              </svg>
-              <svg v-else class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
+              <PauseIcon v-if="isPaused" />
+              <CheckIcon v-else />
             </div>
           </div>
           
@@ -231,9 +221,7 @@
       <div class="bg-gray-800 border border-gray-600/30 p-6 rounded-xl max-w-md w-full mx-4">
         <div class="text-center">
           <div class="w-16 h-16 bg-blue-900/60 border border-blue-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-            </svg>
+            <ManualConfirmIcon />
           </div>
           <h3 class="text-lg font-bold text-white mb-2">Confirmar Riego Manual</h3>
           <p class="text-gray-300 mb-6">
@@ -264,9 +252,7 @@
       <div class="bg-gray-800 border border-gray-600/30 p-6 rounded-xl max-w-md w-full mx-4">
         <div class="text-center">
           <div class="w-16 h-16 bg-red-900/60 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-            </svg>
+            <WarningIcon />
           </div>
           <h3 class="text-lg font-bold text-white mb-2">Cancelar Riego Manual</h3>
           <p class="text-gray-300 mb-6">
@@ -297,6 +283,15 @@
 <script setup>
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { useIrrigationModes } from '~/composables/useIrrigationModes'
+import {
+  HomeIcon,
+  ChevronRightIcon,
+  ManualIcon,
+  CheckIcon,
+  PauseIcon,
+  ManualConfirmIcon,
+  WarningIcon
+} from '~/assets/icons'
 
 // Sistema de modos de riego
 const {

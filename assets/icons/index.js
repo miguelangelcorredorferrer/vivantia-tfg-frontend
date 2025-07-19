@@ -332,4 +332,54 @@ export const getIcon = (iconName) => {
   }
   
   return icons[iconName] || dashboardIcon
+}
+
+// Importar los nuevos iconos de componentes Vue
+import HomeIcon from './HomeIcon.vue'
+import ChevronRightIcon from './ChevronRightIcon.vue'
+import ClockIcon from './ClockIcon.vue'
+import CheckIcon from './CheckIcon.vue'
+import PauseIcon from './PauseIcon.vue'
+import CalendarIcon from './CalendarIcon.vue'
+import ChevronLeftIcon from './ChevronLeftIcon.vue'
+import ChevronRightSmallIcon from './ChevronRightSmallIcon.vue'
+import ConfirmIcon from './ConfirmIcon.vue'
+import WarningIcon from './WarningIcon.vue'
+import ManualIcon from './ManualIcon.vue'
+import ManualConfirmIcon from './ManualConfirmIcon.vue'
+import AutomaticIcon from './AutomaticIcon.vue'
+import ThermometerIcon from './ThermometerIcon.vue'
+import HumidityIcon from './HumidityIcon.vue'
+import AutomaticConfirmIcon from './AutomaticConfirmIcon.vue'
+import DashboardIcon from './DashboardIcon.vue'
+import PlantIcon from './PlantIcon.vue'
+import FlowIcon from './FlowIcon.vue'
+import ManualModeIcon from './ManualModeIcon.vue'
+import ProgrammedModeIcon from './ProgrammedModeIcon.vue'
+import AutomaticModeIcon from './AutomaticModeIcon.vue'
+
+// Exportar los nuevos iconos como componentes Vue
+export {
+  HomeIcon,
+  ChevronRightIcon,
+  ClockIcon,
+  CheckIcon,
+  PauseIcon,
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightSmallIcon,
+  ConfirmIcon,
+  WarningIcon,
+  ManualIcon,
+  ManualConfirmIcon,
+  AutomaticIcon,
+  ThermometerIcon,
+  HumidityIcon,
+  AutomaticConfirmIcon,
+  DashboardIcon,
+  PlantIcon,
+  FlowIcon,
+  ManualModeIcon,
+  ProgrammedModeIcon,
+  AutomaticModeIcon
 } 

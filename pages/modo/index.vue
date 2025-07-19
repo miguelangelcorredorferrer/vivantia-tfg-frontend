@@ -3,9 +3,7 @@
     <!-- Panel de información superior -->
     <div class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 mb-8 hover:bg-gray-900/80 transition-colors">
       <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
-        <svg class="w-8 h-8 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-        </svg>
+        <DashboardIcon />
         Estado del Sistema de Riego
       </h2>
       
@@ -23,10 +21,7 @@
         <div class="bg-gray-800/80 border border-green-500/30 p-4 rounded-lg hover:bg-gray-800/90 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-green-400">Cultivo en Riego</h3>
-            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-              <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
-            </svg>
+            <PlantIcon />
           </div>
           <p class="text-2xl font-bold text-white">{{ currentCrop || '-' }}</p>
         </div>
@@ -35,9 +30,7 @@
         <div class="bg-gray-800/80 border border-cyan-500/30 p-4 rounded-lg hover:bg-gray-800/90 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-cyan-400">Caudal en Curso</h3>
-            <svg class="w-5 h-5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-            </svg>
+            <FlowIcon />
           </div>
           <p class="text-2xl font-bold text-white">{{ isWatering ? flowRate + ' L/min' : '-' }}</p>
         </div>
@@ -125,9 +118,7 @@
         >
           <div class="text-center">
             <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600 transition-colors shadow-lg">
-              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
+                          <ManualModeIcon />
             </div>
             <h3 class="text-xl font-bold text-white mb-2">Manual</h3>
             <p class="text-blue-300 text-sm">Control directo del riego con duración personalizada</p>
@@ -146,9 +137,7 @@
         >
           <div class="text-center">
             <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-600 transition-colors shadow-lg">
-              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-              </svg>
+                          <ProgrammedModeIcon />
             </div>
             <h3 class="text-xl font-bold text-white mb-2">Programado</h3>
             <p class="text-green-300 text-sm">Riego automático a horas específicas del día</p>
@@ -167,9 +156,7 @@
         >
           <div class="text-center">
             <div class="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-600 transition-colors shadow-lg">
-              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-              </svg>
+                          <AutomaticModeIcon />
             </div>
             <h3 class="text-xl font-bold text-white mb-2">Automático</h3>
             <p class="text-purple-300 text-sm">Riego basado en sensores de humedad y temperatura</p>
@@ -212,6 +199,14 @@
 <script setup>
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { useIrrigationModes } from '~/composables/useIrrigationModes'
+import {
+  DashboardIcon,
+  PlantIcon,
+  FlowIcon,
+  ManualModeIcon,
+  ProgrammedModeIcon,
+  AutomaticModeIcon
+} from '~/assets/icons'
 
 // Meta del documento
 useHead({
