@@ -91,6 +91,11 @@
                 <span v-if="isPaused" class="text-yellow-400 ml-2">(Pausado)</span>
               </p>
             </div>
+            <div v-else-if="activeMode === 'programado' && remainingTime" class="mt-2">
+              <p class="text-sm text-yellow-200">
+                Tiempo hasta activación: <span class="font-bold">{{ remainingTime }}</span>
+              </p>
+            </div>
             <div v-else-if="activeMode === 'programado'" class="mt-2">
               <p class="text-sm text-yellow-200">
                 El riego se activará automáticamente en la fecha programada
@@ -134,7 +139,7 @@
           @click="selectMode('programado')"
           :class="[
             'group p-6 rounded-xl border-2 transition-all duration-300',
-            !hasActiveMode
+            activeMode === 'programado' || !hasActiveMode
               ? 'cursor-pointer bg-gray-800/60 border-green-500/30 hover:border-green-400 hover:bg-gray-800/80 transform hover:scale-105' 
               : 'cursor-not-allowed bg-gray-800/30 border-gray-600/20 opacity-50'
           ]"
@@ -265,9 +270,9 @@ const getCurrentModeColor = () => {
 // getModeDescription ahora viene del composable useIrrigationModes
 
 const selectMode = (mode) => {
-  // Permitir acceso al modo manual si está activo, o a cualquier modo si no hay ninguno activo
-  if (mode === 'manual' && activeMode.value === 'manual') {
-    router.push('/modo/manual')
+  // Permitir acceso al modo activo, o a cualquier modo si no hay ninguno activo
+  if (mode === activeMode.value) {
+    router.push(`/modo/${mode}`)
   } else if (!hasActiveMode.value) {
     router.push(`/modo/${mode}`)
   } else {
@@ -298,6 +303,11 @@ watch(remainingTime, (newValue) => {
       // El tiempo se actualizará automáticamente
     })
   }
+})
+
+// Watcher para asegurar que el estado se mantenga sincronizado
+watch(hasActiveMode, (newValue) => {
+  console.log('hasActiveMode cambió a:', newValue, 'activeMode:', activeMode.value)
 })
 
 // Limpiar intervalos al desmontar el componente

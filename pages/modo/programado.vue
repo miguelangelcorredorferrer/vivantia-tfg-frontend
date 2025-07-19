@@ -23,6 +23,157 @@
         </ol>
       </nav>
 
+      <!-- Widget de estado programado cuando está activo (solo cuando no está regando) -->
+      <div v-if="isProgrammedActive && !isWatering" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+        <!-- Debug info -->
+        <div class="text-xs text-gray-500 mb-2">
+          Debug: isProgrammedActive={{ isProgrammedActive }}, isWatering={{ isWatering }}, modeConfig={{ !!modeConfig }}
+        </div>
+        <h2 class="text-xl font-bold text-white mb-6">Riego Programado Configurado</h2>
+        
+        <div class="text-center space-y-6">
+          <!-- Estado visual -->
+          <div class="flex justify-center">
+            <div class="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+              <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Información del riego programado -->
+          <div class="bg-green-900/30 border border-green-700/50 rounded-lg p-4">
+            <h3 class="font-semibold text-green-300 mb-3">Información del Riego Programado</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-400">Fecha Programada:</p>
+                <p class="font-bold text-white">{{ getScheduledDateFromConfig() }}</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Hora Programada:</p>
+                <p class="font-bold text-white">{{ getScheduledTimeFromConfig() }}</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Duración:</p>
+                <p class="font-bold text-white">{{ getDurationFromConfig() }}</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Tiempo Restante:</p>
+                <p class="font-bold text-green-400">{{ remainingTime || 'Calculando...' }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botón de deshacer configuración -->
+          <button
+            @click="showCancelModal = true"
+            class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+          >
+            🗑️ Deshacer Configuración
+          </button>
+        </div>
+      </div>
+
+      <!-- Widget de riego activo cuando está regando -->
+      <div v-if="isProgrammedActive && isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+        <h2 class="text-xl font-bold text-white mb-6">Riego Programado Activo</h2>
+        
+        <div class="text-center space-y-6">
+          <!-- Estado visual -->
+          <div class="flex justify-center">
+            <div class="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+              <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Información del riego -->
+          <div class="bg-green-900/30 border border-green-700/50 rounded-lg p-4">
+            <h3 class="font-semibold text-green-300 mb-3">Información del Riego</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-400">Estado:</p>
+                <p class="font-bold text-white">Bomba Activa</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Tiempo Restante:</p>
+                <p class="font-bold text-white">{{ remainingTime || 'Calculando...' }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botones de control -->
+          <div class="space-y-3">
+            <!-- Botón de parada de emergencia -->
+            <button
+              @click="pauseIrrigation"
+              class="w-full px-6 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold text-lg rounded-lg hover:from-yellow-600 hover:to-yellow-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              ⏸️ Parada de Emergencia
+            </button>
+            
+            <!-- Botón de cancelar -->
+            <button
+              @click="showCancelModal = true"
+              class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              🛑 Cancelar Riego Programado
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget de riego pausado -->
+      <div v-if="isProgrammedActive && isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+        <h2 class="text-xl font-bold text-white mb-6">Riego Programado Pausado</h2>
+        
+        <div class="text-center space-y-6">
+          <!-- Estado visual -->
+          <div class="flex justify-center">
+            <div class="w-24 h-24 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+              <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Información del riego -->
+          <div class="bg-green-900/30 border border-green-700/50 rounded-lg p-4">
+            <h3 class="font-semibold text-green-300 mb-3">Información del Riego</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-400">Estado:</p>
+                <p class="font-bold text-white">Pausado</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Tiempo Restante:</p>
+                <p class="font-bold text-white">{{ remainingTime || 'Calculando...' }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botones de control -->
+          <div class="space-y-3">
+            <!-- Botón de reanudar -->
+            <button
+              @click="resumeIrrigation"
+              class="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-lg rounded-lg hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              ▶️ Reanudar Riego
+            </button>
+            
+            <!-- Botón de cancelar -->
+            <button
+              @click="showCancelModal = true"
+              class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              🛑 Cancelar Riego Programado
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Título y descripción -->
       <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <div class="flex items-center mb-4">
@@ -294,8 +445,8 @@
     </div>
 
     <!-- Modal de confirmación -->
-    <div v-if="showConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-gray-800 p-6 rounded-xl max-w-md w-full mx-4 border border-gray-700">
+    <div v-if="showConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeConfirmModal">
+      <div class="bg-gray-800 p-6 rounded-xl max-w-md w-full mx-4 border border-gray-700" @click.stop>
         <div class="text-center">
           <div class="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-700/50">
             <svg class="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -317,10 +468,43 @@
               Confirmar Programación
             </button>
             <button 
-              @click="showConfirmModal = false"
+              @click="closeConfirmModal"
               class="flex-1 px-4 py-2 bg-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
             >
               Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de cancelación -->
+    <div v-if="showCancelModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeCancelModal">
+      <div class="bg-gray-800 border border-gray-600/30 p-6 rounded-xl max-w-md w-full mx-4" @click.stop>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-red-900/60 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Cancelar Configuración Programada</h3>
+          <p class="text-gray-300 mb-6">
+            ¿Estás seguro de que quieres cancelar la configuración programada?
+            <br><br>
+            <strong class="text-red-400">El riego no se ejecutará en la fecha programada.</strong>
+          </p>
+          <div class="flex space-x-4">
+            <button 
+              @click="cancelProgrammedMode"
+              class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Sí, Cancelar Configuración
+            </button>
+            <button 
+              @click="closeCancelModal"
+              class="flex-1 px-4 py-2 bg-gray-600 text-gray-200 rounded-lg hover:bg-gray-500 transition-colors"
+            >
+              No, Mantener
             </button>
           </div>
         </div>
@@ -335,7 +519,16 @@ import { useIrrigationModes } from '~/composables/useIrrigationModes'
 
 // Sistema de modos de riego
 const {
+  isProgrammedActive,
+  isWatering,
+  remainingTime,
+  isPaused,
+  modeConfig,
+  activeMode,
   activateProgrammedMode,
+  cancelActiveMode,
+  pauseIrrigation,
+  resumeIrrigation,
   clearAllIntervals
 } = useIrrigationModes()
 
@@ -360,6 +553,7 @@ const options = ref({
 })
 
 const showConfirmModal = ref(false)
+const showCancelModal = ref(false)
 
 // Calendario
 const currentDate = ref(new Date())
@@ -456,6 +650,14 @@ const formatScheduledTime = () => {
   return `${hour}:${minute}`
 }
 
+const formatScheduledDate = () => {
+  return selectedDate.value.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
 const formatDuration = () => {
   const totalMinutes = duration.value.minutes || 0
   const totalSeconds = duration.value.seconds || 0
@@ -532,7 +734,7 @@ const confirmConfiguration = () => {
 }
 
 const saveScheduledWatering = () => {
-  showConfirmModal.value = false
+  console.log('saveScheduledWatering llamado')
   
   // Crear la fecha programada completa
   const scheduledDateTime = new Date(selectedDate.value)
@@ -549,20 +751,202 @@ const saveScheduledWatering = () => {
     options: options.value
   }
   
-  // Activar el modo programado usando el composable
-  activateProgrammedMode(config)
+  console.log('Guardando configuración programada:', config)
   
-  showSuccess('Riego programado configurado exitosamente')
+  // Cerrar el modal de confirmación INMEDIATAMENTE
+  showConfirmModal.value = false
   
-  // Redirigir de vuelta a la página principal
+  // Pequeño delay para asegurar que el modal se cierre
   setTimeout(() => {
-    router.push('/modo')
-  }, 1500)
+    // Activar el modo programado usando el composable
+    activateProgrammedMode(config)
+    
+    showSuccess('Riego programado configurado exitosamente')
+    
+    // Forzar la reactividad después de activar el modo
+    nextTick(() => {
+      console.log('Configuración guardada - verificando estado:', {
+        isProgrammedActive: isProgrammedActive.value,
+        isWatering: isWatering.value,
+        modeConfig: modeConfig.value
+      })
+      
+      // Forzar una actualización adicional si es necesario
+      if (!isProgrammedActive.value) {
+        console.log('Forzando actualización del estado...')
+        // Trigger reactivity
+        isProgrammedActive.value = isProgrammedActive.value
+      }
+    })
+  }, 100)
 }
 
 const goBack = () => {
   router.push('/modo')
 }
+
+const cancelProgrammedMode = () => {
+  console.log('cancelProgrammedMode llamado')
+  try {
+    // Cancelar el modo activo
+    cancelActiveMode()
+    
+    // Mostrar mensaje de éxito
+    showSuccess('Configuración programada cancelada')
+    
+    // Cerrar el modal
+    showCancelModal.value = false
+    
+    console.log('Configuración cancelada exitosamente')
+    
+    // Redirigir a la página principal después de un breve delay
+    setTimeout(() => {
+      router.push('/modo')
+    }, 500)
+    
+  } catch (error) {
+    console.error('Error al cancelar configuración:', error)
+    showError('Error al cancelar la configuración')
+  }
+}
+
+const closeCancelModal = () => {
+  console.log('closeCancelModal llamado')
+  try {
+    // Cerrar el modal
+    showCancelModal.value = false
+    console.log('Modal cerrado exitosamente')
+  } catch (error) {
+    console.error('Error al cerrar modal:', error)
+  }
+}
+
+const closeConfirmModal = () => {
+  console.log('closeConfirmModal llamado')
+  try {
+    // Cerrar el modal de confirmación
+    showConfirmModal.value = false
+    console.log('Modal de confirmación cerrado exitosamente')
+  } catch (error) {
+    console.error('Error al cerrar modal de confirmación:', error)
+  }
+}
+
+// Funciones para obtener información desde la configuración guardada
+const getScheduledDateFromConfig = () => {
+  if (!modeConfig.value || !modeConfig.value.scheduledDateTime) {
+    return 'No configurado'
+  }
+  
+  const date = new Date(modeConfig.value.scheduledDateTime)
+  return date.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+const getScheduledTimeFromConfig = () => {
+  if (!modeConfig.value || !modeConfig.value.scheduledDateTime) {
+    return 'No configurado'
+  }
+  
+  const date = new Date(modeConfig.value.scheduledDateTime)
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getDurationFromConfig = () => {
+  if (!modeConfig.value || !modeConfig.value.duration) {
+    return 'No configurado'
+  }
+  
+  const minutes = modeConfig.value.duration.minutes || 0
+  const seconds = modeConfig.value.duration.seconds || 0
+  
+  if (minutes === 0 && seconds === 0) {
+    return 'No configurado'
+  }
+  
+  let result = ''
+  if (minutes > 0) {
+    result += `${minutes} min`
+  }
+  if (seconds > 0) {
+    result += `${result ? ' ' : ''}${seconds} seg`
+  }
+  
+  return result
+}
+
+// Watcher para asegurar que el tiempo restante se actualice
+watch(remainingTime, (newValue) => {
+  // Forzar la reactividad del tiempo restante
+  if (newValue) {
+    // Trigger reactivity
+    nextTick(() => {
+      // El tiempo se actualizará automáticamente
+    })
+  }
+})
+
+// Watcher para asegurar que el estado se mantenga sincronizado
+watch(isProgrammedActive, (newValue) => {
+  console.log('isProgrammedActive cambió a:', newValue, 'activeMode:', activeMode.value)
+})
+
+// Watcher para monitorear el estado de riego
+watch(isWatering, (newValue) => {
+  console.log('isWatering cambió a:', newValue, 'isPaused:', isPaused.value)
+})
+
+watch(isPaused, (newValue) => {
+  console.log('isPaused cambió a:', newValue, 'isWatering:', isWatering.value)
+})
+
+// Watcher para monitorear cambios en modeConfig
+watch(modeConfig, (newValue) => {
+  console.log('modeConfig cambió a:', newValue)
+  if (newValue && Object.keys(newValue).length > 0) {
+    console.log('Configuración detectada - forzando reactividad')
+    nextTick(() => {
+      // Forzar actualización
+      isProgrammedActive.value = isProgrammedActive.value
+    })
+  }
+}, { deep: true })
+
+// Watcher para monitorear el estado del modal
+watch(showCancelModal, (newValue) => {
+  console.log('showCancelModal cambió a:', newValue)
+})
+
+// Watcher para monitorear el modal de confirmación
+watch(showConfirmModal, (newValue) => {
+  console.log('showConfirmModal cambió a:', newValue)
+  // Forzar la reactividad
+  if (!newValue) {
+    nextTick(() => {
+      console.log('Modal de confirmación cerrado - reactividad forzada')
+    })
+  }
+})
+
+// Watcher para monitorear cuando se activa el modo programado
+watch(isProgrammedActive, (newValue, oldValue) => {
+  console.log('isProgrammedActive cambió de', oldValue, 'a:', newValue, 'activeMode:', activeMode.value)
+  if (newValue) {
+    console.log('Modo programado activado - mostrando widget de configuración')
+    // Forzar la reactividad
+    nextTick(() => {
+      console.log('Reactividad forzada después de activar modo programado')
+      // Forzar una actualización adicional
+      isProgrammedActive.value = isProgrammedActive.value
+    })
+  }
+}, { immediate: true })
 
 // Meta del documento
 useHead({

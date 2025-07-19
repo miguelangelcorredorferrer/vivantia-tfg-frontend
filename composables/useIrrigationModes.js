@@ -11,6 +11,7 @@ const pausedTime = ref(null)
 
 // Variable para controlar el intervalo del tiempo restante
 let currentInterval = null
+let countdownInterval = null
 
 export const useIrrigationModes = () => {
   
@@ -41,6 +42,8 @@ export const useIrrigationModes = () => {
   }
 
   const activateProgrammedMode = (config) => {
+    console.log('activateProgrammedMode llamado con config:', config)
+    
     // Cancelar cualquier modo activo
     if (activeMode.value) {
       cancelActiveMode()
@@ -48,7 +51,7 @@ export const useIrrigationModes = () => {
     
     activeMode.value = 'programado'
     modeConfig.value = config
-    isWatering.value = false
+    isWatering.value = false // Inicialmente solo configurado, no regando
     remainingTime.value = null
     startTime.value = null
     
@@ -57,26 +60,75 @@ export const useIrrigationModes = () => {
     const now = new Date()
     const timeUntilActivation = scheduledDateTime - now
     
+    console.log('Tiempo hasta activación:', timeUntilActivation, 'ms')
+    
     if (timeUntilActivation > 0) {
+      // Iniciar countdown hasta la activación
+      startCountdownToActivation(timeUntilActivation)
+      
       // Programar la activación
       setTimeout(() => {
+        console.log('Timeout ejecutado - activando riego programado')
         startProgrammedWatering()
       }, timeUntilActivation)
     } else {
       // Si la fecha ya pasó, activar inmediatamente
+      console.log('Fecha ya pasó - activando inmediatamente')
       startProgrammedWatering()
     }
     
     saveToStorage()
   }
 
+  // Función para iniciar countdown hasta la activación
+  const startCountdownToActivation = (milliseconds) => {
+    // Cancelar countdown anterior si existe
+    if (countdownInterval) {
+      clearInterval(countdownInterval)
+      countdownInterval = null
+    }
+    
+    const updateCountdown = () => {
+      const now = new Date()
+      const scheduledDateTime = new Date(modeConfig.value.scheduledDateTime)
+      const timeLeft = scheduledDateTime - now
+      
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval)
+        countdownInterval = null
+        remainingTime.value = null
+      } else {
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000)
+        
+        if (days > 0) {
+          remainingTime.value = `${days}d ${hours}h ${minutes}m`
+        } else if (hours > 0) {
+          remainingTime.value = `${hours}h ${minutes}m ${seconds}s`
+        } else {
+          remainingTime.value = `${minutes}m ${seconds}s`
+        }
+      }
+    }
+    
+    // Actualizar inmediatamente
+    updateCountdown()
+    
+    // Actualizar cada segundo
+    countdownInterval = setInterval(updateCountdown, 1000)
+  }
+
   // Método para iniciar el riego programado
   const startProgrammedWatering = () => {
+    console.log('startProgrammedWatering llamado - activeMode:', activeMode.value, 'modeConfig:', modeConfig.value)
     if (activeMode.value === 'programado' && modeConfig.value) {
       isWatering.value = true
       startTime.value = new Date()
       
       const totalDuration = (modeConfig.value.duration.minutes || 0) * 60 + (modeConfig.value.duration.seconds || 0)
+      console.log('Iniciando riego programado con duración:', totalDuration, 'segundos')
       setRemainingTime(totalDuration)
       
       saveToStorage()
@@ -94,25 +146,40 @@ export const useIrrigationModes = () => {
 
   // Método para cancelar cualquier modo
   const cancelActiveMode = () => {
-    // Cancelar intervalo si existe
-    if (currentInterval) {
-      clearInterval(currentInterval)
-      currentInterval = null
+    console.log('cancelActiveMode llamado - activeMode:', activeMode.value, 'isWatering:', isWatering.value)
+    
+    try {
+      // Cancelar intervalos si existen
+      if (currentInterval) {
+        clearInterval(currentInterval)
+        currentInterval = null
+      }
+      
+      if (countdownInterval) {
+        clearInterval(countdownInterval)
+        countdownInterval = null
+      }
+      
+      activeMode.value = null
+      modeConfig.value = {}
+      isWatering.value = false
+      remainingTime.value = null
+      startTime.value = null
+      isPaused.value = false
+      pausedTime.value = null
+      
+      clearStorage()
+      
+      console.log('Modo activo cancelado exitosamente')
+    } catch (error) {
+      console.error('Error en cancelActiveMode:', error)
+      throw error
     }
-    
-    activeMode.value = null
-    modeConfig.value = {}
-    isWatering.value = false
-    remainingTime.value = null
-    startTime.value = null
-    isPaused.value = false
-    pausedTime.value = null
-    
-    clearStorage()
   }
 
   // Método para pausar el riego
   const pauseIrrigation = () => {
+    console.log('pauseIrrigation llamado - isWatering:', isWatering.value, 'isPaused:', isPaused.value)
     if (isWatering.value && !isPaused.value) {
       isPaused.value = true
       pausedTime.value = remainingTime.value
@@ -126,12 +193,14 @@ export const useIrrigationModes = () => {
       // Pausar la bomba (simulado)
       isWatering.value = false
       
+      console.log('Riego pausado - tiempo pausado:', pausedTime.value)
       saveToStorage()
     }
   }
 
   // Método para reanudar el riego
   const resumeIrrigation = () => {
+    console.log('resumeIrrigation llamado - isPaused:', isPaused.value, 'pausedTime:', pausedTime.value)
     if (isPaused.value && pausedTime.value) {
       isPaused.value = false
       
@@ -147,6 +216,7 @@ export const useIrrigationModes = () => {
       // Reiniciar el contador
       setRemainingTime(totalSeconds)
       
+      console.log('Riego reanudado - tiempo restante:', totalSeconds, 'segundos')
       pausedTime.value = null
       saveToStorage()
     }
@@ -247,6 +317,33 @@ export const useIrrigationModes = () => {
               completeIrrigation()
             }
           }
+        } else if (activeMode.value === 'programado' && !isWatering.value && modeConfig.value.scheduledDateTime) {
+          // Restaurar countdown para modo programado
+          const scheduledDateTime = new Date(modeConfig.value.scheduledDateTime)
+          const now = new Date()
+          const timeUntilActivation = scheduledDateTime - now
+          
+          if (timeUntilActivation > 0) {
+            startCountdownToActivation(timeUntilActivation)
+          } else {
+            // Si ya pasó la hora, activar inmediatamente
+            startProgrammedWatering()
+          }
+        } else if (activeMode.value === 'programado' && isWatering.value && !isPaused.value && startTime.value) {
+          // Si el riego programado está activo, restaurar el tiempo restante del riego
+          const config = modeConfig.value
+          if (config && config.duration) {
+            const totalDuration = (config.duration.minutes || 0) * 60 + (config.duration.seconds || 0)
+            const elapsed = Math.floor((new Date() - startTime.value) / 1000)
+            const remaining = totalDuration - elapsed
+            
+            if (remaining > 0) {
+              setRemainingTime(remaining)
+            } else {
+              // El tiempo ya expiró
+              completeIrrigation()
+            }
+          }
         } else {
           remainingTime.value = state.remainingTime
         }
@@ -258,7 +355,9 @@ export const useIrrigationModes = () => {
   }
 
   const clearStorage = () => {
+    console.log('clearStorage llamado')
     localStorage.removeItem('irrigationState')
+    console.log('Storage limpiado')
   }
 
   // Limpiar todos los intervalos activos
@@ -266,6 +365,11 @@ export const useIrrigationModes = () => {
     if (currentInterval) {
       clearInterval(currentInterval)
       currentInterval = null
+    }
+    
+    if (countdownInterval) {
+      clearInterval(countdownInterval)
+      countdownInterval = null
     }
   }
 
@@ -306,10 +410,11 @@ export const useIrrigationModes = () => {
     }
   }
 
-  // Inicializar al montar
-  if (process.client) {
-    loadFromStorage()
-  }
+  // Inicializar al montar (solo una vez)
+if (process.client && !window.irrigationInitialized) {
+  loadFromStorage()
+  window.irrigationInitialized = true
+}
 
   return {
     // Estado
