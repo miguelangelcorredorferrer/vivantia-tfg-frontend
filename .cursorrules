@@ -1,0 +1,7 @@
+Voy a darte contexto de que trata este proyecto para que optimices lo máximo posibles las respuestas de las consultas sin desviarte.
+
+Con este proyecto estoy tratando de implementar una solución IoT utilizando The Things Network (TTN) en su versión sandbox gratuita
+He configurado un dispositivo IoT (Arduino WAN) que debe gestionar la comunicación bidireccional entre sensores físicos y una aplicación web (el proyecto que estamos tratando).
+El objetivo del sistema IoT en sí tiene por objetivo implementar un sistema IoT para la automatización de riegos de cultivos. Por ello el objetivo de la aplicación es crear un SPA que permita a los usuarios registrados gestionar el riego de sus cultivos. En función de los valores de humedad y temperatura. Además desde la aplicación se podrá tener un control sobre la bomba por lo que la aplicación web también va a enviar información a la red IoT con el objetivo de que el dispostivo IoT controle el actuador de la bomba.
+
+Esta aplicación web se va a encargar de gestionar los dispostivos registrados por el usuario, añadir y seleccionar cultivos a regar (1 cultivo por usuario, es decir se selecciona un cultivo y ya no se pueden seleccionar más) etc...

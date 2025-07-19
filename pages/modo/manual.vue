@@ -1,0 +1,409 @@
+<template>
+  <div class="space-y-8">
+    <div class="max-w-2xl mx-auto">
+      <!-- Breadcrumb -->
+      <nav class="flex mb-6" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+          <li class="inline-flex items-center">
+            <NuxtLink to="/modo" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+              </svg>
+              Modos de Riego
+            </NuxtLink>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+              </svg>
+              <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Modo Manual</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+
+      <!-- Título y descripción -->
+      <div class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 mb-8 hover:bg-gray-900/80 transition-colors">
+        <div class="flex items-center mb-4">
+          <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mr-4 shadow-lg">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-white">Modo Manual</h1>
+            <p class="text-gray-300">Control directo del sistema de riego</p>
+          </div>
+        </div>
+        
+        <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4">
+          <h3 class="font-semibold text-blue-400 mb-2">¿Cómo funciona el modo manual?</h3>
+          <ul class="text-sm text-blue-300 space-y-1">
+            <li>• Activa la bomba inmediatamente al confirmar</li>
+            <li>• Configura la duración exacta del riego</li>
+            <li>• Control total sobre el proceso</li>
+            <li>• Ideal para riegos puntuales o de emergencia</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Widget de cancelar operación cuando está activo -->
+      <div v-if="isManualActive && isWatering" class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors mb-6">
+        <h2 class="text-xl font-bold text-white mb-6">Riego Manual Activo</h2>
+        
+        <div class="text-center space-y-6">
+          <!-- Estado visual -->
+          <div class="flex justify-center">
+            <div class="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+              <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Información del riego -->
+          <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4">
+            <h3 class="font-semibold text-blue-400 mb-3">Información del Riego</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-400">Estado:</p>
+                <p class="font-bold text-white">Bomba Activa</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Tiempo Restante:</p>
+                <p class="font-bold text-white">{{ remainingTime || 'Calculando...' }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botón de cancelar -->
+          <button
+            @click="confirmCancel"
+            class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+          >
+            🛑 Cancelar Riego Manual
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulario de configuración -->
+      <div class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors">
+        <h2 class="text-xl font-bold text-white mb-6">Configurar Riego Manual</h2>
+        
+        <form @submit.prevent="confirmConfiguration" class="space-y-6">
+          <!-- Duración del riego -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Duración del Riego
+            </label>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Minutos</label>
+                <input 
+                  v-model.number="duration.minutes"
+                  type="number" 
+                  min="0" 
+                  max="59"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                >
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Segundos</label>
+                <input 
+                  v-model.number="duration.seconds"
+                  type="number" 
+                  min="0" 
+                  max="59"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                >
+              </div>
+            </div>
+            <p class="text-sm text-gray-400 mt-2">
+              Duración total: <span class="font-semibold text-white">{{ formatTotalDuration() }}</span>
+            </p>
+          </div>
+
+          <!-- Opciones rápidas -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-3">
+              Opciones Rápidas
+            </label>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button
+                v-for="option in quickOptions"
+                :key="option.label"
+                type="button"
+                @click="setQuickOption(option)"
+                class="p-3 text-sm font-medium text-blue-300 bg-blue-900/30 border border-blue-500/30 rounded-lg hover:bg-blue-900/50 transition-colors"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Configuración adicional -->
+          <div class="bg-gray-800/60 border border-gray-600/30 rounded-lg p-4">
+            <h3 class="font-medium text-gray-300 mb-3">Configuración Adicional</h3>
+            <div class="space-y-3">
+              <label class="flex items-center">
+                <input 
+                  v-model="options.notifyStart" 
+                  type="checkbox" 
+                  class="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                >
+                <span class="ml-2 text-sm text-gray-300">Notificar al iniciar el riego</span>
+              </label>
+              <label class="flex items-center">
+                <input 
+                  v-model="options.notifyEnd" 
+                  type="checkbox" 
+                  class="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                >
+                <span class="ml-2 text-sm text-gray-300">Notificar al finalizar el riego</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Vista previa -->
+          <div class="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-4">
+            <h3 class="font-medium text-yellow-400 mb-2">Vista Previa</h3>
+            <div class="text-sm text-yellow-300 space-y-1">
+              <p><strong>Duración:</strong> {{ formatTotalDuration() }}</p>
+              <p><strong>Inicio:</strong> Inmediato al confirmar</p>
+              <p><strong>Caudal estimado:</strong> 2.5 L/min</p>
+              <p><strong>Volumen total:</strong> {{ calculateVolume() }} L</p>
+            </div>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="flex space-x-4">
+            <button
+              type="submit"
+              :disabled="!isValidDuration()"
+              class="flex-1 px-6 py-4 bg-gradient-to-r from-[#4A5DB8] to-[#2A3B7A] text-white font-bold text-lg rounded-lg hover:from-[#5A6DC8] hover:to-[#3A4B8A] disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              🚀 Iniciar Riego Manual
+            </button>
+            <button
+              type="button"
+              @click="goBack"
+              class="px-6 py-3 bg-gray-600 text-gray-200 font-medium rounded-lg hover:bg-gray-500 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de confirmación -->
+    <div v-if="showConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-gray-800 border border-gray-600/30 p-6 rounded-xl max-w-md w-full mx-4">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-900/60 border border-blue-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Confirmar Riego Manual</h3>
+          <p class="text-gray-300 mb-6">
+            ¿Estás seguro de que quieres iniciar el riego manual por {{ formatTotalDuration() }}?
+            <br><br>
+            <strong>La bomba se activará inmediatamente.</strong>
+          </p>
+          <div class="flex space-x-4">
+            <button 
+              @click="startManualWatering"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Confirmar e Iniciar
+            </button>
+            <button 
+              @click="showConfirmModal = false"
+              class="flex-1 px-4 py-2 bg-gray-600 text-gray-200 rounded-lg hover:bg-gray-500 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de cancelación de riego -->
+    <div v-if="showCancelModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-gray-800 border border-gray-600/30 p-6 rounded-xl max-w-md w-full mx-4">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-red-900/60 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Cancelar Riego Manual</h3>
+          <p class="text-gray-300 mb-6">
+            ¿Estás seguro de que quieres cancelar el riego manual?
+            <br><br>
+            <strong class="text-red-400">La bomba se detendrá inmediatamente.</strong>
+          </p>
+          <div class="flex space-x-4">
+            <button 
+              @click="cancelManualWatering"
+              class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Sí, Cancelar Riego
+            </button>
+            <button 
+              @click="showCancelModal = false"
+              class="flex-1 px-4 py-2 bg-gray-600 text-gray-200 rounded-lg hover:bg-gray-500 transition-colors"
+            >
+              No, Continuar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { useToastNotifications } from '~/composables/useToastNotifications'
+import { useIrrigationModes } from '~/composables/useIrrigationModes'
+
+// Sistema de modos de riego
+const {
+  isManualActive,
+  isWatering,
+  remainingTime,
+  activateManualMode,
+  cancelActiveMode,
+  clearAllIntervals
+} = useIrrigationModes()
+
+// Estados reactivos
+const duration = ref({
+  minutes: 5,
+  seconds: 0
+})
+
+const options = ref({
+  notifyStart: true,
+  notifyEnd: true
+})
+
+const showConfirmModal = ref(false)
+const showCancelModal = ref(false)
+
+// Opciones rápidas predefinidas
+const quickOptions = [
+  { label: '2 min', minutes: 2, seconds: 0 },
+  { label: '5 min', minutes: 5, seconds: 0 },
+  { label: '10 min', minutes: 10, seconds: 0 },
+  { label: '15 min', minutes: 15, seconds: 0 }
+]
+
+// Composables
+const { toast } = useToastNotifications()
+const router = useRouter()
+
+// Helper functions para toast
+const showSuccess = (message) => toast.success(message)
+const showError = (message) => toast.error(message)
+
+// Métodos
+const formatTotalDuration = () => {
+  const totalMinutes = duration.value.minutes || 0
+  const totalSeconds = duration.value.seconds || 0
+  
+  if (totalMinutes === 0 && totalSeconds === 0) {
+    return 'No configurado'
+  }
+  
+  let result = ''
+  if (totalMinutes > 0) {
+    result += `${totalMinutes} min`
+  }
+  if (totalSeconds > 0) {
+    result += `${result ? ' ' : ''}${totalSeconds} seg`
+  }
+  
+  return result
+}
+
+const calculateVolume = () => {
+  const totalMinutes = (duration.value.minutes || 0) + (duration.value.seconds || 0) / 60
+  const flowRate = 2.5 // L/min
+  return (totalMinutes * flowRate).toFixed(1)
+}
+
+const isValidDuration = () => {
+  return (duration.value.minutes > 0) || (duration.value.seconds > 0)
+}
+
+const setQuickOption = (option) => {
+  duration.value.minutes = option.minutes
+  duration.value.seconds = option.seconds
+}
+
+const confirmConfiguration = () => {
+  if (!isValidDuration()) {
+    showError('Por favor, configura una duración válida para el riego')
+    return
+  }
+  
+  showConfirmModal.value = true
+}
+
+const startManualWatering = () => {
+  showConfirmModal.value = false
+  
+  // Configuración para el riego manual
+  const config = {
+    duration: {
+      minutes: duration.value.minutes || 0,
+      seconds: duration.value.seconds || 0
+    },
+    options: options.value,
+    startTime: new Date()
+  }
+  
+  console.log('Configuración enviada:', config)
+  
+  // Activar el modo manual usando el composable
+  activateManualMode(config)
+  
+  showSuccess('Riego manual iniciado exitosamente')
+}
+
+const confirmCancel = () => {
+  if (isWatering.value) {
+    showCancelModal.value = true
+  } else {
+    cancelManualWatering()
+  }
+}
+
+const cancelManualWatering = () => {
+  cancelActiveMode()
+  showSuccess('Riego manual cancelado')
+  showCancelModal.value = false
+}
+
+const goBack = () => {
+  router.push('/modo')
+}
+
+// Meta del documento
+useHead({
+  title: 'Modo Manual - VIVANTIA',
+  meta: [
+    { name: 'description', content: 'Configuración del modo manual de riego' }
+  ]
+})
+
+// Limpiar intervalos al desmontar el componente
+onUnmounted(() => {
+  clearAllIntervals()
+})
+</script> 
