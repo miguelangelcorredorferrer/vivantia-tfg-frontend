@@ -49,14 +49,20 @@
       </div>
 
       <!-- Widget de cancelar operación cuando está activo -->
-      <div v-if="isManualActive && isWatering" class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors mb-6">
-        <h2 class="text-xl font-bold text-white mb-6">Riego Manual Activo</h2>
+      <div v-if="isManualActive && (isWatering || isPaused)" class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors mb-6">
+        <h2 class="text-xl font-bold text-white mb-6">Riego Manual {{ isPaused ? 'Pausado' : 'Activo' }}</h2>
         
         <div class="text-center space-y-6">
           <!-- Estado visual -->
           <div class="flex justify-center">
-            <div class="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-              <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <div :class="[
+              'w-24 h-24 rounded-full flex items-center justify-center shadow-lg',
+              isPaused ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
+            ]">
+              <svg v-if="isPaused" class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+              </svg>
+              <svg v-else class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </div>
@@ -68,7 +74,7 @@
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p class="text-gray-400">Estado:</p>
-                <p class="font-bold text-white">Bomba Activa</p>
+                <p class="font-bold text-white">{{ isPaused ? 'Pausado' : 'Bomba Activa' }}</p>
               </div>
               <div>
                 <p class="text-gray-400">Tiempo Restante:</p>
@@ -77,13 +83,34 @@
             </div>
           </div>
           
-          <!-- Botón de cancelar -->
-          <button
-            @click="confirmCancel"
-            class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-          >
-            🛑 Cancelar Riego Manual
-          </button>
+          <!-- Botones de control -->
+          <div class="space-y-3">
+            <!-- Botón de parada de emergencia -->
+            <button
+              v-if="!isPaused"
+              @click="pauseIrrigation"
+              class="w-full px-6 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold text-lg rounded-lg hover:from-yellow-600 hover:to-yellow-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              ⏸️ Parada de Emergencia
+            </button>
+            
+            <!-- Botón de reanudar -->
+            <button
+              v-if="isPaused"
+              @click="resumeIrrigation"
+              class="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-lg rounded-lg hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              ▶️ Reanudar Riego
+            </button>
+            
+            <!-- Botón de cancelar -->
+            <button
+              @click="confirmCancel"
+              class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              🛑 Cancelar Riego Manual
+            </button>
+          </div>
         </div>
       </div>
 
@@ -276,8 +303,11 @@ const {
   isManualActive,
   isWatering,
   remainingTime,
+  isPaused,
   activateManualMode,
   cancelActiveMode,
+  pauseIrrigation,
+  resumeIrrigation,
   clearAllIntervals
 } = useIrrigationModes()
 
@@ -400,6 +430,17 @@ useHead({
   meta: [
     { name: 'description', content: 'Configuración del modo manual de riego' }
   ]
+})
+
+// Watcher para asegurar que el tiempo restante se actualice
+watch(remainingTime, (newValue) => {
+  // Forzar la reactividad del tiempo restante
+  if (newValue) {
+    // Trigger reactivity
+    nextTick(() => {
+      // El tiempo se actualizará automáticamente
+    })
+  }
 })
 
 // Limpiar intervalos al desmontar el componente

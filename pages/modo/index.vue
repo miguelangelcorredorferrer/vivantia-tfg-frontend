@@ -46,9 +46,15 @@
         <div class="bg-gray-800/80 border border-purple-500/30 p-4 rounded-lg hover:bg-gray-800/90 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-purple-400">Estado Bomba</h3>
-            <div :class="isWatering ? 'bg-green-500 animate-pulse' : 'bg-gray-400'" class="w-3 h-3 rounded-full"></div>
+            <div :class="[
+              isPaused ? 'bg-yellow-500' : 
+              isWatering ? 'bg-green-500 animate-pulse' : 
+              'bg-gray-400'
+            ]" class="w-3 h-3 rounded-full"></div>
           </div>
-          <p class="text-2xl font-bold text-white">{{ isWatering ? 'Activa' : 'Inactiva' }}</p>
+          <p class="text-2xl font-bold text-white">
+            {{ isPaused ? 'Pausada' : isWatering ? 'Activa' : 'Inactiva' }}
+          </p>
         </div>
       </div>
 
@@ -79,8 +85,11 @@
           <div>
             <h3 class="font-semibold text-yellow-400">Modo {{ currentModeDisplay }} Configurado</h3>
             <p class="text-sm text-yellow-300">{{ getModeDescription() }}</p>
-            <div v-if="isWatering" class="mt-2">
-              <p class="text-sm text-yellow-200">Tiempo restante: <span class="font-bold">{{ remainingTime }}</span></p>
+            <div v-if="isWatering || isPaused" class="mt-2">
+              <p class="text-sm text-yellow-200">
+                Tiempo restante: <span class="font-bold">{{ remainingTime }}</span>
+                <span v-if="isPaused" class="text-yellow-400 ml-2">(Pausado)</span>
+              </p>
             </div>
             <div v-else-if="activeMode === 'programado'" class="mt-2">
               <p class="text-sm text-yellow-200">
@@ -212,6 +221,7 @@ const {
   activeMode,
   isWatering,
   remainingTime,
+  isPaused,
   hasActiveMode,
   canAccessMode,
   cancelActiveMode,
@@ -278,6 +288,17 @@ const cancelMode = () => {
   cancelActiveMode()
   showCancelModal.value = false
 }
+
+// Watcher para asegurar que el tiempo restante se actualice
+watch(remainingTime, (newValue) => {
+  // Forzar la reactividad del tiempo restante
+  if (newValue) {
+    // Trigger reactivity
+    nextTick(() => {
+      // El tiempo se actualizará automáticamente
+    })
+  }
+})
 
 // Limpiar intervalos al desmontar el componente
 onUnmounted(() => {

@@ -6,6 +6,8 @@ const modeConfig = ref({})
 const isWatering = ref(false)
 const remainingTime = ref(null)
 const startTime = ref(null)
+const isPaused = ref(false)
+const pausedTime = ref(null)
 
 // Variable para controlar el intervalo del tiempo restante
 let currentInterval = null
@@ -103,8 +105,51 @@ export const useIrrigationModes = () => {
     isWatering.value = false
     remainingTime.value = null
     startTime.value = null
+    isPaused.value = false
+    pausedTime.value = null
     
     clearStorage()
+  }
+
+  // Método para pausar el riego
+  const pauseIrrigation = () => {
+    if (isWatering.value && !isPaused.value) {
+      isPaused.value = true
+      pausedTime.value = remainingTime.value
+      
+      // Cancelar el intervalo actual
+      if (currentInterval) {
+        clearInterval(currentInterval)
+        currentInterval = null
+      }
+      
+      // Pausar la bomba (simulado)
+      isWatering.value = false
+      
+      saveToStorage()
+    }
+  }
+
+  // Método para reanudar el riego
+  const resumeIrrigation = () => {
+    if (isPaused.value && pausedTime.value) {
+      isPaused.value = false
+      
+      // Convertir el tiempo pausado de vuelta a segundos
+      const timeParts = pausedTime.value.split(':')
+      const minutes = parseInt(timeParts[0])
+      const seconds = parseInt(timeParts[1])
+      const totalSeconds = minutes * 60 + seconds
+      
+      // Reanudar la bomba
+      isWatering.value = true
+      
+      // Reiniciar el contador
+      setRemainingTime(totalSeconds)
+      
+      pausedTime.value = null
+      saveToStorage()
+    }
   }
 
   // Gestión de tiempo restante
@@ -168,7 +213,9 @@ export const useIrrigationModes = () => {
       modeConfig: modeConfig.value,
       isWatering: isWatering.value,
       remainingTime: remainingTime.value,
-      startTime: startTime.value
+      startTime: startTime.value,
+      isPaused: isPaused.value,
+      pausedTime: pausedTime.value
     }
     localStorage.setItem('irrigationState', JSON.stringify(state))
   }
@@ -182,9 +229,11 @@ export const useIrrigationModes = () => {
         modeConfig.value = state.modeConfig || {}
         isWatering.value = state.isWatering || false
         startTime.value = state.startTime ? new Date(state.startTime) : null
+        isPaused.value = state.isPaused || false
+        pausedTime.value = state.pausedTime || null
         
-        // Si hay un riego en progreso, recalcular el tiempo restante
-        if (isWatering.value && startTime.value && activeMode.value === 'manual') {
+        // Si hay un riego en progreso y no está pausado, recalcular el tiempo restante
+        if (isWatering.value && startTime.value && activeMode.value === 'manual' && !isPaused.value) {
           const config = modeConfig.value
           if (config && config.duration) {
             const totalDuration = (config.duration.minutes || 0) * 60 + (config.duration.seconds || 0)
@@ -269,6 +318,8 @@ export const useIrrigationModes = () => {
     isWatering,
     remainingTime,
     startTime,
+    isPaused,
+    pausedTime,
     
     // Computeds
     hasActiveMode,
@@ -282,6 +333,8 @@ export const useIrrigationModes = () => {
     activateProgrammedMode,
     activateAutomaticMode,
     cancelActiveMode,
+    pauseIrrigation,
+    resumeIrrigation,
     getModeDescription,
     loadFromStorage,
     clearAllIntervals,
