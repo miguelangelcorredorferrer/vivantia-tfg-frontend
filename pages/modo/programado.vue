@@ -23,11 +23,11 @@
         </ol>
       </nav>
 
-      <!-- Widget de estado programado cuando está activo (solo cuando no está regando) -->
-      <div v-if="isProgrammedActive && !isWatering" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+      <!-- Widget de estado programado cuando está activo (solo cuando está configurado pero no regando ni pausado) -->
+      <div v-if="isProgrammedActive && !isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
         <div class="text-xs text-gray-500 mb-2">
-          Debug: isProgrammedActive={{ isProgrammedActive }}, isWatering={{ isWatering }}, modeConfig={{ !!modeConfig }}
+          Debug: isProgrammedActive={{ isProgrammedActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
         </div>
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Configurado</h2>
         
@@ -76,6 +76,10 @@
 
       <!-- Widget de riego activo cuando está regando -->
       <div v-if="isProgrammedActive && isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+        <!-- Debug info -->
+        <div class="text-xs text-gray-500 mb-2">
+          Debug: isProgrammedActive={{ isProgrammedActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
+        </div>
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Activo</h2>
         
         <div class="text-center space-y-6">
@@ -126,6 +130,10 @@
 
       <!-- Widget de riego pausado -->
       <div v-if="isProgrammedActive && isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+        <!-- Debug info -->
+        <div class="text-xs text-gray-500 mb-2">
+          Debug: isProgrammedActive={{ isProgrammedActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
+        </div>
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Pausado</h2>
         
         <div class="text-center space-y-6">
