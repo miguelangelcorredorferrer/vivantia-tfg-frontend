@@ -99,7 +99,7 @@
             @click="showCancelModal = true"
             class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
           >
-            {{ isWatering ? 'Cancelar Operación' : 'Cancelar Configuración' }}
+            {{ getCancelButtonText() }}
           </button>
         </div>
       </div>
@@ -170,19 +170,14 @@
       <div class="bg-gray-800 border border-gray-600/30 p-6 rounded-xl max-w-md w-full mx-4">
         <h3 class="text-lg font-bold text-white mb-4">Confirmar Cancelación</h3>
         <p class="text-gray-300 mb-6">
-          {{ isWatering ? 
-            '¿Estás seguro de que quieres cancelar el riego actual? La bomba se detendrá inmediatamente.' :
-            activeMode === 'programado' ?
-              '¿Estás seguro de que quieres cancelar la programación? El riego no se ejecutará en la fecha programada.' :
-              '¿Estás seguro de que quieres deshacer la configuración del modo actual?'
-          }}
+          {{ getCancelModalText() }}
         </p>
         <div class="flex space-x-4">
           <button 
             @click="cancelMode"
             class="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
           >
-            {{ isWatering ? 'Cancelar Operación' : 'Cancelar Configuración' }}
+            {{ getCancelButtonText() }}
           </button>
           <button 
             @click="showCancelModal = false"
@@ -300,6 +295,30 @@ const selectMode = (mode) => {
     router.push(`/modo/${mode}`)
   } else {
     showError('No puedes cambiar de modo mientras hay uno activo. Cancela el riego actual primero.')
+  }
+}
+
+const getCancelButtonText = () => {
+  if (isWatering.value) {
+    return 'Cancelar Riego'
+  } else if (activeMode.value === 'programado') {
+    return 'Cancelar Configuración'
+  } else if (activeMode.value === 'automatico') {
+    return 'Cancelar Configuración'
+  } else {
+    return 'Cancelar Configuración'
+  }
+}
+
+const getCancelModalText = () => {
+  if (isWatering.value) {
+    return '¿Estás seguro de que quieres cancelar el riego actual? La bomba se detendrá inmediatamente.'
+  } else if (activeMode.value === 'programado') {
+    return '¿Estás seguro de que quieres cancelar la programación? El riego no se ejecutará en la fecha programada.'
+  } else if (activeMode.value === 'automatico') {
+    return '¿Estás seguro de que quieres deshacer la configuración del modo automático?'
+  } else {
+    return '¿Estás seguro de que quieres deshacer la configuración del modo actual?'
   }
 }
 
