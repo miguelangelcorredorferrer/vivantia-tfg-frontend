@@ -357,6 +357,7 @@ import FlowIcon from './FlowIcon.vue'
 import ManualModeIcon from './ManualModeIcon.vue'
 import ProgrammedModeIcon from './ProgrammedModeIcon.vue'
 import AutomaticModeIcon from './AutomaticModeIcon.vue'
+import EditIcon from './EditIcon.vue'
 
 // Exportar los nuevos iconos como componentes Vue
 export {
@@ -381,5 +382,6 @@ export {
   FlowIcon,
   ManualModeIcon,
   ProgrammedModeIcon,
-  AutomaticModeIcon
+  AutomaticModeIcon,
+  EditIcon
 } 

@@ -113,6 +113,18 @@
             <!-- Acciones -->
             <td class="px-6 py-4">
               <div class="flex items-center justify-center space-x-4">
+                <!-- Botón Ver -->
+                <div class="flex flex-col items-center space-y-1">
+                  <button
+                    @click="handleView(crop)"
+                    class="p-2 text-gray-400 hover:text-green-400 hover:bg-green-900/20 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    title="Ver detalles del cultivo"
+                  >
+                    <component :is="getIcon('info')" />
+                  </button>
+                  <span class="text-xs text-gray-400">Ver</span>
+                </div>
+
                 <!-- Botón Editar -->
                 <div class="flex flex-col items-center space-y-1">
                   <button
@@ -202,6 +214,12 @@ const handleToggleSelection = (cropId, value) => {
   
   // Solo emitir el evento, las alertas las maneja la página principal
   emit('toggle-selection', { cropId, isSelected: value })
+}
+
+// Función para manejar la visualización
+const handleView = (crop) => {
+  // Navegar a la página de visualización
+  router.push(`/cultivos/ver/${crop.id}`)
 }
 
 // Función para manejar la edición
