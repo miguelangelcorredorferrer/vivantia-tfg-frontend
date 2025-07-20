@@ -111,7 +111,7 @@
           @click="selectMode('manual')"
           :class="[
             'group p-6 rounded-xl border-2 transition-all duration-300',
-            activeMode === 'manual' || !hasActiveMode
+            canAccessManualMode
               ? 'cursor-pointer bg-gray-800/60 border-blue-500/30 hover:border-blue-400 hover:bg-gray-800/80 transform hover:scale-105' 
               : 'cursor-not-allowed bg-gray-800/30 border-gray-600/20 opacity-50'
           ]"
@@ -130,7 +130,7 @@
           @click="selectMode('programado')"
           :class="[
             'group p-6 rounded-xl border-2 transition-all duration-300',
-            activeMode === 'programado' || !hasActiveMode
+            canAccessProgrammedMode
               ? 'cursor-pointer bg-gray-800/60 border-green-500/30 hover:border-green-400 hover:bg-gray-800/80 transform hover:scale-105' 
               : 'cursor-not-allowed bg-gray-800/30 border-gray-600/20 opacity-50'
           ]"
@@ -149,7 +149,7 @@
           @click="selectMode('automatico')"
           :class="[
             'group p-6 rounded-xl border-2 transition-all duration-300',
-            !hasActiveMode
+            canAccessAutomaticMode
               ? 'cursor-pointer bg-gray-800/60 border-purple-500/30 hover:border-purple-400 hover:bg-gray-800/80 transform hover:scale-105' 
               : 'cursor-not-allowed bg-gray-800/30 border-gray-600/20 opacity-50'
           ]"
@@ -250,6 +250,22 @@ const currentModeDisplay = computed(() => {
   return activeMode.value ? activeMode.value.charAt(0).toUpperCase() + activeMode.value.slice(1) : 'Apagado'
 })
 
+// Computed para determinar qué modos están disponibles
+const canAccessManualMode = computed(() => {
+  // Manual disponible solo si no hay modo activo o si es el modo actual
+  return !hasActiveMode.value || activeMode.value === 'manual'
+})
+
+const canAccessProgrammedMode = computed(() => {
+  // Programado disponible solo si no hay modo activo o si es el modo actual
+  return !hasActiveMode.value || activeMode.value === 'programado'
+})
+
+const canAccessAutomaticMode = computed(() => {
+  // Automático disponible solo si no hay modo activo o si es el modo actual
+  return !hasActiveMode.value || activeMode.value === 'automatico'
+})
+
 // Métodos
 const getCurrentModeColor = () => {
   if (!activeMode.value) return 'bg-gray-400'
@@ -265,10 +281,22 @@ const getCurrentModeColor = () => {
 // getModeDescription ahora viene del composable useIrrigationModes
 
 const selectMode = (mode) => {
-  // Permitir acceso al modo activo, o a cualquier modo si no hay ninguno activo
-  if (mode === activeMode.value) {
-    router.push(`/modo/${mode}`)
-  } else if (!hasActiveMode.value) {
+  // Verificar si el modo está disponible según los computed
+  let canAccess = false
+  
+  switch (mode) {
+    case 'manual':
+      canAccess = canAccessManualMode.value
+      break
+    case 'programado':
+      canAccess = canAccessProgrammedMode.value
+      break
+    case 'automatico':
+      canAccess = canAccessAutomaticMode.value
+      break
+  }
+  
+  if (canAccess) {
     router.push(`/modo/${mode}`)
   } else {
     showError('No puedes cambiar de modo mientras hay uno activo. Cancela el riego actual primero.')
@@ -289,11 +317,11 @@ const cancelMode = () => {
   showCancelModal.value = false
 }
 
-// Watcher para asegurar que el tiempo restante se actualice
+// Watchers para asegurar que los cambios se reflejen en tiempo real
 watch(remainingTime, (newValue) => {
+  console.log('remainingTime cambió a:', newValue)
   // Forzar la reactividad del tiempo restante
   if (newValue) {
-    // Trigger reactivity
     nextTick(() => {
       // El tiempo se actualizará automáticamente
     })
@@ -303,6 +331,33 @@ watch(remainingTime, (newValue) => {
 // Watcher para asegurar que el estado se mantenga sincronizado
 watch(hasActiveMode, (newValue) => {
   console.log('hasActiveMode cambió a:', newValue, 'activeMode:', activeMode.value)
+})
+
+// Watcher para monitorear cambios en el estado de riego
+watch(isWatering, (newValue) => {
+  console.log('isWatering cambió a:', newValue, 'activeMode:', activeMode.value)
+  // Forzar actualización de la UI
+  nextTick(() => {
+    // Trigger reactivity
+  })
+})
+
+// Watcher para monitorear cambios en el modo activo
+watch(activeMode, (newValue) => {
+  console.log('activeMode cambió a:', newValue, 'isWatering:', isWatering.value)
+  // Forzar actualización de la UI
+  nextTick(() => {
+    // Trigger reactivity
+  })
+})
+
+// Watcher para monitorear cambios en el estado de pausa
+watch(isPaused, (newValue) => {
+  console.log('isPaused cambió a:', newValue, 'isWatering:', isWatering.value)
+  // Forzar actualización de la UI
+  nextTick(() => {
+    // Trigger reactivity
+  })
 })
 
 // Limpiar intervalos al desmontar el componente

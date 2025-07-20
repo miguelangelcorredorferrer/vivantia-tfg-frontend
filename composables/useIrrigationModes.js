@@ -136,12 +136,125 @@ export const useIrrigationModes = () => {
   }
 
   const activateAutomaticMode = (config) => {
+    console.log('activateAutomaticMode llamado con config:', config)
+    
+    // Cancelar cualquier modo activo (incluyendo programado)
+    if (activeMode.value) {
+      // Si hay un modo programado activo, guardar su estado antes de cancelarlo
+      if (activeMode.value === 'programado') {
+        const currentState = {
+          activeMode: activeMode.value,
+          modeConfig: modeConfig.value,
+          isWatering: isWatering.value,
+          remainingTime: remainingTime.value,
+          startTime: startTime.value,
+          isPaused: isPaused.value,
+          pausedTime: pausedTime.value
+        }
+        localStorage.setItem('programmedModeBackup', JSON.stringify(currentState))
+        console.log('Estado del modo programado guardado como backup')
+      }
+      
+      // Cancelar el modo activo
+      cancelActiveMode()
+    }
+    
     activeMode.value = 'automatico'
     modeConfig.value = config
-    isWatering.value = false // Se activará según sensores
+    isWatering.value = false // Inicialmente solo configurado, no regando
+    remainingTime.value = null
     startTime.value = null
     
+    // Iniciar monitoreo automático
+    startAutomaticMonitoring()
+    
     saveToStorage()
+  }
+
+  // Función para monitorear sensores automáticamente
+  const startAutomaticMonitoring = () => {
+    console.log('Iniciando monitoreo automático')
+    
+    // Simular monitoreo cada 5 segundos
+    if (currentInterval) {
+      clearInterval(currentInterval)
+    }
+    
+    currentInterval = setInterval(() => {
+      if (activeMode.value === 'automatico' && modeConfig.value) {
+        checkAutomaticConditions()
+      }
+    }, 5000)
+  }
+
+  // Función para verificar condiciones automáticas
+  const checkAutomaticConditions = () => {
+    if (!modeConfig.value || activeMode.value !== 'automatico') {
+      return
+    }
+    
+    // Simular valores de sensores (en una implementación real vendrían del IoT)
+    const currentTemperature = 25 + Math.random() * 10 // 25-35°C
+    const currentHumidity = 40 + Math.random() * 30 // 40-70%
+    
+    const { maxTemperature, minHumidity, maxHumidity } = modeConfig.value.thresholds
+    
+    // Verificar si se deben activar las condiciones
+    const shouldActivate = currentTemperature >= maxTemperature || currentHumidity <= minHumidity
+    
+    // SOLO mostrar logs de las condiciones, NO activar automáticamente
+    if (shouldActivate && !isWatering.value && !isPaused.value) {
+      console.log('Condiciones automáticas cumplidas - pero NO activando riego automáticamente')
+      console.log('Temperatura:', currentTemperature, '°C, Humedad:', currentHumidity, '%')
+      console.log('Umbrales - Temp max:', maxTemperature, '°C, Humedad min:', minHumidity, '%')
+    } else if (isWatering.value && currentHumidity >= maxHumidity) {
+      console.log('Humedad máxima alcanzada - deteniendo riego')
+      stopAutomaticWatering()
+    }
+  }
+
+  // Método para iniciar el riego automático
+  const startAutomaticWatering = () => {
+    console.log('startAutomaticWatering llamado')
+    if (activeMode.value === 'automatico' && modeConfig.value) {
+      isWatering.value = true
+      startTime.value = new Date()
+      
+      const totalDuration = (modeConfig.value.duration.minutes || 0) * 60 + (modeConfig.value.duration.seconds || 0)
+      console.log('Iniciando riego automático con duración:', totalDuration, 'segundos')
+      setRemainingTime(totalDuration)
+      
+      saveToStorage()
+    }
+  }
+
+  // Método para detener el riego automático
+  const stopAutomaticWatering = () => {
+    console.log('stopAutomaticWatering llamado')
+    if (activeMode.value === 'automatico' && isWatering.value) {
+      isWatering.value = false
+      remainingTime.value = null
+      startTime.value = null
+      
+      // Cancelar intervalo de tiempo restante
+      if (currentInterval) {
+        clearInterval(currentInterval)
+        currentInterval = null
+      }
+      
+      // Reiniciar monitoreo
+      startAutomaticMonitoring()
+      
+      saveToStorage()
+    }
+  }
+
+  // Método para simular activación manual del riego automático (para testing)
+  const triggerAutomaticWatering = () => {
+    console.log('triggerAutomaticWatering llamado')
+    if (activeMode.value === 'automatico' && modeConfig.value && !isWatering.value && !isPaused.value) {
+      startAutomaticWatering()
+    }
   }
 
   // Método para cancelar cualquier modo
@@ -173,6 +286,74 @@ export const useIrrigationModes = () => {
       console.log('Modo activo cancelado exitosamente')
     } catch (error) {
       console.error('Error en cancelActiveMode:', error)
+      throw error
+    }
+  }
+
+  // Método específico para cancelar solo el modo automático
+  const cancelAutomaticMode = () => {
+    console.log('cancelAutomaticMode llamado - activeMode:', activeMode.value)
+    
+    try {
+      // Solo cancelar si el modo activo es automático
+      if (activeMode.value === 'automatico') {
+        // Cancelar intervalo de monitoreo automático
+        if (currentInterval) {
+          clearInterval(currentInterval)
+          currentInterval = null
+        }
+        
+        // Si hay un modo programado en backup, restaurarlo
+        const backupData = localStorage.getItem('programmedModeBackup')
+        if (backupData) {
+          const data = JSON.parse(backupData)
+          if (data.activeMode === 'programado') {
+            activeMode.value = 'programado'
+            modeConfig.value = data.modeConfig || {}
+            isWatering.value = data.isWatering || false
+            remainingTime.value = data.remainingTime || null
+            startTime.value = data.startTime ? new Date(data.startTime) : null
+            isPaused.value = data.isPaused || false
+            pausedTime.value = data.pausedTime || null
+            
+            // Reiniciar countdown si es necesario
+            if (data.modeConfig && data.modeConfig.scheduledDateTime) {
+              const scheduledDateTime = new Date(data.modeConfig.scheduledDateTime)
+              const now = new Date()
+              const timeUntilActivation = scheduledDateTime - now
+              
+              if (timeUntilActivation > 0) {
+                startCountdownToActivation(timeUntilActivation)
+                setTimeout(() => {
+                  startProgrammedWatering()
+                }, timeUntilActivation)
+              }
+            }
+            
+            // Limpiar el backup
+            localStorage.removeItem('programmedModeBackup')
+            
+            console.log('Modo programado restaurado después de cancelar automático')
+            saveToStorage()
+            return
+          }
+        }
+        
+        // Si no hay modo programado, cancelar completamente
+        activeMode.value = null
+        modeConfig.value = {}
+        isWatering.value = false
+        remainingTime.value = null
+        startTime.value = null
+        isPaused.value = false
+        pausedTime.value = null
+        
+        clearStorage()
+      }
+      
+      console.log('Modo automático cancelado exitosamente')
+    } catch (error) {
+      console.error('Error en cancelAutomaticMode:', error)
       throw error
     }
   }
@@ -438,11 +619,15 @@ if (process.client && !window.irrigationInitialized) {
     activateProgrammedMode,
     activateAutomaticMode,
     cancelActiveMode,
+    cancelAutomaticMode,
     pauseIrrigation,
     resumeIrrigation,
     getModeDescription,
     loadFromStorage,
     clearAllIntervals,
-    startProgrammedWatering
+    startProgrammedWatering,
+    startAutomaticWatering,
+    stopAutomaticWatering,
+    triggerAutomaticWatering
   }
 } 
