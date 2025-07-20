@@ -345,30 +345,131 @@
             </div>
           </div>
 
-          <!-- Opciones de repetición -->
+          <!-- Opciones de frecuencia visual -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-3">
-              Frecuencia
+            <label class="block text-sm font-medium text-gray-300 mb-4">
+              Frecuencia de Riego
             </label>
-            <div class="space-y-2">
-              <label class="flex items-center">
-                <input 
-                  v-model="frequency" 
-                  type="radio" 
-                  value="once"
-                  class="text-green-600 focus:ring-green-500 bg-gray-700 border-gray-600"
+            
+            <!-- Opciones de frecuencia -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Opción: Solo una vez -->
+              <div 
+                @click="selectFrequency('once')"
+                class="relative cursor-pointer group"
+              >
+                <div 
+                  class="p-4 rounded-xl border-2 transition-all duration-200"
+                  :class="frequency === 'once' 
+                    ? 'border-green-500 bg-green-900/20 shadow-lg shadow-green-500/20' 
+                    : 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700'"
                 >
-                <span class="ml-2 text-sm text-gray-300">Solo una vez</span>
-              </label>
-              <label class="flex items-center">
-                <input 
-                  v-model="frequency" 
-                  type="radio" 
-                  value="daily"
-                  class="text-green-600 focus:ring-green-500 bg-gray-700 border-gray-600"
+                  <div class="text-center">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center"
+                         :class="frequency === 'once' ? 'bg-green-500' : 'bg-gray-600'">
+                      <span class="text-xl">1️⃣</span>
+                    </div>
+                    <h3 class="font-semibold text-white mb-2">Solo una vez</h3>
+                    <p class="text-sm text-gray-400">Riego único en la fecha y hora seleccionada</p>
+                  </div>
+                  <!-- Checkmark -->
+                  <div v-if="frequency === 'once'" 
+                       class="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm">✓</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Opción: Diariamente -->
+              <div 
+                @click="selectFrequency('daily')"
+                class="relative cursor-pointer group"
+              >
+                <div 
+                  class="p-4 rounded-xl border-2 transition-all duration-200"
+                  :class="frequency === 'daily' 
+                    ? 'border-green-500 bg-green-900/20 shadow-lg shadow-green-500/20' 
+                    : 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700'"
                 >
-                <span class="ml-2 text-sm text-gray-300">Diariamente a la misma hora</span>
+                  <div class="text-center">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center"
+                         :class="frequency === 'daily' ? 'bg-green-500' : 'bg-gray-600'">
+                      <span class="text-xl">🔄</span>
+                    </div>
+                    <h3 class="font-semibold text-white mb-2">Diariamente</h3>
+                    <p class="text-sm text-gray-400">Riego automático todos los días a la misma hora</p>
+                  </div>
+                  <!-- Checkmark -->
+                  <div v-if="frequency === 'daily'" 
+                       class="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm">✓</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Opción: Días personalizados -->
+              <div 
+                @click="selectFrequency('custom')"
+                class="relative cursor-pointer group"
+              >
+                <div 
+                  class="p-4 rounded-xl border-2 transition-all duration-200"
+                  :class="frequency === 'custom' 
+                    ? 'border-green-500 bg-green-900/20 shadow-lg shadow-green-500/20' 
+                    : 'border-gray-600 bg-gray-700/50 hover:border-gray-500 hover:bg-gray-700'"
+                >
+                  <div class="text-center">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center"
+                         :class="frequency === 'custom' ? 'bg-green-500' : 'bg-gray-600'">
+                      <span class="text-xl">📅</span>
+                    </div>
+                    <h3 class="font-semibold text-white mb-2">Días específicos</h3>
+                    <p class="text-sm text-gray-400">Elegir los días de la semana para el riego</p>
+                  </div>
+                  <!-- Checkmark -->
+                  <div v-if="frequency === 'custom'" 
+                       class="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm">✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Selector de días personalizados (solo visible si frequency === 'custom') -->
+            <div v-if="frequency === 'custom'" class="mt-6">
+              <label class="block text-sm font-medium text-gray-300 mb-3">
+                Seleccionar días de la semana
               </label>
+              <div class="grid grid-cols-7 gap-2">
+                <div 
+                  v-for="(day, index) in weekDays" 
+                  :key="index"
+                  @click="toggleDay(index)"
+                  class="relative cursor-pointer group"
+                >
+                  <div 
+                    class="p-3 rounded-lg border-2 text-center transition-all duration-200"
+                    :class="selectedDays.includes(index) 
+                      ? 'border-green-500 bg-green-900/30 text-green-300' 
+                      : 'border-gray-600 bg-gray-700/50 text-gray-400 hover:border-gray-500 hover:bg-gray-700'"
+                  >
+                    <div class="text-sm font-medium">{{ day }}</div>
+                    <!-- Checkmark para días seleccionados -->
+                    <div v-if="selectedDays.includes(index)" 
+                         class="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                      <span class="text-white text-xs">✓</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Resumen de días seleccionados -->
+              <div v-if="selectedDays.length > 0" class="mt-3 p-3 bg-green-900/20 border border-green-700/50 rounded-lg">
+                <p class="text-sm text-green-300">
+                  <strong>Días seleccionados:</strong> 
+                  {{ getSelectedDaysText() }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -409,7 +510,7 @@
             <div class="text-sm text-blue-200 space-y-1">
               <p><strong>Fecha y hora programada:</strong> {{ formatScheduledDateTime() }}</p>
               <p><strong>Duración:</strong> {{ formatDuration() }}</p>
-              <p><strong>Frecuencia:</strong> {{ frequency === 'once' ? 'Solo una vez' : 'Diario' }}</p>
+              <p><strong>Frecuencia:</strong> {{ getFrequencyText() }}</p>
               <p><strong>Caudal estimado:</strong> 2.5 L/min</p>
               <p><strong>Volumen total:</strong> {{ calculateVolume() }} L</p>
             </div>
@@ -545,6 +646,7 @@ const duration = ref({
 })
 
 const frequency = ref('once')
+const selectedDays = ref([]) // Para días personalizados
 
 const options = ref({
   notifyBeforeStart: true,
@@ -712,7 +814,15 @@ const isValidConfiguration = () => {
   const scheduled = new Date(selectedDate.value)
   scheduled.setHours(scheduledTime.value.hour, scheduledTime.value.minute, 0, 0)
   
-  return (duration.value.minutes > 0 || duration.value.seconds > 0) && scheduled > now
+  const hasValidDuration = (duration.value.minutes > 0 || duration.value.seconds > 0)
+  const hasValidDateTime = scheduled > now
+  
+  // Validación específica para frecuencia personalizada
+  if (frequency.value === 'custom' && selectedDays.value.length === 0) {
+    return false
+  }
+  
+  return hasValidDuration && hasValidDateTime
 }
 
 const setTimeOption = (option) => {
@@ -720,10 +830,61 @@ const setTimeOption = (option) => {
   scheduledTime.value.minute = option.minute
 }
 
+// Métodos para manejar la frecuencia
+const selectFrequency = (freq) => {
+  frequency.value = freq
+  // Limpiar días seleccionados si no es custom
+  if (freq !== 'custom') {
+    selectedDays.value = []
+  }
+}
+
+const toggleDay = (dayIndex) => {
+  const index = selectedDays.value.indexOf(dayIndex)
+  if (index > -1) {
+    selectedDays.value.splice(index, 1)
+  } else {
+    selectedDays.value.push(dayIndex)
+  }
+  // Ordenar los días
+  selectedDays.value.sort()
+}
+
+const getSelectedDaysText = () => {
+  if (selectedDays.value.length === 0) return 'Ningún día seleccionado'
+  
+  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+  const selectedDayNames = selectedDays.value.map(index => dayNames[index])
+  
+  if (selectedDayNames.length === 1) {
+    return selectedDayNames[0]
+  } else if (selectedDayNames.length === 2) {
+    return `${selectedDayNames[0]} y ${selectedDayNames[1]}`
+  } else {
+    const last = selectedDayNames.pop()
+    return `${selectedDayNames.join(', ')} y ${last}`
+  }
+}
+
+const getFrequencyText = () => {
+  switch (frequency.value) {
+    case 'once':
+      return 'Solo una vez'
+    case 'daily':
+      return 'Diariamente a la misma hora'
+    case 'custom':
+      return `Días específicos: ${getSelectedDaysText()}`
+    default:
+      return 'No configurado'
+  }
+}
+
 const confirmConfiguration = () => {
   if (!isValidConfiguration()) {
     if (duration.value.minutes === 0 && duration.value.seconds === 0) {
       showError('Por favor, configura una duración válida para el riego')
+    } else if (frequency.value === 'custom' && selectedDays.value.length === 0) {
+      showError('Por favor, selecciona al menos un día de la semana para el riego personalizado')
     } else {
       showError('La fecha y hora programada debe ser futura')
     }

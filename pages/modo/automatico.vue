@@ -360,43 +360,7 @@
             </div>
           </div>
 
-          <!-- Configuración avanzada -->
-          <div class="bg-gray-700 rounded-lg p-4 border border-gray-600">
-            <h3 class="font-medium text-white mb-3">Configuración Avanzada</h3>
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm text-gray-300 mb-1">Intervalo Mínimo entre Riegos</label>
-                <select 
-                  v-model="advancedOptions.cooldownMinutes"
-                  class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-                >
-                  <option value="30">30 minutos</option>
-                  <option value="60">1 hora</option>
-                  <option value="120">2 horas</option>
-                  <option value="240">4 horas</option>
-                </select>
-              </div>
-              
-              <div class="space-y-2">
-                <label class="flex items-center">
-                  <input 
-                    v-model="advancedOptions.enableNightMode" 
-                    type="checkbox" 
-                    class="rounded border-gray-600 text-purple-600 focus:ring-purple-500 bg-gray-700"
-                  >
-                  <span class="ml-2 text-sm text-gray-300">Desactivar riego nocturno (22:00 - 06:00)</span>
-                </label>
-                <label class="flex items-center">
-                  <input 
-                    v-model="advancedOptions.notifyActivation" 
-                    type="checkbox" 
-                    class="rounded border-gray-600 text-purple-600 focus:ring-purple-500 bg-gray-700"
-                  >
-                  <span class="ml-2 text-sm text-gray-300">Notificar cada activación automática</span>
-                </label>
-              </div>
-            </div>
-          </div>
+
 
           <!-- Vista previa de configuración -->
           <div class="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4">
@@ -544,11 +508,7 @@ const duration = ref({
   seconds: 0
 })
 
-const advancedOptions = ref({
-  cooldownMinutes: 60,
-  enableNightMode: true,
-  notifyActivation: true
-})
+
 
 const showConfirmModal = ref(false)
 const showCancelModal = ref(false)
@@ -648,8 +608,7 @@ const saveAutomaticConfiguration = () => {
       duration: {
         minutes: duration.value.minutes || 0,
         seconds: duration.value.seconds || 0
-      },
-      advancedOptions: advancedOptions.value
+      }
     }
     
     console.log('Guardando configuración automática:', config)
