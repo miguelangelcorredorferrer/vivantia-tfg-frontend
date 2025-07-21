@@ -120,7 +120,7 @@
                     class="p-2 text-gray-400 hover:text-green-400 hover:bg-green-900/20 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                     title="Ver detalles del cultivo"
                   >
-                    <component :is="getIcon('info')" />
+                    <component :is="getIcon('notes')" />
                   </button>
                   <span class="text-xs text-gray-400">Ver</span>
                 </div>

@@ -56,10 +56,10 @@ import SidebarItem from './SidebarItem.vue'
         />
         
         <SidebarItem 
-          icon="settings" 
-          label="Settings" 
-          to="/settings" 
-          :active="$route.path === '/settings'"
+          icon="alerts" 
+          label="Alertas" 
+          to="/alertas" 
+          :active="$route.path === '/alertas'"
         />
       </div>
     </nav>

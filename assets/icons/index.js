@@ -295,6 +295,21 @@ export const getIcon = (iconName) => {
     close: closeIcon,
     check: checkIcon,
     info: infoIcon,
+    notes: () => h('svg', {
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      viewBox: '0 0 24 24',
+      class: 'w-4 h-4'
+    }, [
+      h('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+      h('polyline', { points: '14,2 14,8 20,8' }),
+      h('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
+      h('line', { x1: '16', y1: '17', x2: '8', y2: '17' }),
+      h('polyline', { points: '10,9 9,9 8,9' })
+    ]),
     edit: editIcon,
     delete: deleteIcon,
     search: searchIcon,
@@ -358,6 +373,10 @@ import ManualModeIcon from './ManualModeIcon.vue'
 import ProgrammedModeIcon from './ProgrammedModeIcon.vue'
 import AutomaticModeIcon from './AutomaticModeIcon.vue'
 import EditIcon from './EditIcon.vue'
+import NotesIcon from './NotesIcon.vue'
+import UserIcon from './UserIcon.vue'
+import DeviceIcon from './DeviceIcon.vue'
+import WateringIcon from './WateringIcon.vue'
 
 // Exportar los nuevos iconos como componentes Vue
 export {
@@ -383,5 +402,15 @@ export {
   ManualModeIcon,
   ProgrammedModeIcon,
   AutomaticModeIcon,
-  EditIcon
-} 
+  EditIcon,
+  NotesIcon,
+  UserIcon,
+  DeviceIcon,
+  WateringIcon
+}
+
+// Exportar AlertsIcon como alias
+export { alertsIcon as AlertsIcon }
+
+// Exportar DeleteIcon como alias
+export { deleteIcon as DeleteIcon } 
