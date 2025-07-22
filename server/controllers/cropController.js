@@ -1,0 +1,398 @@
+import { pool } from '../config/db.js';
+import Crop from '../models/Crop.js';
+import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
+
+// Crear un nuevo cultivo
+const createCrop = async (req, res) => {
+  try {
+    const {
+      user_id, name, description, image, category, growth_days,
+      humidity_min, humidity_max, temperature_max, selected = false
+    } = req.body;
+
+    // Validar campos obligatorios
+    if (!user_id || !name) {
+      return handleBadRequestError('User ID y nombre del cultivo son obligatorios', res);
+    }
+
+    const query = `
+      INSERT INTO crops (
+        user_id, name, description, image, category, growth_days,
+        humidity_min, humidity_max, temperature_max, selected
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *
+    `;
+    
+    const values = [
+      user_id, name, description, image, category, growth_days,
+      humidity_min, humidity_max, temperature_max, selected
+    ];
+    
+    const result = await pool.query(query, values);
+    const crop = new Crop(result.rows[0]);
+
+    return handleSuccessResponse(res, crop, 'Cultivo creado exitosamente', 201);
+  } catch (error) {
+    return handleInternalServerError('Error al crear cultivo', res, error);
+  }
+};
+
+// Buscar cultivo por ID
+const findCropById = async (id) => {
+  try {
+    const query = 'SELECT * FROM crops WHERE id = $1';
+    const result = await pool.query(query, [id]);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    return new Crop(result.rows[0]);
+  } catch (error) {
+    throw new Error(`Error al buscar cultivo: ${error.message}`);
+  }
+};
+
+// Obtener cultivo por ID (para API)
+const getCropById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const crop = await findCropById(id);
+
+    if (!crop) {
+      return handleNotFoundError('Cultivo no encontrado', res);
+    }
+
+    return handleSuccessResponse(res, crop, 'Cultivo obtenido exitosamente');
+  } catch (error) {
+    return handleInternalServerError('Error al obtener cultivo', res, error);
+  }
+};
+
+// Buscar cultivo por usuario
+const findCropByUserId = async (user_id) => {
+  try {
+    const query = 'SELECT * FROM crops WHERE user_id = $1';
+    const result = await pool.query(query, [user_id]);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    return new Crop(result.rows[0]);
+  } catch (error) {
+    throw new Error(`Error al buscar cultivo del usuario: ${error.message}`);
+  }
+};
+
+// Obtener cultivo por usuario (para API)
+const getCropByUserId = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const crop = await findCropByUserId(user_id);
+
+    if (!crop) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró cultivo para este usuario'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: crop
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener cultivo del usuario',
+      error: error.message
+    });
+  }
+};
+
+// Obtener todos los cultivos
+const getAllCrops = async (req, res) => {
+  try {
+    const query = 'SELECT * FROM crops ORDER BY created_at DESC';
+    const result = await pool.query(query);
+    
+    const crops = result.rows.map(row => new Crop(row));
+
+    res.status(200).json({
+      success: true,
+      count: crops.length,
+      data: crops
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener cultivos',
+      error: error.message
+    });
+  }
+};
+
+// Buscar cultivo seleccionado por usuario
+const getSelectedCropByUserId = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    const query = 'SELECT * FROM crops WHERE user_id = $1 AND selected = true';
+    const result = await pool.query(query, [user_id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay cultivo seleccionado para este usuario'
+      });
+    }
+    
+    const crop = new Crop(result.rows[0]);
+
+    res.status(200).json({
+      success: true,
+      data: crop
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al buscar cultivo seleccionado',
+      error: error.message
+    });
+  }
+};
+
+// Actualizar cultivo
+const updateCrop = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Verificar si el cultivo existe
+    const existingCrop = await findCropById(id);
+    if (!existingCrop) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cultivo no encontrado'
+      });
+    }
+
+    const fields = [];
+    const values = [];
+    let counter = 1;
+
+    // Construir la consulta dinámicamente
+    for (const [key, value] of Object.entries(updateData)) {
+      if (key !== 'id' && key !== 'user_id' && key !== 'created_at') {
+        fields.push(`${key} = $${counter}`);
+        values.push(value);
+        counter++;
+      }
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No hay campos para actualizar'
+      });
+    }
+
+    values.push(id);
+    
+    const query = `
+      UPDATE crops 
+      SET ${fields.join(', ')}
+      WHERE id = $${counter}
+      RETURNING *
+    `;
+    
+    const result = await pool.query(query, values);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cultivo no encontrado'
+      });
+    }
+    
+    const updatedCrop = new Crop(result.rows[0]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Cultivo actualizado exitosamente',
+      data: updatedCrop
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar cultivo',
+      error: error.message
+    });
+  }
+};
+
+// Seleccionar cultivo (deseleccionar otros del mismo usuario)
+const selectCrop = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+
+    // Verificar si el cultivo existe
+    const existingCrop = await findCropById(id);
+    if (!existingCrop) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cultivo no encontrado'
+      });
+    }
+
+    await client.query('BEGIN');
+
+    // Deseleccionar todos los cultivos del usuario
+    await client.query(
+      'UPDATE crops SET selected = false WHERE user_id = $1',
+      [existingCrop.user_id]
+    );
+
+    // Seleccionar este cultivo
+    const result = await client.query(
+      'UPDATE crops SET selected = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+
+    await client.query('COMMIT');
+    
+    const selectedCrop = new Crop(result.rows[0]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Cultivo seleccionado exitosamente',
+      data: selectedCrop
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({
+      success: false,
+      message: 'Error al seleccionar cultivo',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};
+
+// Deseleccionar cultivo
+const deselectCrop = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const query = 'UPDATE crops SET selected = false WHERE id = $1 RETURNING *';
+    const result = await pool.query(query, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cultivo no encontrado'
+      });
+    }
+    
+    const deselectedCrop = new Crop(result.rows[0]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Cultivo deseleccionado exitosamente',
+      data: deselectedCrop
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al deseleccionar cultivo',
+      error: error.message
+    });
+  }
+};
+
+// Eliminar cultivo
+const deleteCrop = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar si el cultivo existe
+    const existingCrop = await findCropById(id);
+    if (!existingCrop) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cultivo no encontrado'
+      });
+    }
+
+    const query = 'DELETE FROM crops WHERE id = $1';
+    const result = await pool.query(query, [id]);
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cultivo no encontrado'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Cultivo eliminado exitosamente'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar cultivo',
+      error: error.message
+    });
+  }
+};
+
+// Obtener configuraciones de riego asociadas
+const getCropIrrigationConfigs = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar si el cultivo existe
+    const existingCrop = await findCropById(id);
+    if (!existingCrop) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cultivo no encontrado'
+      });
+    }
+
+    const query = 'SELECT * FROM irrigation_configs WHERE crop_id = $1';
+    const result = await pool.query(query, [id]);
+
+    res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener configuraciones de riego',
+      error: error.message
+    });
+  }
+};
+
+export {
+  createCrop,
+  findCropById,
+  getCropById,
+  findCropByUserId,
+  getCropByUserId,
+  getAllCrops,
+  getSelectedCropByUserId,
+  updateCrop,
+  selectCrop,
+  deselectCrop,
+  deleteCrop,
+  getCropIrrigationConfigs
+};
