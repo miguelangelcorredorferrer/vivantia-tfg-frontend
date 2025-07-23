@@ -1,66 +1,147 @@
-import api from '../lib/axios'
+const getApiUrl = () => {
+  const config = useRuntimeConfig()
+  return config.public.apiUrl || 'http://localhost:3001/api'
+}
+
+const getAuthHeaders = () => {
+  const token = process.client ? localStorage.getItem('AUTH_TOKEN') : null
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export default {
     // Rutas básicas CRUD
     create(data) {
-        return api.post('/alerts', data)
+        return $fetch('/alerts', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getById(id) {
-        return api.get(`/alerts/${id}`)
+        return $fetch(`/alerts/${id}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     delete(id) {
-        return api.delete(`/alerts/${id}`)
+        return $fetch(`/alerts/${id}`, {
+            method: 'DELETE',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas por usuario
     getAlertsByUserId(userId) {
-        return api.get(`/alerts/user/${userId}`)
+        return $fetch(`/alerts/user/${userId}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getUnresolvedAlertsByUserId(userId) {
-        return api.get(`/alerts/user/${userId}/unresolved`)
+        return $fetch(`/alerts/user/${userId}/unresolved`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     resolveAllAlertsByUserId(userId) {
-        return api.put(`/alerts/user/${userId}/resolve-all`)
+        return $fetch(`/alerts/user/${userId}/resolve-all`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     deleteOldAlerts(userId) {
-        return api.delete(`/alerts/user/${userId}/old`)
+        return $fetch(`/alerts/user/${userId}/old`, {
+            method: 'DELETE',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas por filtros
     getAlertsByType(alertType) {
-        return api.get(`/alerts/type/${alertType}`)
+        return $fetch(`/alerts/type/${alertType}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getAlertsBySeverity(severity) {
-        return api.get(`/alerts/severity/${severity}`)
+        return $fetch(`/alerts/severity/${severity}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas de acciones
     resolveAlert(id) {
-        return api.put(`/alerts/${id}/resolve`)
+        return $fetch(`/alerts/${id}/resolve`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     unresolveAlert(id) {
-        return api.put(`/alerts/${id}/unresolve`)
+        return $fetch(`/alerts/${id}/unresolve`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas de estadísticas
     getAlertCountByType() {
-        return api.get('/alerts/stats/type')
+        return $fetch('/alerts/stats/type', {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getAlertCountBySeverity() {
-        return api.get('/alerts/stats/severity')
+        return $fetch('/alerts/stats/severity', {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas para crear alertas específicas
     createUserRegisteredAlert(data) {
-        return api.post('/alerts/user-registered', data)
+        return $fetch('/alerts/user-registered', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     createDeviceOfflineAlert(data) {
-        return api.post('/alerts/device-offline', data)
+        return $fetch('/alerts/device-offline', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     createHumidityThresholdAlert(data) {
-        return api.post('/alerts/humidity-threshold', data)
+        return $fetch('/alerts/humidity-threshold', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     createIrrigationStartedAlert(data) {
-        return api.post('/alerts/irrigation-started', data)
+        return $fetch('/alerts/irrigation-started', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     }
 } 

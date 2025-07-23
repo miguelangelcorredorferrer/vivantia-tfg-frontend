@@ -1,28 +1,66 @@
-import api from '../lib/axios'
+const getApiUrl = () => {
+  const config = useRuntimeConfig()
+  return config.public.apiUrl || 'http://localhost:3001/api'
+}
+
+const getAuthHeaders = () => {
+  const token = process.client ? localStorage.getItem('AUTH_TOKEN') : null
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export default {
     // Rutas básicas CRUD
     create(data) {
-        return api.post('/users', data)
+        return $fetch('/users', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getAllUsers() {
-        return api.get('/users')
+        return $fetch('/users', {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getById(id) {
-        return api.get(`/users/${id}`)
+        return $fetch(`/users/${id}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     update(id, data) {
-        return api.put(`/users/${id}`, data)
+        return $fetch(`/users/${id}`, {
+            method: 'PUT',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     delete(id) {
-        return api.delete(`/users/${id}`)
+        return $fetch(`/users/${id}`, {
+            method: 'DELETE',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas específicas
     getUserByEmail(email) {
-        return api.get(`/users/email/${email}`)
+        return $fetch(`/users/email/${email}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getCurrentUserProfile() {
-        return api.get('/users/profile/current')
+        return $fetch('/users/profile/current', {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     }
 } 

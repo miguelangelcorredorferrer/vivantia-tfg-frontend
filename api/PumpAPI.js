@@ -1,32 +1,69 @@
-import api from '../lib/axios'
+const getApiUrl = () => {
+  const config = useRuntimeConfig()
+  return config.public.apiUrl || 'http://localhost:3001/api'
+}
+
+const getAuthHeaders = () => {
+  const token = process.client ? localStorage.getItem('AUTH_TOKEN') : null
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export default {
     // Rutas básicas CRUD
     create(data) {
-        return api.post('/pump-activations', data)
+        return $fetch('/pump-activations', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getById(id) {
-        return api.get(`/pump-activations/${id}`)
+        return $fetch(`/pump-activations/${id}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas por filtros
     getActivePumpActivations() {
-        return api.get('/pump-activations/active/all')
+        return $fetch('/pump-activations/active/all', {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getPumpActivationsByUserId(userId) {
-        return api.get(`/pump-activations/user/${userId}`)
+        return $fetch(`/pump-activations/user/${userId}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas de acciones
     completePumpActivation(id) {
-        return api.put(`/pump-activations/${id}/complete`)
+        return $fetch(`/pump-activations/${id}/complete`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     cancelPumpActivation(id) {
-        return api.put(`/pump-activations/${id}/cancel`)
+        return $fetch(`/pump-activations/${id}/cancel`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas de estadísticas
     getPumpActivationStats() {
-        return api.get('/pump-activations/stats/all')
+        return $fetch('/pump-activations/stats/all', {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     }
 } 

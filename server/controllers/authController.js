@@ -80,10 +80,15 @@ const verifyAccount = async (req, res) => {
         const userData = result.rows[0];
         const user = new User(userData);
 
-        // Si el token es válido, confirmar la cuenta
+        // Si el token es válido, confirmar la cuenta y actualizar el rol
         const updateQuery = `
             UPDATE users 
-            SET verified = true, token = '' 
+            SET verified = true, 
+                token = '', 
+                role = CASE 
+                    WHEN role = 'visitante' THEN 'usuario'
+                    ELSE role 
+                END
             WHERE id = $1 
             RETURNING id, email, name, role, verified, created_at
         `;

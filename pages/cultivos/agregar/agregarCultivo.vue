@@ -372,6 +372,9 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: 'auth'
+})
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { cropCategories } from '~/utils/crops'

@@ -1,3 +1,5 @@
+
+
 <template>
   <div class="space-y-8">
     <div class="max-w-4xl mx-auto">
@@ -461,6 +463,9 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: 'auth'
+})
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { useIrrigationModes } from '~/composables/useIrrigationModes'
 import {

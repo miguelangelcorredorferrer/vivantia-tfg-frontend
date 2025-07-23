@@ -1,153 +1,13 @@
-<template>
-  <div class="space-y-8">
-    <div class="max-w-7xl mx-auto">
-      <!-- Header -->
-      <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
-              <AlertsIcon />
-            </div>
-            <div>
-              <h1 class="text-2xl font-bold text-white">Alertas del Sistema</h1>
-              <p class="text-gray-300">Gestiona y revisa todas las notificaciones del sistema</p>
-            </div>
-          </div>
-          
-          <!-- Estadísticas rápidas -->
-          <div class="flex items-center space-x-6">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-white">{{ totalAlerts }}</div>
-              <div class="text-sm text-gray-400">Total</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-orange-400">{{ unreadAlerts }}</div>
-              <div class="text-sm text-gray-400">Nuevas</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-red-400">{{ criticalAlerts }}</div>
-              <div class="text-sm text-gray-400">Críticas</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Filtros -->
-      <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <h2 class="text-lg font-semibold text-white mb-4">Filtros</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <!-- Filtro por categoría -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Categoría</label>
-            <select 
-              v-model="filters.category"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
-            >
-              <option value="">Todas las categorías</option>
-              <option value="user">Usuario</option>
-              <option value="environmental">Ambiental</option>
-              <option value="device">Dispositivo</option>
-              <option value="crop">Cultivo</option>
-              <option value="irrigation">Riego</option>
-            </select>
-          </div>
-
-          <!-- Filtro por subcategoría -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Subcategoría</label>
-            <select 
-              v-model="filters.subcategory"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
-            >
-              <option value="">Todas las subcategorías</option>
-              <option value="temperature">Temperatura</option>
-              <option value="humidity">Humedad</option>
-              <option value="moisture">Humedad del Suelo</option>
-              <option value="water_level">Nivel de Agua</option>
-              <option value="pressure">Presión</option>
-            </select>
-          </div>
-
-          <!-- Filtro por severidad -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Severidad</label>
-            <select 
-              v-model="filters.severity"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
-            >
-              <option value="">Todas las severidades</option>
-              <option value="info">Información</option>
-              <option value="success">Éxito</option>
-              <option value="warning">Advertencia</option>
-              <option value="error">Error</option>
-            </select>
-          </div>
-
-          <!-- Filtro por estado -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Estado</label>
-            <select 
-              v-model="filters.status"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
-            >
-              <option value="">Todos los estados</option>
-              <option value="unread">Nuevas</option>
-              <option value="read">Resueltas</option>
-            </select>
-          </div>
-
-          <!-- Filtro por fecha -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Período</label>
-            <select 
-              v-model="filters.period"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
-            >
-              <option value="all">Todo el tiempo</option>
-              <option value="today">Hoy</option>
-              <option value="week">Esta semana</option>
-              <option value="month">Este mes</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Botones de acción -->
-        <div class="flex items-center justify-between mt-6">
-          <div class="flex items-center space-x-3">
-            <button
-              @click="clearFilters"
-              class="px-4 py-2 bg-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Limpiar Filtros
-            </button>
-            <button
-              @click="markAllAsRead"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Marcar Todo como Resuelto
-            </button>
-          </div>
-          
-          <div class="text-sm text-gray-400">
-            {{ filteredAlerts.length }} alertas encontradas
-          </div>
-        </div>
-      </div>
-
-      <!-- Tabla de Alertas -->
-      <AlertsTable 
-        :alerts="filteredAlerts"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { AlertsIcon } from '~/assets/icons'
 import AlertsTable from '~/components/Alerts/AlertsTable.vue'
+
+// Configurar middleware de autenticación
+definePageMeta({
+  middleware: 'auth'
+})
 
 // Meta del documento
 useHead({
@@ -437,4 +297,149 @@ onMounted(() => {
   // Cargar alertas desde la API (simulado)
   console.log('Página de alertas cargada')
 })
-</script> 
+</script>
+
+<template>
+  <div class="space-y-8">
+    <div class="max-w-7xl mx-auto">
+      <!-- Header -->
+      <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+              <AlertsIcon />
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold text-white">Alertas del Sistema</h1>
+              <p class="text-gray-300">Gestiona y revisa todas las notificaciones del sistema</p>
+            </div>
+          </div>
+          
+          <!-- Estadísticas rápidas -->
+          <div class="flex items-center space-x-6">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-white">{{ totalAlerts }}</div>
+              <div class="text-sm text-gray-400">Total</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-orange-400">{{ unreadAlerts }}</div>
+              <div class="text-sm text-gray-400">Nuevas</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-red-400">{{ criticalAlerts }}</div>
+              <div class="text-sm text-gray-400">Críticas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+        <h2 class="text-lg font-semibold text-white mb-4">Filtros</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Filtro por categoría -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Categoría</label>
+            <select 
+              v-model="filters.category"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+            >
+              <option value="">Todas las categorías</option>
+              <option value="user">Usuario</option>
+              <option value="environmental">Ambiental</option>
+              <option value="device">Dispositivo</option>
+              <option value="crop">Cultivo</option>
+              <option value="irrigation">Riego</option>
+            </select>
+          </div>
+
+          <!-- Filtro por subcategoría -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Subcategoría</label>
+            <select 
+              v-model="filters.subcategory"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+            >
+              <option value="">Todas las subcategorías</option>
+              <option value="temperature">Temperatura</option>
+              <option value="humidity">Humedad</option>
+              <option value="moisture">Humedad del Suelo</option>
+              <option value="water_level">Nivel de Agua</option>
+              <option value="pressure">Presión</option>
+            </select>
+          </div>
+
+          <!-- Filtro por severidad -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Severidad</label>
+            <select 
+              v-model="filters.severity"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+            >
+              <option value="">Todas las severidades</option>
+              <option value="info">Información</option>
+              <option value="success">Éxito</option>
+              <option value="warning">Advertencia</option>
+              <option value="error">Error</option>
+            </select>
+          </div>
+
+          <!-- Filtro por estado -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Estado</label>
+            <select 
+              v-model="filters.status"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+            >
+              <option value="">Todos los estados</option>
+              <option value="unread">Nuevas</option>
+              <option value="read">Resueltas</option>
+            </select>
+          </div>
+
+          <!-- Filtro por fecha -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Período</label>
+            <select 
+              v-model="filters.period"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+            >
+              <option value="all">Todo el tiempo</option>
+              <option value="today">Hoy</option>
+              <option value="week">Esta semana</option>
+              <option value="month">Este mes</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex items-center justify-between mt-6">
+          <div class="flex items-center space-x-3">
+            <button
+              @click="clearFilters"
+              class="px-4 py-2 bg-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Limpiar Filtros
+            </button>
+            <button
+              @click="markAllAsRead"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Marcar Todo como Resuelto
+            </button>
+          </div>
+          
+          <div class="text-sm text-gray-400">
+            {{ filteredAlerts.length }} alertas encontradas
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Alertas -->
+      <AlertsTable 
+        :alerts="filteredAlerts"
+      />
+    </div>
+  </div>
+</template> 

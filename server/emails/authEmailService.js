@@ -159,7 +159,7 @@ export async function sendEmailVerification({ name, email, token }) {
                 </p>
                 
                 <div class="btn-container">
-                    <a href="${process.env.FRONTEND_URL}/auth/verificar-cuenta/${token}" class="verify-btn">
+                    <a href="${process.env.FRONTEND_URL}/auth/confirm/${token}" class="verify-btn">
                         ✅ Confirmar mi cuenta
                     </a>
                 </div>
@@ -189,7 +189,7 @@ export async function sendEmailVerification({ name, email, token }) {
         from: 'Vivantia <cuentas@vivantia.com>',
         to: email,
         subject: "🌿 Vivantia - Confirma tu cuenta",
-        text: `Hola ${name}, confirma tu cuenta en Vivantia. Tu cuenta está casi lista, solo debes confirmarla en el siguiente enlace: ${process.env.FRONTEND_URL}/auth/verificar-cuenta/${token}`,
+        text: `Hola ${name}, confirma tu cuenta en Vivantia. Tu cuenta está casi lista, solo debes confirmarla en el siguiente enlace: ${process.env.FRONTEND_URL}/auth/confirm/${token}`,
         html: htmlTemplate
     });
 
@@ -340,7 +340,7 @@ export async function sendEmailPasswordReset({ name, email, token }) {
                 </p>
                 
                 <div class="btn-container">
-                    <a href="${process.env.FRONTEND_URL}/auth/nueva-password/${token}" class="reset-btn">
+                    <a href="${process.env.FRONTEND_URL}/auth/new-password/${token}" class="reset-btn">
                         🔑 Reestablecer mi contraseña
                     </a>
                 </div>
@@ -381,7 +381,7 @@ export async function sendEmailPasswordReset({ name, email, token }) {
         from: 'Vivantia <cuentas@vivantia.com>',
         to: email,
         subject: "🔐 Vivantia - Reestablecer contraseña",
-        text: `Hola ${name}, has solicitado reestablecer tu contraseña en Vivantia. Sigue el siguiente enlace para generar una nueva contraseña: ${process.env.FRONTEND_URL}/auth/nueva-password/${token}`,
+        text: `Hola ${name}, has solicitado reestablecer tu contraseña en Vivantia. Sigue el siguiente enlace para generar una nueva contraseña: ${process.env.FRONTEND_URL}/auth/new-password/${token}`,
         html: htmlTemplate
     });
 

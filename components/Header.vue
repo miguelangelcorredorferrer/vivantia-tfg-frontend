@@ -1,6 +1,17 @@
 <script setup>
+import { useUserStore } from '~/stores/user'
+
 // Definir los eventos que puede emitir el componente
 defineEmits(['toggle-sidebar'])
+
+const userStore = useUserStore()
+
+// Función para cerrar sesión
+const handleLogout = () => {
+  userStore.logout()
+  // Redirigir al login
+  navigateTo('/auth/login')
+}
 </script>
 
 <template>
@@ -32,31 +43,46 @@ defineEmits(['toggle-sidebar'])
         </div>
       </div>
 
-      <!-- Sección derecha con botones y perfil -->
+      <!-- Sección derecha con información de usuario -->
       <div class="flex items-center space-x-4">
         
-        <!-- Iconos de acción -->
-        <div class="flex items-center space-x-2">
-          <!-- Búsqueda -->
-          <button class="p-2 rounded-lg hover:bg-gray-600 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-          </button>
+        <!-- Información del usuario logueado -->
+        <div v-if="userStore.isAuthenticated" class="flex items-center space-x-3">
+          <!-- Saludo personalizado -->
+          <div class="hidden sm:block text-right">
+            <p class="text-sm font-medium text-white">
+              ¡Bienvenido {{ userStore.userName }} a Vivantia!
+            </p>
+            <p class="text-xs text-gray-300">{{ userStore.userEmail }}</p>
+          </div>
           
-          <!-- Actividad -->
-          <button class="p-2 rounded-lg hover:bg-gray-600 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-          </button>
+          <!-- Dropdown de usuario -->
+          <div class="relative">
+            <button 
+              class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg"
+              title="Menú de usuario"
+            >
+              <span class="text-white font-semibold text-sm">
+                {{ userStore.userName.charAt(0).toUpperCase() }}
+              </span>
+            </button>
+          </div>
           
-          <!-- Perfil de usuario -->
-          <button class="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-500 transition-colors">
-            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+          <!-- Botón de cerrar sesión -->
+          <button 
+            @click="handleLogout"
+            class="p-2 rounded-lg hover:bg-gray-600 transition-colors text-gray-300 hover:text-white"
+            title="Cerrar sesión"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
             </svg>
           </button>
+        </div>
+
+        <!-- Estado no autenticado - No mostrar nada ya que se redirige automáticamente -->
+        <div v-else class="flex items-center space-x-2">
+          <!-- Usuario no autenticado será redirigido automáticamente -->
         </div>
       </div>
     </div>

@@ -1,53 +1,115 @@
-import api from '../lib/axios'
+const getApiUrl = () => {
+  const config = useRuntimeConfig()
+  return config.public.apiUrl || 'http://localhost:3001/api'
+}
+
+const getAuthHeaders = () => {
+  const token = process.client ? localStorage.getItem('AUTH_TOKEN') : null
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export default {
     // Rutas básicas de configuración de riego
     createIrrigationConfig(data) {
-        return api.post('/irrigation', data)
+        return $fetch('/irrigation', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getIrrigationConfigById(id) {
-        return api.get(`/irrigation/${id}`)
+        return $fetch(`/irrigation/${id}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     deleteIrrigationConfig(id) {
-        return api.delete(`/irrigation/${id}`)
+        return $fetch(`/irrigation/${id}`, {
+            method: 'DELETE',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas por usuario
     getActiveIrrigationConfigsByUser(userId) {
-        return api.get(`/irrigation/user/${userId}/active`)
+        return $fetch(`/irrigation/user/${userId}/active`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     getIrrigationConfigsByUserAndType(userId, modeType) {
-        return api.get(`/irrigation/user/${userId}/type/${modeType}`)
+        return $fetch(`/irrigation/user/${userId}/type/${modeType}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas de acciones
     activateIrrigationConfig(id) {
-        return api.put(`/irrigation/${id}/activate`)
+        return $fetch(`/irrigation/${id}/activate`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     updateLastIrrigation(id, data) {
-        return api.put(`/irrigation/${id}/update-last-irrigation`, data)
+        return $fetch(`/irrigation/${id}/update-last-irrigation`, {
+            method: 'PUT',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas de configuración específica
     getSpecificConfig(id) {
-        return api.get(`/irrigation/${id}/specific-config`)
+        return $fetch(`/irrigation/${id}/specific-config`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas para configuraciones manuales
     createManualConfig(data) {
-        return api.post('/irrigation/manual', data)
+        return $fetch('/irrigation/manual', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas para configuraciones automáticas
     createAutomaticConfig(data) {
-        return api.post('/irrigation/automatic', data)
+        return $fetch('/irrigation/automatic', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     
     // Rutas para configuraciones programadas
     createProgrammedConfig(data) {
-        return api.post('/irrigation/programmed', data)
+        return $fetch('/irrigation/programmed', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     },
     updateNextExecution(id, data) {
-        return api.put(`/irrigation/programmed/${id}/next-execution`, data)
+        return $fetch(`/irrigation/programmed/${id}/next-execution`, {
+            method: 'PUT',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     }
 } 

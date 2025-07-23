@@ -1,26 +1,12 @@
-<template>
-  <div class="space-y-8">
-    <!-- Header de la página -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-white">Dispositivos IoT</h1>
-      <p class="text-gray-400 mt-2">Gestión y monitoreo de dispositivos para el sistema de riego automático</p>
-    </div>
-
-    <!-- Formulario de registro -->
-    <DeviceForm @device-added="handleDeviceAdded" />
-
-    <!-- Tabla de dispositivos -->
-    <DevicesTable 
-      :devices="devices" 
-      @toggle-device="handleToggleDevice" 
-    />
-  </div>
-</template>
-
 <script setup>
 import { ref } from 'vue'
 import DeviceForm from '~/components/Devices/DeviceForm.vue'
 import DevicesTable from '~/components/Devices/DevicesTable.vue'
+
+// Configurar middleware de autenticación
+definePageMeta({
+  middleware: 'auth'
+})
 
 // Estado reactivo para los dispositivos
 const devices = ref([
@@ -91,6 +77,25 @@ const handleToggleDevice = ({ index, isActive }) => {
   // await deviceService.updateDeviceStatus(devices.value[index].id, isActive)
 }
 </script>
+
+<template>
+  <div class="space-y-8">
+    <!-- Header de la página -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-white">Dispositivos IoT</h1>
+      <p class="text-gray-400 mt-2">Gestión y monitoreo de dispositivos para el sistema de riego automático</p>
+    </div>
+
+    <!-- Formulario de registro -->
+    <DeviceForm @device-added="handleDeviceAdded" />
+
+    <!-- Tabla de dispositivos -->
+    <DevicesTable 
+      :devices="devices" 
+      @toggle-device="handleToggleDevice" 
+    />
+  </div>
+</template>
 
 <style scoped>
 /* Estilos adicionales si son necesarios */

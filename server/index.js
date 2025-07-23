@@ -25,12 +25,21 @@ app.use(express.json())
 conectarDB()
 
 //Configurar CORS
-const whiteList = [process.env.FRONTEND_URL]
+const whiteList = [
+    process.env.FRONTEND_URL,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+]
 
 const corsOptions = {
     origin: (origin, callback) => {
         // Permitir peticiones sin origin (como Postman)
         if (!origin) return callback(null, true);
+        
+        // En desarrollo, permitir localhost
+        if (process.env.NODE_ENV !== 'production') {
+            return callback(null, true);
+        }
         
         if(whiteList.includes(origin)) {
             //Permite la conexión
@@ -39,7 +48,10 @@ const corsOptions = {
             //No permite la conexión
             callback(new Error("Error de CORS"))
         }
-    }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token']
 }
 
 app.use(cors(corsOptions))

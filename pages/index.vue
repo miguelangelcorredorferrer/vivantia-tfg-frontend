@@ -1,13 +1,13 @@
 <script setup>
-// Redirect automático a dashboard
-await navigateTo('/dashboard')
+// Redirect automático al login
+await navigateTo('/auth/login')
 </script>
 
 <template>
   <div class="flex items-center justify-center min-h-screen">
     <div class="text-center">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-      <p class="text-gray-400">Cargando dashboard...</p>
+      <p class="text-gray-400">Redirigiendo al login...</p>
     </div>
   </div>
 </template>

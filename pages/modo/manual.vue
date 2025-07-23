@@ -1,3 +1,172 @@
+<script setup>
+// Configurar middleware de autenticación
+definePageMeta({
+  middleware: 'auth'
+})
+
+import { useToastNotifications } from '~/composables/useToastNotifications'
+import { useIrrigationModes } from '~/composables/useIrrigationModes'
+import {
+  HomeIcon,
+  ChevronRightIcon,
+  ManualIcon,
+  CheckIcon,
+  PauseIcon,
+  ManualConfirmIcon,
+  WarningIcon
+} from '~/assets/icons'
+
+// Sistema de modos de riego
+const {
+  isManualActive,
+  isWatering,
+  remainingTime,
+  isPaused,
+  activateManualMode,
+  cancelActiveMode,
+  pauseIrrigation,
+  resumeIrrigation,
+  clearAllIntervals
+} = useIrrigationModes()
+
+// Estados reactivos
+const duration = ref({
+  minutes: 5,
+  seconds: 0
+})
+
+const options = ref({
+  notifyStart: true,
+  notifyEnd: true
+})
+
+const showConfirmModal = ref(false)
+const showCancelModal = ref(false)
+
+// Opciones rápidas predefinidas
+const quickOptions = [
+  { label: '2 min', minutes: 2, seconds: 0 },
+  { label: '5 min', minutes: 5, seconds: 0 },
+  { label: '10 min', minutes: 10, seconds: 0 },
+  { label: '15 min', minutes: 15, seconds: 0 }
+]
+
+// Composables
+const { toast } = useToastNotifications()
+const router = useRouter()
+
+// Helper functions para toast
+const showSuccess = (message) => toast.success(message)
+const showError = (message) => toast.error(message)
+
+// Métodos
+const formatTotalDuration = () => {
+  const totalMinutes = duration.value.minutes || 0
+  const totalSeconds = duration.value.seconds || 0
+  
+  if (totalMinutes === 0 && totalSeconds === 0) {
+    return 'No configurado'
+  }
+  
+  let result = ''
+  if (totalMinutes > 0) {
+    result += `${totalMinutes} min`
+  }
+  if (totalSeconds > 0) {
+    result += `${result ? ' ' : ''}${totalSeconds} seg`
+  }
+  
+  return result
+}
+
+const calculateVolume = () => {
+  const totalMinutes = (duration.value.minutes || 0) + (duration.value.seconds || 0) / 60
+  const flowRate = 2.5 // L/min
+  return (totalMinutes * flowRate).toFixed(1)
+}
+
+const isValidDuration = () => {
+  return (duration.value.minutes > 0) || (duration.value.seconds > 0)
+}
+
+const setQuickOption = (option) => {
+  duration.value.minutes = option.minutes
+  duration.value.seconds = option.seconds
+}
+
+const confirmConfiguration = () => {
+  if (!isValidDuration()) {
+    showError('Por favor, configura una duración válida para el riego')
+    return
+  }
+  
+  showConfirmModal.value = true
+}
+
+const startManualWatering = () => {
+  showConfirmModal.value = false
+  
+  // Configuración para el riego manual
+  const config = {
+    duration: {
+      minutes: duration.value.minutes || 0,
+      seconds: duration.value.seconds || 0
+    },
+    options: options.value,
+    startTime: new Date()
+  }
+  
+  console.log('Configuración enviada:', config)
+  
+  // Activar el modo manual usando el composable
+  activateManualMode(config)
+  
+  showSuccess('Riego manual iniciado exitosamente')
+}
+
+const confirmCancel = () => {
+  if (isWatering.value) {
+    showCancelModal.value = true
+  } else {
+    cancelManualWatering()
+  }
+}
+
+const cancelManualWatering = () => {
+  cancelActiveMode()
+  showSuccess('Riego manual cancelado')
+  showCancelModal.value = false
+}
+
+const goBack = () => {
+  router.push('/modo')
+}
+
+// Meta del documento
+useHead({
+  title: 'Modo Manual - VIVANTIA',
+  meta: [
+    { name: 'description', content: 'Configuración del modo manual de riego' }
+  ]
+})
+
+// Watcher para asegurar que el tiempo restante se actualice
+watch(remainingTime, (newValue) => {
+  // Forzar la reactividad del tiempo restante
+  if (newValue) {
+    // Trigger reactivity
+    nextTick(() => {
+      // El tiempo se actualizará automáticamente
+    })
+  }
+})
+
+// Limpiar intervalos al desmontar el componente
+onUnmounted(() => {
+  clearAllIntervals()
+})
+</script>
+
 <template>
   <div class="space-y-8">
     <div class="max-w-2xl mx-auto">
@@ -278,168 +447,4 @@
       </div>
     </div>
   </div>
-</template>
-
-<script setup>
-import { useToastNotifications } from '~/composables/useToastNotifications'
-import { useIrrigationModes } from '~/composables/useIrrigationModes'
-import {
-  HomeIcon,
-  ChevronRightIcon,
-  ManualIcon,
-  CheckIcon,
-  PauseIcon,
-  ManualConfirmIcon,
-  WarningIcon
-} from '~/assets/icons'
-
-// Sistema de modos de riego
-const {
-  isManualActive,
-  isWatering,
-  remainingTime,
-  isPaused,
-  activateManualMode,
-  cancelActiveMode,
-  pauseIrrigation,
-  resumeIrrigation,
-  clearAllIntervals
-} = useIrrigationModes()
-
-// Estados reactivos
-const duration = ref({
-  minutes: 5,
-  seconds: 0
-})
-
-const options = ref({
-  notifyStart: true,
-  notifyEnd: true
-})
-
-const showConfirmModal = ref(false)
-const showCancelModal = ref(false)
-
-// Opciones rápidas predefinidas
-const quickOptions = [
-  { label: '2 min', minutes: 2, seconds: 0 },
-  { label: '5 min', minutes: 5, seconds: 0 },
-  { label: '10 min', minutes: 10, seconds: 0 },
-  { label: '15 min', minutes: 15, seconds: 0 }
-]
-
-// Composables
-const { toast } = useToastNotifications()
-const router = useRouter()
-
-// Helper functions para toast
-const showSuccess = (message) => toast.success(message)
-const showError = (message) => toast.error(message)
-
-// Métodos
-const formatTotalDuration = () => {
-  const totalMinutes = duration.value.minutes || 0
-  const totalSeconds = duration.value.seconds || 0
-  
-  if (totalMinutes === 0 && totalSeconds === 0) {
-    return 'No configurado'
-  }
-  
-  let result = ''
-  if (totalMinutes > 0) {
-    result += `${totalMinutes} min`
-  }
-  if (totalSeconds > 0) {
-    result += `${result ? ' ' : ''}${totalSeconds} seg`
-  }
-  
-  return result
-}
-
-const calculateVolume = () => {
-  const totalMinutes = (duration.value.minutes || 0) + (duration.value.seconds || 0) / 60
-  const flowRate = 2.5 // L/min
-  return (totalMinutes * flowRate).toFixed(1)
-}
-
-const isValidDuration = () => {
-  return (duration.value.minutes > 0) || (duration.value.seconds > 0)
-}
-
-const setQuickOption = (option) => {
-  duration.value.minutes = option.minutes
-  duration.value.seconds = option.seconds
-}
-
-const confirmConfiguration = () => {
-  if (!isValidDuration()) {
-    showError('Por favor, configura una duración válida para el riego')
-    return
-  }
-  
-  showConfirmModal.value = true
-}
-
-const startManualWatering = () => {
-  showConfirmModal.value = false
-  
-  // Configuración para el riego manual
-  const config = {
-    duration: {
-      minutes: duration.value.minutes || 0,
-      seconds: duration.value.seconds || 0
-    },
-    options: options.value,
-    startTime: new Date()
-  }
-  
-  console.log('Configuración enviada:', config)
-  
-  // Activar el modo manual usando el composable
-  activateManualMode(config)
-  
-  showSuccess('Riego manual iniciado exitosamente')
-}
-
-const confirmCancel = () => {
-  if (isWatering.value) {
-    showCancelModal.value = true
-  } else {
-    cancelManualWatering()
-  }
-}
-
-const cancelManualWatering = () => {
-  cancelActiveMode()
-  showSuccess('Riego manual cancelado')
-  showCancelModal.value = false
-}
-
-const goBack = () => {
-  router.push('/modo')
-}
-
-// Meta del documento
-useHead({
-  title: 'Modo Manual - VIVANTIA',
-  meta: [
-    { name: 'description', content: 'Configuración del modo manual de riego' }
-  ]
-})
-
-// Watcher para asegurar que el tiempo restante se actualice
-watch(remainingTime, (newValue) => {
-  // Forzar la reactividad del tiempo restante
-  if (newValue) {
-    // Trigger reactivity
-    nextTick(() => {
-      // El tiempo se actualizará automáticamente
-    })
-  }
-})
-
-// Limpiar intervalos al desmontar el componente
-onUnmounted(() => {
-  clearAllIntervals()
-})
-</script> 
+</template> 
