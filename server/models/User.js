@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { uniqueId } from '../utils/index.js';
 
 class User {
   constructor(data = {}) {
@@ -7,6 +8,8 @@ class User {
     this.password = data.password;
     this.name = data.name;
     this.role = data.role || 'visitante';
+    this.token = data.token || uniqueId();
+    this.verified = data.verified || false;
     this.created_at = data.created_at;
   }
 
@@ -19,10 +22,21 @@ class User {
     }
   }
 
-  // Obtener datos del usuario sin contraseña
+  // Obtener datos del usuario sin contraseña, token y datos sensibles
   toJSON() {
-    const { password, ...userWithoutPassword } = this;
-    return userWithoutPassword;
+    const { password, token, ...userWithoutSensitiveData } = this;
+    return userWithoutSensitiveData;
+  }
+
+  // Obtener datos públicos del usuario (para JWT payload)
+  getPublicData() {
+    return {
+      id: this.id,
+      email: this.email,
+      name: this.name,
+      role: this.role,
+      verified: this.verified
+    };
   }
 }
 

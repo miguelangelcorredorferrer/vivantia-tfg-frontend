@@ -36,4 +36,5 @@ const hashPasswordIfModified = async (req, res, next) => {
   }
 };
 
-export { hashPassword, hashPasswordIfModified }; 
+export { hashPassword, hashPasswordIfModified };
+export default { hashPassword, hashPasswordIfModified }; 

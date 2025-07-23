@@ -36,8 +36,11 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,
   role user_role NOT NULL DEFAULT 'visitante',
+  token TEXT,
+  verified BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
 
 CREATE TABLE crops (
   id SERIAL PRIMARY KEY,

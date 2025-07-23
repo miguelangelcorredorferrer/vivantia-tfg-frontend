@@ -1,5 +1,6 @@
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import jwt from 'jsonwebtoken';
 
 // ===== FUNCIONES DE FECHA =====
 
@@ -135,6 +136,19 @@ const handleSuccessResponse = (res, data, message = 'Operación exitosa', status
   });
 };
 
+// ===== FUNCIONES JWT Y AUTENTICACIÓN =====
+
+// Generar ID único para tokens
+const uniqueId = () => Date.now().toString(32) + Math.random().toString(32).substring(2);
+
+// Generar JWT
+const generateJWT = (id) => {
+  const token = jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: '30d'
+  });
+  return token;
+};
+
 // ===== EXPORTACIONES =====
 
 export {
@@ -152,5 +166,9 @@ export {
   handleNotFoundError,
   handleBadRequestError,
   handleInternalServerError,
-  handleSuccessResponse
+  handleSuccessResponse,
+  
+  // Funciones JWT y autenticación
+  uniqueId,
+  generateJWT
 };

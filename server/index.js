@@ -3,6 +3,14 @@ import dotenv from "dotenv";
 import colors from "colors";
 import cors from "cors";
 import { conectarDB } from './config/db.js'
+import alertRoutes from './routes/alertRoutes.js'
+import authRoutes from './routes/authRoutes.js'
+import cropRoutes from './routes/cropRoutes.js'
+import deviceRoutes from './routes/deviceRoutes.js'
+import irrigationRoutes from './routes/irrigationRoutes.js'
+import pumpActivationRoutes from './routes/pumpActivationRoutes.js'
+import sensorReadingRoutes from './routes/sensorReadingRoutes.js'
+import userRoutes from './routes/userRoutes.js'
 
 //Variables de entorno
 dotenv.config()
@@ -36,10 +44,15 @@ const corsOptions = {
 
 app.use(cors(corsOptions))
 
-//Definir una ruta
-app.get('/hola', (req, res) => {
-    res.json({ msg: 'API funcionando correctamente' })
-})
+//Definir rutas de la API
+app.use('/api/alerts', alertRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/crops', cropRoutes)
+app.use('/api/devices', deviceRoutes)
+app.use('/api/irrigation', irrigationRoutes)
+app.use('/api/pump-activations', pumpActivationRoutes)
+app.use('/api/sensor-readings', sensorReadingRoutes)
+app.use('/api/users', userRoutes)
 
 //Definir el puerto
 const PORT = process.env.PORT || 3001

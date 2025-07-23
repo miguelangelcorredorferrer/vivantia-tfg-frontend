@@ -4,7 +4,6 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   modules: [
-    '@nuxt/content',
     '@nuxt/eslint',
     '@nuxt/fonts',
     '@nuxt/icon',
@@ -32,5 +31,10 @@ export default defineNuxtConfig({
         }
       }
     }
-  }
+  },
+
+  // Ignorar la carpeta server para evitar conflictos con Nuxt
+  ignore: [
+    'server/**'
+  ]
 })

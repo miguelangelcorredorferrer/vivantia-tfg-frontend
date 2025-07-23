@@ -1,12 +1,35 @@
-// En las rutas
+import express from 'express';
+import {
+  register,
+  verifyAccount,
+  login,
+  forgotPassword,
+  verifyPasswordResetToken,
+  updatePassword,
+  changePassword,
+  user,
+  admin
+} from '../controllers/authController.js';
 import { hashPassword, hashPasswordIfModified } from '../middleware/passwordMiddleware.js';
-import { register, login, changePassword } from '../controllers/authController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
-// Registro (cifra contraseña)
-app.post('/auth/register', hashPassword, register);
+const router = express.Router();
 
-// Cambio de contraseña (cifra solo si cambió)
-app.put('/auth/change-password/:id', hashPasswordIfModified, changePassword);
+// Rutas públicas de autenticación
+router.post('/register', hashPassword, register);
+router.post('/login', login);
 
-// Login (no necesita middleware de cifrado)
-app.post('/auth/login', login);
+// Rutas de verificación de cuenta
+router.get('/verify/:token', verifyAccount);
+
+// Rutas de recuperación de contraseña
+router.post('/forgot-password', forgotPassword);
+router.get('/verify-token/:token', verifyPasswordResetToken);
+router.put('/update-password/:token', hashPasswordIfModified, updatePassword);
+
+// Rutas protegidas (requieren autenticación)
+router.put('/change-password/:id', authMiddleware, hashPasswordIfModified, changePassword);
+router.get('/user', authMiddleware, user);
+router.get('/admin', authMiddleware, admin);
+
+export default router;
