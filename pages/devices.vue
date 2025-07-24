@@ -1,5 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useUserStore } from '~/stores/user'
+import { useDeviceStore } from '~/stores/device'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import DeviceForm from '~/components/Devices/DeviceForm.vue'
 import DevicesTable from '~/components/Devices/DevicesTable.vue'
@@ -13,7 +15,7 @@ definePageMeta({
 // Stores
 const userStore = useUserStore()
 const deviceStore = useDeviceStore()
-const { showToast } = useToastNotifications()
+const { toast } = useToastNotifications()
 
 // Estado del modal de edición
 const isEditModalOpen = ref(false)
@@ -26,7 +28,7 @@ onMounted(async () => {
       await deviceStore.fetchUserDevice(userStore.user.id)
     } catch (error) {
       console.error('Error cargando dispositivo:', error)
-      showToast('Error al cargar dispositivo', 'error')
+      toast.error('Error al cargar dispositivo')
     }
   }
 })
@@ -36,7 +38,6 @@ const handleDeviceAdded = async (newDeviceData) => {
   try {
     // Mapear campos del formulario a los campos que espera el backend
     const deviceToAdd = {
-      user_id: userStore.user.id,
       device_name: newDeviceData.deviceName,
       enddevice_id: newDeviceData.enddeviceId,
       app_eui: newDeviceData.appEui,
@@ -50,17 +51,11 @@ const handleDeviceAdded = async (newDeviceData) => {
     const response = await deviceStore.createDevice(deviceToAdd)
     
     console.log('✅ Dispositivo creado exitosamente:', response.data?.device_name)
-    showToast('Dispositivo registrado exitosamente', 'success')
+    toast.success('Dispositivo registrado exitosamente')
     
   } catch (error) {
     console.error('❌ Error creando dispositivo:', error)
-    
-    // Mostrar mensaje de error específico
-    if (error.message.includes('ya tienes un dispositivo')) {
-      showToast('Ya tienes un dispositivo registrado. Solo se permite uno por usuario.', 'error')
-    } else {
-      showToast(error.message || 'Error al registrar dispositivo', 'error')
-    }
+    toast.error(error.message || 'Error al registrar dispositivo')
   }
 }
 
@@ -71,7 +66,7 @@ const handleToggleDevice = async ({ device, isActive }) => {
     console.log(`✅ Dispositivo ${device.deviceName} ${isActive ? 'activado' : 'desactivado'}`)
   } catch (error) {
     console.error('❌ Error cambiando estado del dispositivo:', error)
-    showToast(error.message || 'Error al cambiar estado del dispositivo', 'error')
+    toast.error(error.message || 'Error al cambiar estado del dispositivo')
   }
 }
 
@@ -93,11 +88,11 @@ const handleSaveDevice = async ({ deviceId, updateData }) => {
   try {
     await deviceStore.updateDevice(deviceId, updateData)
     console.log('✅ Dispositivo actualizado exitosamente')
-    showToast('Dispositivo actualizado exitosamente', 'success')
+    toast.success('Dispositivo actualizado exitosamente')
     // El modal se cierra automáticamente desde el componente
   } catch (error) {
     console.error('❌ Error actualizando dispositivo:', error)
-    showToast(error.message || 'Error al actualizar dispositivo', 'error')
+    toast.error(error.message || 'Error al actualizar dispositivo')
     // En caso de error, no se cierra el modal para que el usuario pueda corregir
   }
 }
@@ -107,10 +102,10 @@ const handleDeleteDevice = async (device) => {
   try {
     await deviceStore.deleteDevice(device.id)
     console.log('✅ Dispositivo eliminado exitosamente')
-    showToast('Dispositivo eliminado exitosamente', 'success')
+    toast.success('Dispositivo eliminado exitosamente')
   } catch (error) {
     console.error('❌ Error eliminando dispositivo:', error)
-    showToast(error.message || 'Error al eliminar dispositivo', 'error')
+    toast.error(error.message || 'Error al eliminar dispositivo')
   }
 }
 </script>

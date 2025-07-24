@@ -16,7 +16,7 @@
             <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
             </svg>
-            Solo 1 dispositivo activo permitido
+            Múltiples dispositivos permitidos
           </div>
         </div>
       </template>
@@ -27,11 +27,24 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
         </svg>
         <h3 class="text-lg font-medium text-white mb-2">
-          {{ deviceStore.deviceCount === 0 ? 'No hay dispositivos registrados' : 'No se encontraron dispositivos' }}
+          {{ deviceStore.deviceCount === 0 ? 'No tienes dispositivos registrados' : 'No se encontraron dispositivos' }}
         </h3>
         <p class="text-gray-400">
-          {{ deviceStore.deviceCount === 0 ? 'Registra tu primer dispositivo usando el formulario de arriba' : 'Intenta ajustar los filtros de búsqueda' }}
+          {{ deviceStore.deviceCount === 0 ? 'Registra tu primer dispositivo para comenzar a usar el sistema de riego' : 'Intenta ajustar los filtros de búsqueda' }}
         </p>
+        
+        <!-- Botón para agregar primer dispositivo (solo cuando no hay dispositivos) -->
+        <div v-if="deviceStore.deviceCount === 0" class="mt-6">
+          <button
+            @click="scrollToForm"
+            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Registrar Primer Dispositivo
+          </button>
+        </div>
       </div>
 
       <table v-else class="w-full text-sm text-left">
@@ -191,6 +204,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useToastNotifications } from '~/composables/useToastNotifications'
+import { getIcon } from '~/assets/icons'
 import BaseCard from '../Cards/BaseCard.vue'
 import CustomSwitch from '../SwitchPlugin/CustomSwitch.vue'
 import DatabaseStatusIcon from './DatabaseStatusIcon.vue'
@@ -319,6 +333,27 @@ const copyAppKey = async (appKey, index) => {
     }
     
     document.body.removeChild(textArea)
+  }
+}
+
+// Función para hacer scroll al formulario
+const scrollToForm = () => {
+  // Buscar el formulario de dispositivos en la página
+  const formElement = document.querySelector('[data-device-form]') || 
+                     document.querySelector('.device-form') ||
+                     document.querySelector('form')
+  
+  if (formElement) {
+    formElement.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'start' 
+    })
+  } else {
+    // Fallback: hacer scroll al inicio de la página
+    window.scrollTo({ 
+      top: 0, 
+      behavior: 'smooth' 
+    })
   }
 }
 </script>

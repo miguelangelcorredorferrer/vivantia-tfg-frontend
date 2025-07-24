@@ -14,6 +14,38 @@ const createDevice = async (req, res) => {
       return handleBadRequestError('Todos los campos obligatorios deben ser proporcionados', res);
     }
 
+    // Verificar que no exista un dispositivo con el mismo enddevice_id
+    const existingDeviceQuery = 'SELECT * FROM devices WHERE enddevice_id = $1';
+    const existingDeviceResult = await pool.query(existingDeviceQuery, [enddevice_id]);
+    
+    if (existingDeviceResult.rows.length > 0) {
+      return handleBadRequestError('Ya existe un dispositivo con este EnddeviceID', res);
+    }
+
+    // Verificar que no exista un dispositivo con el mismo AppEUI
+    const existingAppEuiQuery = 'SELECT * FROM devices WHERE app_eui = $1';
+    const existingAppEuiResult = await pool.query(existingAppEuiQuery, [app_eui]);
+    
+    if (existingAppEuiResult.rows.length > 0) {
+      return handleBadRequestError('Ya existe un dispositivo con este AppEUI', res);
+    }
+
+    // Verificar que no exista un dispositivo con el mismo DevEUI
+    const existingDevEuiQuery = 'SELECT * FROM devices WHERE dev_eui = $1';
+    const existingDevEuiResult = await pool.query(existingDevEuiQuery, [dev_eui]);
+    
+    if (existingDevEuiResult.rows.length > 0) {
+      return handleBadRequestError('Ya existe un dispositivo con este DevEUI', res);
+    }
+
+    // Verificar que no exista un dispositivo con el mismo AppKey
+    const existingAppKeyQuery = 'SELECT * FROM devices WHERE app_key = $1';
+    const existingAppKeyResult = await pool.query(existingAppKeyQuery, [app_key]);
+    
+    if (existingAppKeyResult.rows.length > 0) {
+      return handleBadRequestError('Ya existe un dispositivo con este AppKey', res);
+    }
+
     const query = `
       INSERT INTO devices (
         user_id, device_name, enddevice_id, app_eui, dev_eui, app_key, is_active_communication
@@ -69,6 +101,15 @@ const getDeviceById = async (req, res) => {
 const getDevicesByUserId = async (req, res) => {
   try {
     const { user_id } = req.params;
+    const authenticatedUser = req.user;
+
+    // Verificar que el usuario autenticado está accediendo a sus propios dispositivos
+    if (authenticatedUser.id !== parseInt(user_id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a estos dispositivos'
+      });
+    }
 
     const query = 'SELECT * FROM devices WHERE user_id = $1 ORDER BY created_at DESC';
     const result = await pool.query(query, [user_id]);

@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import DeviceAPI from '~/api/DeviceAPI.js'
 
 export const useDeviceStore = defineStore('device', () => {
-  // Estado reactivo - Solo un dispositivo por usuario
-  const device = ref(null)
+  // Estado reactivo - Múltiples dispositivos por usuario + dispositivo actual
+  const devices = ref([])
+  const device = ref(null) // Dispositivo actual en uso
   const isLoading = ref(false)
   const error = ref(null)
 
@@ -23,30 +24,26 @@ export const useDeviceStore = defineStore('device', () => {
     }
   }
 
+  // Mapear dispositivos del backend al frontend
+  const mappedDevices = computed(() => {
+    return devices.value.map(device => mapDeviceFromBackend(device))
+  })
+
   // Getters computados
-  const hasDevice = computed(() => device.value !== null)
+  const hasDevice = computed(() => devices.value.length > 0)
   const isDeviceActive = computed(() => device.value?.is_active_communication || false)
   const deviceName = computed(() => device.value?.device_name || '')
   const enddeviceId = computed(() => device.value?.enddevice_id || '')
+  const deviceCount = computed(() => devices.value.length)
+  const activeDevices = computed(() => mappedDevices.value.filter(device => device.isActive))
+  const activeDeviceCount = computed(() => activeDevices.value.length)
   
-  // Para compatibilidad con componentes existentes que esperan arrays
-  const devices = computed(() => {
-    const mappedDevice = mapDeviceFromBackend(device.value)
-    console.log('🔄 Computed devices ejecutado:', mappedDevice)
-    return mappedDevice ? [mappedDevice] : []
-  })
-  const deviceCount = computed(() => device.value ? 1 : 0)
-  const activeDevices = computed(() => isDeviceActive.value ? devices.value : [])
-  const activeDeviceCount = computed(() => isDeviceActive.value ? 1 : 0)
-  
-  // Para el filtro con sugerencias (aunque sea un solo dispositivo)
+  // Para el filtro con sugerencias
   const deviceNames = computed(() => {
-    const mappedDevice = devices.value[0]
-    return mappedDevice?.deviceName ? [mappedDevice.deviceName] : []
+    return mappedDevices.value.map(device => device.deviceName).filter(Boolean)
   })
   const enddeviceIds = computed(() => {
-    const mappedDevice = devices.value[0]
-    return mappedDevice?.enddeviceId ? [mappedDevice.enddeviceId] : []
+    return mappedDevices.value.map(device => device.enddeviceId).filter(Boolean)
   })
 
   // Actions para operaciones CRUD
@@ -56,16 +53,18 @@ export const useDeviceStore = defineStore('device', () => {
       error.value = null
       
       const response = await DeviceAPI.getDevicesByUserId(userId)
-      // Como solo hay un dispositivo por usuario, tomar el primero
-      device.value = response.data?.[0] || null
+      // Cargar todos los dispositivos del usuario
+      devices.value = response.data || []
       
-      console.log('📱 Dispositivo del usuario cargado:', device.value?.device_name || 'ninguno')
-      console.log('📊 Datos del dispositivo desde backend:', device.value)
-      console.log('📋 Dispositivo mapeado para frontend:', mapDeviceFromBackend(device.value))
+      // Establecer el primer dispositivo como dispositivo actual (si existe)
+      device.value = devices.value.length > 0 ? devices.value[0] : null
+      
+      console.log('📱 Dispositivos del usuario cargados:', devices.value.length)
+      console.log('📊 Dispositivo actual:', device.value?.device_name || 'ninguno')
       return response
     } catch (err) {
-      error.value = err.message || 'Error al cargar dispositivo del usuario'
-      console.error('❌ Error cargando dispositivo del usuario:', err)
+      error.value = err.message || 'Error al cargar dispositivos del usuario'
+      console.error('❌ Error cargando dispositivos del usuario:', err)
       throw err
     } finally {
       isLoading.value = false
@@ -77,19 +76,18 @@ export const useDeviceStore = defineStore('device', () => {
       isLoading.value = true
       error.value = null
       
-      // Si ya hay un dispositivo, no permitir crear otro
-      if (device.value) {
-        throw new Error('Ya tienes un dispositivo registrado. Solo se permite uno por usuario.')
-      }
-      
       const response = await DeviceAPI.create(deviceData)
       
-      // Establecer el nuevo dispositivo como el dispositivo del usuario
+      // Agregar el nuevo dispositivo al array
       if (response.data) {
-        device.value = response.data
+        devices.value.push(response.data)
+        // Si es el primer dispositivo, establecerlo como dispositivo actual
+        if (devices.value.length === 1) {
+          device.value = response.data
+        }
       }
       
-      console.log('✅ Dispositivo creado:', response.data?.deviceName)
+      console.log('✅ Dispositivo creado:', response.data?.device_name)
       return response
     } catch (err) {
       error.value = err.message || 'Error al crear dispositivo'
@@ -105,19 +103,23 @@ export const useDeviceStore = defineStore('device', () => {
       isLoading.value = true
       error.value = null
       
-      // Verificar que estamos actualizando el dispositivo correcto
-      if (device.value?.id !== deviceId) {
+      // Verificar que el dispositivo existe en la lista del usuario
+      const deviceIndex = devices.value.findIndex(d => d.id === deviceId)
+      if (deviceIndex === -1) {
         throw new Error('No tienes permisos para actualizar este dispositivo')
       }
       
       const response = await DeviceAPI.update(deviceId, updateData)
       
-      // Actualizar el dispositivo en el estado
+      // Actualizar el dispositivo en el array y en device si es el actual
       if (response.data) {
-        device.value = { ...device.value, ...response.data }
+        devices.value[deviceIndex] = response.data
+        if (device.value?.id === deviceId) {
+          device.value = response.data
+        }
       }
       
-      console.log('✅ Dispositivo actualizado:', response.data?.deviceName)
+      console.log('✅ Dispositivo actualizado:', response.data?.device_name)
       return response
     } catch (err) {
       error.value = err.message || 'Error al actualizar dispositivo'
@@ -133,15 +135,21 @@ export const useDeviceStore = defineStore('device', () => {
       isLoading.value = true
       error.value = null
       
-      // Verificar que estamos eliminando el dispositivo correcto
-      if (device.value?.id !== deviceId) {
+      // Verificar que el dispositivo existe en la lista del usuario
+      const deviceIndex = devices.value.findIndex(d => d.id === deviceId)
+      if (deviceIndex === -1) {
         throw new Error('No tienes permisos para eliminar este dispositivo')
       }
       
       await DeviceAPI.delete(deviceId)
       
-      // Limpiar el dispositivo del estado
-      device.value = null
+      // Remover el dispositivo del array
+      devices.value.splice(deviceIndex, 1)
+      
+      // Si era el dispositivo actual, limpiarlo
+      if (device.value?.id === deviceId) {
+        device.value = devices.value.length > 0 ? devices.value[0] : null
+      }
       
       console.log('✅ Dispositivo eliminado')
       return true
@@ -159,8 +167,9 @@ export const useDeviceStore = defineStore('device', () => {
       isLoading.value = true
       error.value = null
       
-      // Verificar que estamos cambiando el estado del dispositivo correcto
-      if (device.value?.id !== deviceId) {
+      // Verificar que el dispositivo existe en la lista del usuario
+      const deviceIndex = devices.value.findIndex(d => d.id === deviceId)
+      if (deviceIndex === -1) {
         throw new Error('No tienes permisos para cambiar el estado de este dispositivo')
       }
       
@@ -168,9 +177,13 @@ export const useDeviceStore = defineStore('device', () => {
         ? await DeviceAPI.activateDevice(deviceId)
         : await DeviceAPI.deactivateDevice(deviceId)
       
-      // Actualizar el estado del dispositivo
-      if (response.data && device.value) {
-        device.value.is_active_communication = isActive
+      // Actualizar el estado del dispositivo en el array
+      if (response.data) {
+        devices.value[deviceIndex].is_active_communication = isActive
+        // Si es el dispositivo actual, actualizarlo también
+        if (device.value?.id === deviceId) {
+          device.value.is_active_communication = isActive
+        }
       }
       
       console.log(`✅ Dispositivo ${isActive ? 'activado' : 'desactivado'}`)
@@ -212,41 +225,36 @@ export const useDeviceStore = defineStore('device', () => {
     }
   }
 
-  // Utilidades para filtros (simplificadas para un solo dispositivo)
+  // Utilidades para filtros
   const filterDevicesSuggestions = (searchTerm, field) => {
-    if (!searchTerm || devices.value.length === 0) return []
+    if (!searchTerm || mappedDevices.value.length === 0) return []
     
-    const mappedDevice = devices.value[0]
-    const value = field === 'deviceName' ? mappedDevice.deviceName : mappedDevice.enddeviceId
-    
-    if (value && value.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return [value]
-    }
-    
-    return []
+    return mappedDevices.value
+      .map(device => field === 'deviceName' ? device.deviceName : device.enddeviceId)
+      .filter(value => value && value.toLowerCase().includes(searchTerm.toLowerCase()))
   }
 
   const filterDevices = (filters) => {
-    if (devices.value.length === 0) return []
+    if (mappedDevices.value.length === 0) return []
     
-    const mappedDevice = devices.value[0]
-    
-    // Si no hay filtros, devolver el dispositivo mapeado
+    // Si no hay filtros, devolver todos los dispositivos mapeados
     if (!filters.deviceName && !filters.enddeviceId) {
-      return devices.value
+      return mappedDevices.value
     }
     
-    let matches = true
-    
-    if (filters.deviceName) {
-      matches = matches && mappedDevice.deviceName?.toLowerCase().includes(filters.deviceName.toLowerCase())
-    }
-    
-    if (filters.enddeviceId) {
-      matches = matches && mappedDevice.enddeviceId?.toLowerCase().includes(filters.enddeviceId.toLowerCase())
-    }
-    
-    return matches ? devices.value : []
+    return mappedDevices.value.filter(device => {
+      let matches = true
+      
+      if (filters.deviceName) {
+        matches = matches && device.deviceName?.toLowerCase().includes(filters.deviceName.toLowerCase())
+      }
+      
+      if (filters.enddeviceId) {
+        matches = matches && device.enddeviceId?.toLowerCase().includes(filters.enddeviceId.toLowerCase())
+      }
+      
+      return matches
+    })
   }
 
   // Limpiar errores
@@ -256,6 +264,7 @@ export const useDeviceStore = defineStore('device', () => {
 
   // Reset del store
   const reset = () => {
+    devices.value = []
     device.value = null
     error.value = null
     isLoading.value = false
@@ -263,6 +272,7 @@ export const useDeviceStore = defineStore('device', () => {
 
   return {
     // Estado principal
+    devices,
     device,
     isLoading,
     error,
@@ -272,14 +282,12 @@ export const useDeviceStore = defineStore('device', () => {
     isDeviceActive,
     deviceName,
     enddeviceId,
-    
-    // Compatibilidad con arrays para componentes existentes
-    devices,
     deviceCount,
     activeDevices,
     activeDeviceCount,
     deviceNames,
     enddeviceIds,
+    mappedDevices,
     
     // Actions
     fetchUserDevice,

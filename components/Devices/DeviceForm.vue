@@ -1,6 +1,6 @@
 <template>
   <BaseCard title="Registrar Nuevo Dispositivo">
-    <form @submit.prevent="handleSubmit" class="space-y-6">
+    <form @submit.prevent="handleSubmit" class="space-y-6" data-device-form>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Device Name -->
         <div>
@@ -115,10 +115,14 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useDeviceStore } from '~/stores/device'
+import { useUserStore } from '~/stores/user'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import BaseCard from '../Cards/BaseCard.vue'
 
 const emit = defineEmits(['device-added'])
+const deviceStore = useDeviceStore()
+const userStore = useUserStore()
 const { deviceAdded, deviceAddError } = useToastNotifications()
 
 const isLoading = ref(false)
@@ -135,8 +139,18 @@ const handleSubmit = async () => {
   isLoading.value = true
   
   try {
-    // Simular una llamada a la API
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Mapear campos del formulario a los campos que espera el backend
+    const deviceData = {
+      user_id: userStore.user.id,
+      device_name: formData.deviceName,
+      enddevice_id: formData.enddeviceId,
+      app_eui: formData.appEui,
+      dev_eui: formData.devEui,
+      app_key: formData.appKey
+    }
+    
+    // Crear dispositivo usando el store
+    await deviceStore.createDevice(deviceData)
     
     // Emitir evento con los datos del dispositivo
     emit('device-added', { ...formData })
