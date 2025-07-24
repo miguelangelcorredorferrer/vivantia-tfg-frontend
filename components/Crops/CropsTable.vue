@@ -18,8 +18,17 @@
     <div class="overflow-x-auto">
       <div v-if="crops.length === 0" class="text-center py-12">
         <component :is="getIcon('plantConfig')" class="mx-auto mb-4 opacity-50" />
-        <h3 class="text-lg font-medium text-white mb-2">No se encontraron cultivos</h3>
-        <p class="text-gray-400">Intenta ajustar los filtros para encontrar cultivos</p>
+        <h3 class="text-lg font-medium text-white mb-2">No tienes cultivos registrados</h3>
+        <p class="text-gray-400">Crea tu primer cultivo para comenzar a usar el sistema de riego</p>
+        <NuxtLink 
+          to="/cultivos/agregar/agregarCultivo"
+          class="inline-flex items-center px-4 py-2 mt-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Crear Primer Cultivo
+        </NuxtLink>
       </div>
 
       <table v-else class="w-full text-sm text-left">

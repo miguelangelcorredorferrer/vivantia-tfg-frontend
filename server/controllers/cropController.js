@@ -6,13 +6,16 @@ import { handleNotFoundError, handleBadRequestError, handleInternalServerError, 
 const createCrop = async (req, res) => {
   try {
     const {
-      user_id, name, description, image, category, growth_days,
+      name, description, image, category, growth_days,
       humidity_min, humidity_max, temperature_max, session, selected = false
     } = req.body;
 
+    // Obtener user_id del usuario autenticado
+    const user_id = req.user.id;
+
     // Validar campos obligatorios
-    if (!user_id || !name) {
-      return handleBadRequestError('User ID y nombre del cultivo son obligatorios', res);
+    if (!name) {
+      return handleBadRequestError('Nombre del cultivo es obligatorio', res);
     }
 
     const query = `
@@ -24,12 +27,21 @@ const createCrop = async (req, res) => {
       RETURNING *
     `;
     
-    const values = [
-      user_id, name, description, image, category, growth_days,
-      humidity_min, humidity_max, temperature_max, session, selected
+    const cleanValues = [
+      user_id, 
+      name, 
+      description || null, 
+      image || null, 
+      category || null, 
+      growth_days || null,
+      humidity_min || null, 
+      humidity_max || null, 
+      temperature_max || null, 
+      session || null, 
+      selected
     ];
     
-    const result = await pool.query(query, values);
+    const result = await pool.query(query, cleanValues);
     const crop = new Crop(result.rows[0]);
 
     return handleSuccessResponse(res, crop, 'Cultivo creado exitosamente', 201);
@@ -90,6 +102,16 @@ const findCropByUserId = async (user_id) => {
 const getCropByUserId = async (req, res) => {
   try {
     const { user_id } = req.params;
+    const authenticatedUser = req.user;
+
+    // Verificar que el usuario autenticado está accediendo a su propio cultivo
+    if (authenticatedUser.id !== parseInt(user_id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a este cultivo'
+      });
+    }
+
     const crop = await findCropByUserId(user_id);
 
     if (!crop) {
@@ -107,6 +129,39 @@ const getCropByUserId = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener cultivo del usuario',
+      error: error.message
+    });
+  }
+};
+
+// Obtener todos los cultivos de un usuario específico
+const getAllCropsByUserId = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const authenticatedUser = req.user;
+
+    // Verificar que el usuario autenticado está accediendo a sus propios cultivos
+    if (authenticatedUser.id !== parseInt(user_id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a estos cultivos'
+      });
+    }
+
+    const query = 'SELECT * FROM crops WHERE user_id = $1 ORDER BY created_at DESC';
+    const result = await pool.query(query, [user_id]);
+    
+    const crops = result.rows.map(row => new Crop(row));
+
+    res.status(200).json({
+      success: true,
+      count: crops.length,
+      data: crops
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener cultivos del usuario',
       error: error.message
     });
   }
@@ -138,6 +193,15 @@ const getAllCrops = async (req, res) => {
 const getSelectedCropByUserId = async (req, res) => {
   try {
     const { user_id } = req.params;
+    const authenticatedUser = req.user;
+
+    // Verificar que el usuario autenticado está accediendo a su propio cultivo
+    if (authenticatedUser.id !== parseInt(user_id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a este cultivo'
+      });
+    }
 
     const query = 'SELECT * FROM crops WHERE user_id = $1 AND selected = true';
     const result = await pool.query(query, [user_id]);
@@ -169,6 +233,7 @@ const updateCrop = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+    const authenticatedUser = req.user;
 
     // Verificar si el cultivo existe
     const existingCrop = await findCropById(id);
@@ -176,6 +241,14 @@ const updateCrop = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Cultivo no encontrado'
+      });
+    }
+
+    // Verificar que el usuario autenticado es el propietario del cultivo
+    if (existingCrop.user_id !== authenticatedUser.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para actualizar este cultivo'
       });
     }
 
@@ -238,6 +311,7 @@ const selectCrop = async (req, res) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;
+    const authenticatedUser = req.user;
 
     // Verificar si el cultivo existe
     const existingCrop = await findCropById(id);
@@ -245,6 +319,14 @@ const selectCrop = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Cultivo no encontrado'
+      });
+    }
+
+    // Verificar que el usuario autenticado es el propietario del cultivo
+    if (existingCrop.user_id !== authenticatedUser.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para seleccionar este cultivo'
       });
     }
 
@@ -287,6 +369,24 @@ const selectCrop = async (req, res) => {
 const deselectCrop = async (req, res) => {
   try {
     const { id } = req.params;
+    const authenticatedUser = req.user;
+
+    // Verificar si el cultivo existe y pertenece al usuario
+    const existingCrop = await findCropById(id);
+    if (!existingCrop) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cultivo no encontrado'
+      });
+    }
+
+    // Verificar que el usuario autenticado es el propietario del cultivo
+    if (existingCrop.user_id !== authenticatedUser.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para deseleccionar este cultivo'
+      });
+    }
 
     const query = 'UPDATE crops SET selected = false WHERE id = $1 RETURNING *';
     const result = await pool.query(query, [id]);
@@ -318,6 +418,7 @@ const deselectCrop = async (req, res) => {
 const deleteCrop = async (req, res) => {
   try {
     const { id } = req.params;
+    const authenticatedUser = req.user;
 
     // Verificar si el cultivo existe
     const existingCrop = await findCropById(id);
@@ -325,6 +426,14 @@ const deleteCrop = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Cultivo no encontrado'
+      });
+    }
+
+    // Verificar que el usuario autenticado es el propietario del cultivo
+    if (existingCrop.user_id !== authenticatedUser.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para eliminar este cultivo'
       });
     }
 
@@ -415,6 +524,7 @@ export {
   getCropById,
   findCropByUserId,
   getCropByUserId,
+  getAllCropsByUserId,
   getAllCrops,
   getSelectedCropByUserId,
   getCropCategories,

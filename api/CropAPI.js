@@ -63,6 +63,13 @@ export default {
             headers: getAuthHeaders()
         })
     },
+    getAllCropsByUserId(userId) {
+        return $fetch(`/crops/user/${userId}/all`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
     getSelectedCropByUserId(userId) {
         return $fetch(`/crops/user/${userId}/selected`, {
             method: 'GET',

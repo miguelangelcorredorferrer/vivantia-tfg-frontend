@@ -67,20 +67,22 @@ onMounted(async () => {
       await cropStore.init()
     }
     
-    // Cargar cultivo del usuario si existe
+    // Cargar todos los cultivos del usuario
     if (userStore.user?.id) {
       try {
-        await cropStore.fetchUserCrop(userStore.user.id)
-      } catch (error) {
-        // No mostrar error si no tiene cultivo, es normal
-        if (!error.response?.status === 404) {
-          console.error('Error cargando cultivo del usuario:', error)
+        const result = await cropStore.fetchAllUserCrops(userStore.user.id)
+        if (result.success && result.data.length === 0) {
+          // Usuario sin cultivos, es normal
+          console.log('Usuario sin cultivos registrados')
         }
+      } catch (error) {
+        console.error('Error cargando cultivos del usuario:', error)
+        // No mostrar toast de error para evitar confusión
       }
     }
   } catch (error) {
     console.error('Error inicializando cultivos:', error)
-    toast.error('Error al cargar los cultivos')
+    // No mostrar toast de error para evitar confusión
   }
 })
 
@@ -88,11 +90,14 @@ onMounted(async () => {
 watch(() => userStore.user?.id, async (userId) => {
   if (userId && cropStore.isInitialized) {
     try {
-      await cropStore.fetchUserCrop(userId)
-    } catch (error) {
-      if (!error.response?.status === 404) {
-        console.error('Error cargando cultivo del usuario:', error)
+      const result = await cropStore.fetchAllUserCrops(userId)
+      if (result.success && result.data.length === 0) {
+        // Usuario sin cultivos, es normal
+        console.log('Usuario sin cultivos registrados')
       }
+    } catch (error) {
+      console.error('Error cargando cultivos del usuario:', error)
+      // No mostrar toast de error para evitar confusión
     }
   }
 })

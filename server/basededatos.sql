@@ -32,6 +32,8 @@ CREATE TYPE alert_subtype AS ENUM (
   'programmed_reminder', 'programmed_schedule', 'programmed_cancelled', 'automatic_saved'
 );
 
+ALTER TABLE crops DROP CONSTRAINT crops_user_id_key;
+
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,

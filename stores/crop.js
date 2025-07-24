@@ -21,7 +21,8 @@ export const useCropStore = defineStore('crop', () => {
 
   // Getters (computed)
   const filteredCrops = computed(() => {
-    let filtered = [...crops.value]
+    // Usar todos los cultivos del usuario
+    let filtered = crops.value || []
 
     // Filtro por búsqueda (nombre)
     if (filters.value.search) {
@@ -63,15 +64,15 @@ export const useCropStore = defineStore('crop', () => {
   const fetchAllCrops = async () => {
     try {
       isLoading.value = true
-      console.log('🔄 CropStore: Obteniendo todos los cultivos...')
+      console.log('🔄 CropStore: Obteniendo todos los cultivos (solo para admin)...')
       
       const response = await CropAPI.getAll()
       crops.value = response.data || []
       
-      console.log('✅ CropStore: Cultivos obtenidos:', crops.value.length)
+      console.log('✅ CropStore: Todos los cultivos obtenidos:', crops.value.length)
       return { success: true, data: crops.value }
     } catch (error) {
-      console.error('❌ CropStore: Error obteniendo cultivos:', error)
+      console.error('❌ CropStore: Error obteniendo todos los cultivos:', error)
       throw error
     } finally {
       isLoading.value = false
@@ -129,19 +130,49 @@ export const useCropStore = defineStore('crop', () => {
       // Establecer como cultivo actual del usuario
       currentCrop.value = crop
       
-      // Actualizar en el array
-      const index = crops.value.findIndex(c => c.user_id === userId)
-      if (index !== -1) {
-        crops.value[index] = crop
-      } else {
-        crops.value.push(crop)
-      }
-      
       console.log('✅ CropStore: Cultivo del usuario obtenido:', crop.name)
       return { success: true, data: crop }
     } catch (error) {
       console.error('❌ CropStore: Error obteniendo cultivo del usuario:', error)
       currentCrop.value = null
+      
+      // Si es un 404, no es un error real, es normal que no tenga cultivo
+      if (error.response?.status === 404) {
+        console.log('✅ CropStore: Usuario sin cultivo registrado (normal)')
+        return { success: true, data: null }
+      }
+      
+      throw error
+    }
+  }
+
+  const fetchAllUserCrops = async (userId) => {
+    try {
+      console.log('🔄 CropStore: Obteniendo todos los cultivos del usuario:', userId)
+      
+      const response = await CropAPI.getAllCropsByUserId(userId)
+      const userCrops = response.data || []
+      
+      // Actualizar el array de cultivos con los cultivos del usuario
+      crops.value = userCrops
+      
+      // Establecer el currentCrop como el cultivo seleccionado (si existe)
+      const selectedCrop = userCrops.find(crop => crop.selected)
+      currentCrop.value = selectedCrop || (userCrops.length > 0 ? userCrops[0] : null)
+      
+      console.log('✅ CropStore: Todos los cultivos del usuario obtenidos:', userCrops.length)
+      return { success: true, data: userCrops }
+    } catch (error) {
+      console.error('❌ CropStore: Error obteniendo todos los cultivos del usuario:', error)
+      crops.value = []
+      currentCrop.value = null
+      
+      // Si es un 404, no es un error real, es normal que no tenga cultivos
+      if (error.response?.status === 404) {
+        console.log('✅ CropStore: Usuario sin cultivos registrados (normal)')
+        return { success: true, data: [] }
+      }
+      
       throw error
     }
   }
@@ -170,10 +201,13 @@ export const useCropStore = defineStore('crop', () => {
       const response = await CropAPI.create(cropData)
       const newCrop = response.data
       
+      // Agregar al array de cultivos
       crops.value.push(newCrop)
       
-      // El nuevo cultivo se convierte en el cultivo actual del usuario
-      currentCrop.value = newCrop
+      // Si es el primer cultivo o está marcado como seleccionado, establecerlo como actual
+      if (!currentCrop.value || newCrop.selected) {
+        currentCrop.value = newCrop
+      }
       
       console.log('✅ CropStore: Cultivo creado:', newCrop.name)
       return { success: true, data: newCrop }
@@ -330,10 +364,8 @@ export const useCropStore = defineStore('crop', () => {
     try {
       console.log('🔄 CropStore: Inicializando...')
       
-      await Promise.all([
-        fetchAllCrops(),
-        fetchCropCategories()
-      ])
+      // Solo cargar categorías, no todos los cultivos
+      await fetchCropCategories()
       
       isInitialized.value = true
       console.log('✅ CropStore: Inicializado correctamente')
@@ -376,6 +408,7 @@ export const useCropStore = defineStore('crop', () => {
     fetchCropCategories,
     fetchCropById,
     fetchUserCrop,
+    fetchAllUserCrops,
     fetchSelectedCrop,
     createCrop,
     updateCrop,
