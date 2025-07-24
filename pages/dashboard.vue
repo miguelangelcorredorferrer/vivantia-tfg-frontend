@@ -1,6 +1,10 @@
 <script setup>
 import { useSensorData } from '~/composables/useSensorData.js'
+import { useCropStore } from '~/stores/crop'
+import { useDeviceStore } from '~/stores/device'
+import { useUserStore } from '~/stores/user'
 import { thermometerIcon, humidityIcon } from '~/assets/icons'
+import { getIcon } from '~/assets/icons'
 import BaseCard from '~/components/Cards/BaseCard.vue'
 import WorkingTemperatureChart from '~/components/Charts/WorkingTemperatureChart.vue'
 import WorkingHumidityChart from '~/components/Charts/WorkingHumidityChart.vue'
@@ -9,6 +13,11 @@ import WorkingHumidityChart from '~/components/Charts/WorkingHumidityChart.vue'
 definePageMeta({
   middleware: 'auth'
 })
+
+// Obtener stores
+const cropStore = useCropStore()
+const deviceStore = useDeviceStore()
+const userStore = useUserStore()
 
 // Obtener datos de sensores
 const {
@@ -22,6 +31,23 @@ const {
   formattedTemperature,
   formattedHumidity
 } = useSensorData()
+
+// Cargar datos al montar el componente
+onMounted(async () => {
+  try {
+    // Cargar cultivo del usuario si no está cargado
+    if (userStore.user?.id && !cropStore.currentCrop) {
+      await cropStore.fetchUserCrop(userStore.user.id)
+    }
+    
+    // Cargar dispositivo del usuario si no está cargado
+    if (userStore.user?.id && !deviceStore.device) {
+      await deviceStore.fetchUserDevice(userStore.user.id)
+    }
+  } catch (error) {
+    console.error('Error cargando datos del dashboard:', error)
+  }
+})
 
 
 
@@ -131,7 +157,7 @@ const {
           </div>
           <div>
             <p class="text-sm text-gray-400">Cultivo actual</p>
-            <p class="text-white font-semibold">Lechuga Iceberg</p>
+            <p class="text-white font-semibold">{{ cropStore.currentCrop?.name || '-' }}</p>
           </div>
         </div>
       </BaseCard>
@@ -168,34 +194,34 @@ const {
           <!-- INFORMACIÓN DEL CULTIVO -->
           <div class="space-y-4">
             <div class="flex items-center space-x-3 mb-4">
-              <Icon name="heroicons:leaf" class="w-6 h-6 text-green-400" />
+              <component :is="getIcon('plant')" class="w-6 h-6 text-green-400" />
               <h4 class="text-lg font-bold text-white">Cultivo Seleccionado</h4>
             </div>
             
             <div class="space-y-3">
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Nombre:</span>
-                 <span class="text-white font-bold text-lg">Lechuga Iceberg</span>
+                 <span class="text-white font-bold text-lg">{{ cropStore.currentCrop?.name || 'No seleccionado' }}</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Categoría:</span>
-                 <span class="text-green-400 font-bold text-lg">Hortalizas</span>
+                 <span class="text-green-400 font-bold text-lg">{{ cropStore.currentCrop?.category || 'N/A' }}</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Humedad Mínima:</span>
-                 <span class="text-blue-400 font-bold text-lg">70%</span>
+                 <span class="text-blue-400 font-bold text-lg">{{ cropStore.currentCrop?.humidity_min || 'N/A' }}%</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Humedad Máxima:</span>
-                 <span class="text-blue-400 font-bold text-lg">85%</span>
+                 <span class="text-blue-400 font-bold text-lg">{{ cropStore.currentCrop?.humidity_max || 'N/A' }}%</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Temperatura Máxima:</span>
-                 <span class="text-red-400 font-bold text-lg">22°C</span>
+                 <span class="text-red-400 font-bold text-lg">{{ cropStore.currentCrop?.temperature_max || 'N/A' }}°C</span>
                </div>
               
                              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
@@ -211,12 +237,12 @@ const {
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Días de Crecimiento:</span>
-                 <span class="text-white font-bold text-lg">45 días</span>
+                 <span class="text-white font-bold text-lg">{{ cropStore.currentCrop?.growth_days || 'N/A' }} días</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Temporada:</span>
-                 <span class="text-purple-400 font-bold text-lg">Primavera/Otoño</span>
+                 <span class="text-purple-400 font-bold text-lg">{{ cropStore.currentCrop?.session || 'N/A' }}</span>
                </div>
             </div>
           </div>
@@ -231,43 +257,24 @@ const {
             <div class="space-y-3">
               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                 <span class="text-gray-300 font-medium">Nombre:</span>
-                <span class="text-white font-bold text-lg">Sensor Riego Principal</span>
+                <span class="text-white font-bold text-lg">{{ deviceStore.device?.device_name || 'No registrado' }}</span>
               </div>
               
               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                 <span class="text-gray-300 font-medium">ID del Dispositivo:</span>
-                <span class="text-gray-300 font-mono font-bold text-lg">sensor-riego-01</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                <span class="text-gray-300 font-medium">Ubicación:</span>
-                <span class="text-blue-400 font-bold text-lg">Zona A - Invernadero</span>
+                <span class="text-gray-300 font-mono font-bold text-lg">{{ deviceStore.device?.enddevice_id || 'N/A' }}</span>
               </div>
               
               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                 <div class="flex items-center space-x-2">
-                  <Icon name="heroicons:signal" class="w-5 h-5 text-green-400" />
-                  <span class="text-gray-300 font-medium">Señal TTN:</span>
-                </div>
-                <span class="text-green-400 font-bold text-lg">85%</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                <div class="flex items-center space-x-2">
-                  <Icon name="heroicons:battery-100" class="w-5 h-5 text-yellow-400" />
-                  <span class="text-gray-300 font-medium">Batería:</span>
-                </div>
-                <span class="text-yellow-400 font-bold text-lg">92%</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                <div class="flex items-center space-x-2">
-                  <Icon name="heroicons:wifi" class="w-5 h-5 text-green-400" />
+                  <Icon name="heroicons:wifi" class="w-5 h-5" :class="deviceStore.device?.is_active_communication ? 'text-green-400' : 'text-red-400'" />
                   <span class="text-gray-300 font-medium">Estado:</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                  <span class="text-green-400 font-bold text-lg">CONECTADO</span>
+                  <div class="w-3 h-3 rounded-full animate-pulse" :class="deviceStore.device?.is_active_communication ? 'bg-green-400' : 'bg-red-400'"></div>
+                  <span class="font-bold text-lg" :class="deviceStore.device?.is_active_communication ? 'text-green-400' : 'text-red-400'">
+                    {{ deviceStore.device?.is_active_communication ? 'CONECTADO' : 'DESCONECTADO' }}
+                  </span>
                 </div>
               </div>
               

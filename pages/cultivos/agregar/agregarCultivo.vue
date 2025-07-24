@@ -63,17 +63,14 @@
                   <label for="category" class="block text-sm font-medium text-white mb-2">
                     Categoría <span class="text-red-400">*</span>
                   </label>
-                  <select
+                  <input
                     id="category"
                     v-model="formData.category"
+                    type="text"
                     required
-                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                  >
-                    <option value="">Selecciona una categoría</option>
-                    <option v-for="category in availableCategories" :key="category" :value="category">
-                      {{ category }}
-                    </option>
-                  </select>
+                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    placeholder="Ej: Hortalizas, Frutas, Hierbas..."
+                  />
                 </div>
               </div>
 
@@ -107,7 +104,7 @@
                   </label>
                   <input
                     id="minHumidity"
-                    v-model.number="formData.minHumidity"
+                    v-model.number="formData.humidity_min"
                     type="number"
                     min="0"
                     max="100"
@@ -125,7 +122,7 @@
                   </label>
                   <input
                     id="maxHumidity"
-                    v-model.number="formData.maxHumidity"
+                    v-model.number="formData.humidity_max"
                     type="number"
                     min="0"
                     max="100"
@@ -143,7 +140,7 @@
                   </label>
                   <input
                     id="maxTemperature"
-                    v-model.number="formData.maxTemperature"
+                    v-model.number="formData.temperature_max"
                     type="number"
                     min="0"
                     max="50"
@@ -170,7 +167,7 @@
                   </label>
                   <input
                     id="growthDays"
-                    v-model.number="formData.growthDays"
+                    v-model.number="formData.growth_days"
                     type="number"
                     min="1"
                     max="365"
@@ -183,12 +180,12 @@
 
                 <!-- Temporada de cosecha -->
                 <div>
-                  <label for="harvestSeason" class="block text-sm font-medium text-white mb-2">
+                  <label for="session" class="block text-sm font-medium text-white mb-2">
                     Temporada de Cosecha <span class="text-red-400">*</span>
                   </label>
                   <select
-                    id="harvestSeason"
-                    v-model="formData.harvestSeason"
+                    id="session"
+                    v-model="formData.session"
                     required
                     class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                   >
@@ -375,15 +372,18 @@
 definePageMeta({
   middleware: 'auth'
 })
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { cropCategories } from '~/utils/crops'
 import { useToastNotifications } from '~/composables/useToastNotifications'
+import { useCropStore } from '~/stores/crop'
+import { useUserStore } from '~/stores/user'
 import { getIcon } from '~/assets/icons'
 import BaseCard from '~/components/Cards/BaseCard.vue'
 
 const router = useRouter()
-const { cropSelected } = useToastNotifications()
+const { toast } = useToastNotifications()
+const cropStore = useCropStore()
+const userStore = useUserStore()
 
 // Estados reactivos
 const isSubmitting = ref(false)
@@ -397,16 +397,20 @@ const formData = reactive({
   name: '',
   description: '',
   category: '',
-  minHumidity: null,
-  maxHumidity: null,
-  maxTemperature: null,
-  growthDays: null,
-  harvestSeason: '',
+  humidity_min: null,
+  humidity_max: null,
+  temperature_max: null,
+  growth_days: null,
+  session: '',
   image: null
 })
 
 // Opciones disponibles
-const availableCategories = cropCategories.filter(cat => cat !== 'Todas')
+const availableCategories = computed(() => 
+  cropStore.categories.length > 0 ? cropStore.categories : [
+    'Hortalizas', 'Frutas', 'Hierbas', 'Cereales', 'Legumbres'
+  ]
+)
 const availableSeasons = [
   'Primavera',
   'Verano',
@@ -423,25 +427,25 @@ const availableSeasons = [
 const validationErrors = computed(() => {
   const errors = []
   
-  if (formData.minHumidity && formData.maxHumidity) {
-    if (formData.minHumidity >= formData.maxHumidity) {
+  if (formData.humidity_min && formData.humidity_max) {
+    if (formData.humidity_min >= formData.humidity_max) {
       errors.push('La humedad mínima debe ser menor que la máxima')
     }
   }
   
-  if (formData.minHumidity && (formData.minHumidity < 0 || formData.minHumidity > 100)) {
+  if (formData.humidity_min && (formData.humidity_min < 0 || formData.humidity_min > 100)) {
     errors.push('La humedad mínima debe estar entre 0 y 100%')
   }
   
-  if (formData.maxHumidity && (formData.maxHumidity < 0 || formData.maxHumidity > 100)) {
+  if (formData.humidity_max && (formData.humidity_max < 0 || formData.humidity_max > 100)) {
     errors.push('La humedad máxima debe estar entre 0 y 100%')
   }
   
-  if (formData.maxTemperature && (formData.maxTemperature < 0 || formData.maxTemperature > 50)) {
+  if (formData.temperature_max && (formData.temperature_max < 0 || formData.temperature_max > 50)) {
     errors.push('La temperatura máxima debe estar entre 0 y 50°C')
   }
   
-  if (formData.growthDays && (formData.growthDays < 1 || formData.growthDays > 365)) {
+  if (formData.growth_days && (formData.growth_days < 1 || formData.growth_days > 365)) {
     errors.push('Los días de crecimiento deben estar entre 1 y 365')
   }
   
@@ -511,26 +515,31 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   
   try {
-    // Simular envío del formulario
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Preparar datos para envío
+    const cropData = {
+      user_id: userStore.user.id,
+      name: formData.name,
+      description: formData.description,
+      category: formData.category,
+      growth_days: formData.growth_days,
+      humidity_min: formData.humidity_min,
+      humidity_max: formData.humidity_max,
+      temperature_max: formData.temperature_max,
+      session: formData.session,
+      image: formData.image || null, // Por ahora null, se puede implementar upload después
+      selected: false // Por defecto no seleccionado
+    }
     
-    // Mostrar alerta de éxito
-    const toast = document.createElement('div')
-    toast.className = 'fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out'
-    toast.innerHTML = `
-      <div class="flex items-center space-x-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-        </svg>
-        <span class="font-medium">¡Cultivo agregado exitosamente!</span>
-      </div>
-    `
-    document.body.appendChild(toast)
+    // Crear cultivo usando el store
+    const result = await cropStore.createCrop(cropData)
     
-    // Remover la alerta después de 3 segundos
-    setTimeout(() => {
-      toast.remove()
-    }, 3000)
+    // Mostrar mensaje de éxito
+    toast.success(`¡Cultivo "${result.data.name}" agregado exitosamente!`)
+    
+    // Actualizar categorías si es nueva
+    if (!cropStore.categories.includes(formData.category)) {
+      await cropStore.fetchCropCategories()
+    }
     
     // Redirigir a la página de cultivos
     setTimeout(() => {
@@ -539,10 +548,22 @@ const handleSubmit = async () => {
     
   } catch (error) {
     console.error('Error al agregar cultivo:', error)
+    toast.error(error.response?.data?.message || 'Error al agregar el cultivo')
   } finally {
     isSubmitting.value = false
   }
 }
+
+// Cargar categorías al montar el componente
+onMounted(async () => {
+  try {
+    if (!cropStore.isInitialized) {
+      await cropStore.fetchCropCategories()
+    }
+  } catch (error) {
+    console.error('Error cargando categorías:', error)
+  }
+})
 </script>
 
 <style scoped>

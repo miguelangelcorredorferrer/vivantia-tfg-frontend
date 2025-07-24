@@ -21,7 +21,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Categoría -->
         <div>
           <label for="category-filter" class="block text-sm font-medium text-white mb-2">
@@ -36,6 +36,30 @@
             <option v-for="category in categories" :key="category" :value="category">
               {{ category }}
             </option>
+          </select>
+        </div>
+
+        <!-- Temporada -->
+        <div>
+          <label for="session-filter" class="block text-sm font-medium text-white mb-2">
+            Temporada
+          </label>
+          <select
+            id="session-filter"
+            v-model="localFilters.session"
+            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            @change="updateFilters"
+          >
+            <option value="">Todas</option>
+            <option value="Primavera">Primavera</option>
+            <option value="Verano">Verano</option>
+            <option value="Otoño">Otoño</option>
+            <option value="Invierno">Invierno</option>
+            <option value="Primavera/Verano">Primavera/Verano</option>
+            <option value="Verano/Otoño">Verano/Otoño</option>
+            <option value="Otoño/Invierno">Otoño/Invierno</option>
+            <option value="Invierno/Primavera">Invierno/Primavera</option>
+            <option value="Todo el año">Todo el año</option>
           </select>
         </div>
 
@@ -123,25 +147,31 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { debounce } from 'lodash-es'
 import { getIcon } from '~/assets/icons'
-import { cropCategories } from '~/utils/crops'
 import BaseCard from '../Cards/BaseCard.vue'
 
 const props = defineProps({
   resultsCount: {
     type: Number,
     default: 0
+  },
+  categories: {
+    type: Array,
+    default: () => []
   }
 })
 
 const emit = defineEmits(['filters-changed'])
 
-// Categorías disponibles
-const categories = cropCategories
+// Categorías disponibles (combinando las del store con "Todas")
+const categories = computed(() => {
+  return ['Todas', ...props.categories]
+})
 
 // Filtros locales
 const localFilters = reactive({
   name: '',
   category: 'Todas',
+  session: '',
   minHumidity: '',
   maxHumidity: '',
   maxTemperature: ''
@@ -151,6 +181,7 @@ const localFilters = reactive({
 const hasActiveFilters = computed(() => {
   return localFilters.name !== '' ||
          localFilters.category !== 'Todas' ||
+         localFilters.session !== '' ||
          localFilters.minHumidity !== '' ||
          localFilters.maxHumidity !== '' ||
          localFilters.maxTemperature !== ''
@@ -168,6 +199,7 @@ const debouncedUpdate = debounce(updateFilters, 300)
 const clearFilters = () => {
   localFilters.name = ''
   localFilters.category = 'Todas'
+  localFilters.session = ''
   localFilters.minHumidity = ''
   localFilters.maxHumidity = ''
   localFilters.maxTemperature = ''
@@ -176,6 +208,7 @@ const clearFilters = () => {
 
 // Watch para cambios inmediatos en select
 watch(() => localFilters.category, updateFilters)
+watch(() => localFilters.session, updateFilters)
 </script>
 
 <style scoped>

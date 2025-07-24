@@ -5,6 +5,7 @@ import {
   getCropByUserId,
   getAllCrops,
   getSelectedCropByUserId,
+  getCropCategories,
   updateCrop,
   selectCrop,
   deselectCrop,
@@ -17,6 +18,7 @@ const router = express.Router();
 // Rutas básicas CRUD
 router.post('/', createCrop);
 router.get('/', getAllCrops);
+router.get('/categories', getCropCategories);
 router.get('/:id', getCropById);
 router.put('/:id', updateCrop);
 router.delete('/:id', deleteCrop);

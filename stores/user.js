@@ -5,13 +5,27 @@ import AuthAPI from '../api/AuthAPI'
 export const useUserStore = defineStore('user', () => {
   // Estado
   const user = ref(null)
-  const token = ref(process.client ? localStorage.getItem('AUTH_TOKEN') : null)
+  const token = ref(null)
   const isLoading = ref(false)
+  
+  // Inicializar token solo en el cliente para evitar problemas de hidratación
+  if (process.client) {
+    token.value = localStorage.getItem('AUTH_TOKEN')
+    console.log('🔄 Store: Token inicializado desde localStorage:', !!token.value)
+  }
 
   // Getters (computed)
   const isAuthenticated = computed(() => {
+    // En el servidor, siempre devolver false para evitar problemas de hidratación
+    if (!process.client) {
+      return false
+    }
+    
     const result = !!token.value && !!user.value
-    console.log('🔍 Store: isAuthenticated computed ->', result, { token: !!token.value, user: !!user.value })
+    // Solo mostrar logs en desarrollo para reducir ruido
+    if (process.dev) {
+      console.log('🔍 Store: isAuthenticated computed ->', result, { token: !!token.value, user: !!user.value })
+    }
     return result
   })
   const userName = computed(() => user.value?.name || '')

@@ -7,7 +7,7 @@ const createCrop = async (req, res) => {
   try {
     const {
       user_id, name, description, image, category, growth_days,
-      humidity_min, humidity_max, temperature_max, selected = false
+      humidity_min, humidity_max, temperature_max, session, selected = false
     } = req.body;
 
     // Validar campos obligatorios
@@ -18,15 +18,15 @@ const createCrop = async (req, res) => {
     const query = `
       INSERT INTO crops (
         user_id, name, description, image, category, growth_days,
-        humidity_min, humidity_max, temperature_max, selected
+        humidity_min, humidity_max, temperature_max, session, selected
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
     
     const values = [
       user_id, name, description, image, category, growth_days,
-      humidity_min, humidity_max, temperature_max, selected
+      humidity_min, humidity_max, temperature_max, session, selected
     ];
     
     const result = await pool.query(query, values);
@@ -351,6 +351,33 @@ const deleteCrop = async (req, res) => {
   }
 };
 
+// Obtener todas las categorías únicas de cultivos
+const getCropCategories = async (req, res) => {
+  try {
+    const query = `
+      SELECT DISTINCT category 
+      FROM crops 
+      WHERE category IS NOT NULL AND category != ''
+      ORDER BY category ASC
+    `;
+    const result = await pool.query(query);
+    
+    const categories = result.rows.map(row => row.category);
+
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener categorías de cultivos',
+      error: error.message
+    });
+  }
+};
+
 // Obtener configuraciones de riego asociadas
 const getCropIrrigationConfigs = async (req, res) => {
   try {
@@ -390,6 +417,7 @@ export {
   getCropByUserId,
   getAllCrops,
   getSelectedCropByUserId,
+  getCropCategories,
   updateCrop,
   selectCrop,
   deselectCrop,

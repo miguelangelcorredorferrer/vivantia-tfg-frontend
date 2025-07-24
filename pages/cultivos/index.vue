@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { sampleCrops, filterCrops } from '~/utils/crops'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useToastNotifications } from '~/composables/useToastNotifications'
+import { useCropStore } from '~/stores/crop'
+import { useUserStore } from '~/stores/user'
 import CropsFilter from '~/components/Crops/CropsFilter.vue'
 import CropsTable from '~/components/Crops/CropsTable.vue'
 
@@ -10,96 +11,90 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { cropSelected, cropDeselected, irrigationStarted, irrigationStopped, systemConnected } = useToastNotifications()
-
-// Estado reactivo de los cultivos
-const crops = ref([])
-
-// Filtros aplicados
-const currentFilters = ref({
-  name: '',
-  category: 'Todas',
-  minHumidity: '',
-  maxHumidity: '',
-  maxTemperature: ''
-})
-
-// Cultivos filtrados
-const filteredCrops = computed(() => {
-  return filterCrops(crops.value, currentFilters.value)
-})
+const { toast } = useToastNotifications()
+const cropStore = useCropStore()
+const userStore = useUserStore()
 
 // Función para manejar cambios en los filtros
 const handleFiltersChanged = (filters) => {
-  currentFilters.value = { ...filters }
+  cropStore.setSearchFilter(filters.name || '')
+  cropStore.setCategoryFilter(filters.category === 'Todas' ? '' : filters.category || '')
+  cropStore.setSessionFilter(filters.session || '')
+  
+  // Los filtros de humedad y temperatura se pueden manejar aquí si es necesario
+  // Por ahora solo manejamos name, category y session en el store
 }
 
 // Función para manejar la selección de cultivos
-const handleToggleSelection = ({ cropId, isSelected }) => {
-  const cropIndex = crops.value.findIndex(crop => crop.id === cropId)
-  if (cropIndex === -1) return
-  
-  const crop = crops.value[cropIndex]
-  
-  if (isSelected) {
-    // SELECCIONAR cultivo
-    const selectedIndex = crops.value.findIndex(c => c.isSelected)
-    if (selectedIndex !== -1 && selectedIndex !== cropIndex) {
-      // Hay otro cultivo seleccionado, deseleccionarlo SILENCIOSAMENTE
-      const previousCrop = crops.value[selectedIndex]
-      previousCrop.isSelected = false
-      
-      // Si el anterior tenía bomba activa, transferirla al nuevo
-      if (previousCrop.waterPumpActive) {
-        previousCrop.waterPumpActive = false
-        crop.waterPumpActive = true
-        // Transferencia silenciosa, sin alertas molestas
-      }
+const handleToggleSelection = async ({ cropId, isSelected }) => {
+  try {
+    if (isSelected) {
+      const result = await cropStore.selectCrop(cropId)
+      toast.success(`Cultivo "${result.data.name}" seleccionado exitosamente`)
+    } else {
+      const result = await cropStore.deselectCrop(cropId)
+      toast.success(`Cultivo "${result.data.name}" deseleccionado exitosamente`)
     }
-    
-    // Seleccionar el cultivo actual
-    crops.value[cropIndex].isSelected = true
-    
-    // Mostrar SOLO UNA alerta de cultivo seleccionado
-    cropSelected(crop.name)
-    
-  } else {
-    // DESELECCIONAR cultivo
-    crops.value[cropIndex].isSelected = false
-    
-    // Mostrar alerta de deselección
-    cropDeselected(crop.name)
-    
-    // Si tenía bomba activa, detener el riego (con alerta separada)
-    if (crop.waterPumpActive) {
-      crop.waterPumpActive = false
-      irrigationStopped(crop.name)
-    }
+  } catch (error) {
+    console.error('Error al cambiar selección de cultivo:', error)
+    toast.error(error.response?.data?.message || 'Error al cambiar selección del cultivo')
   }
 }
 
 // Función para eliminar un cultivo
-const handleDeleteCrop = (cropId) => {
-  const cropIndex = crops.value.findIndex(crop => crop.id === cropId)
-  if (cropIndex === -1) return
-  
-  const crop = crops.value[cropIndex]
-  
-  // No permitir eliminar si está seleccionado
-  if (crop.isSelected) {
-    useToastNotifications().deviceAddError()
-    return
+const handleDeleteCrop = async (cropId) => {
+  try {
+    const cropToDelete = cropStore.crops.find(c => c.id === cropId)
+    
+    // No permitir eliminar si está seleccionado
+    if (cropToDelete?.selected) {
+      toast.warning('No puedes eliminar un cultivo que está seleccionado')
+      return
+    }
+    
+    await cropStore.deleteCrop(cropId)
+    toast.success(`Cultivo "${cropToDelete?.name}" eliminado exitosamente`)
+  } catch (error) {
+    console.error('Error al eliminar cultivo:', error)
+    toast.error(error.response?.data?.message || 'Error al eliminar el cultivo')
   }
-  
-  // Eliminar el cultivo
-  crops.value.splice(cropIndex, 1)
-  // El toast se maneja en el componente CropsTable
 }
 
-// Cargar datos iniciales
-onMounted(() => {
-  // Clonar los datos de prueba para poder modificarlos
-  crops.value = JSON.parse(JSON.stringify(sampleCrops))
+// Inicializar datos
+onMounted(async () => {
+  try {
+    if (!cropStore.isInitialized) {
+      await cropStore.init()
+    }
+    
+    // Cargar cultivo del usuario si existe
+    if (userStore.user?.id) {
+      try {
+        await cropStore.fetchUserCrop(userStore.user.id)
+      } catch (error) {
+        // No mostrar error si no tiene cultivo, es normal
+        if (!error.response?.status === 404) {
+          console.error('Error cargando cultivo del usuario:', error)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error inicializando cultivos:', error)
+    toast.error('Error al cargar los cultivos')
+  }
+})
+
+// Observar cambios en el usuario para cargar su cultivo
+watch(() => userStore.user?.id, async (userId) => {
+  if (userId && cropStore.isInitialized) {
+    try {
+      await cropStore.fetchUserCrop(userId)
+    } catch (error) {
+      if (!error.response?.status === 404) {
+        console.error('Error cargando cultivo del usuario:', error)
+      }
+    }
+  }
 })
 </script>
 
@@ -124,18 +119,27 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Filtros -->
-    <CropsFilter 
-      :results-count="filteredCrops.length"
-      @filters-changed="handleFiltersChanged"
-    />
+    <!-- Estado de carga -->
+    <div v-if="cropStore.isLoading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+    </div>
 
-    <!-- Tabla de cultivos -->
-    <CropsTable 
-      :crops="filteredCrops"
-      @toggle-selection="handleToggleSelection"
-      @delete-crop="handleDeleteCrop"
-    />
+    <!-- Contenido principal -->
+    <template v-else>
+      <!-- Filtros -->
+      <CropsFilter 
+        :results-count="cropStore.filteredCrops.length"
+        :categories="cropStore.categories"
+        @filters-changed="handleFiltersChanged"
+      />
+
+      <!-- Tabla de cultivos -->
+      <CropsTable 
+        :crops="cropStore.filteredCrops"
+        @toggle-selection="handleToggleSelection"
+        @delete-crop="handleDeleteCrop"
+      />
+    </template>
   </div>
 </template>
 

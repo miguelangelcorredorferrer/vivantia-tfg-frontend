@@ -11,6 +11,9 @@ CREATE TYPE alert_category AS ENUM (
   'irrigation'      -- Actividad de riego
 );
 
+
+
+
 CREATE TYPE alert_subtype AS ENUM (
   -- User alerts
   'user_registered', 'user_logged_in', 'username_changed', 'password_changed',
@@ -53,6 +56,7 @@ CREATE TABLE crops (
   humidity_min DECIMAL(5,2), -- % mínimo de humedad
   humidity_max DECIMAL(5,2), -- % máximo de humedad
   temperature_max DECIMAL(5,2), -- °C máximo
+  session VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW(),
   selected BOOLEAN DEFAULT FALSE, -- Indica si el cultivo está seleccionado (FALSE por defecto)
   UNIQUE(user_id) -- Solo 1 cultivo por usuario

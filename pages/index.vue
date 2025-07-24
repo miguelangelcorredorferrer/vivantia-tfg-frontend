@@ -1,6 +1,12 @@
 <script setup>
-// Redirect automático al login
-await navigateTo('/auth/login')
+const userStore = useUserStore()
+
+// Redirigir según estado de autenticación
+if (userStore.isAuthenticated && userStore.user?.verified) {
+  await navigateTo('/dashboard')
+} else {
+  await navigateTo('/auth/login')
+}
 </script>
 
 <template>

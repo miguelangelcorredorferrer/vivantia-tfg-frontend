@@ -62,10 +62,10 @@
                   <div class="flex items-center space-x-2">
                     <div 
                       class="w-3 h-3 rounded-full"
-                      :class="crop.isSelected ? 'bg-green-500 animate-pulse' : 'bg-gray-500'"
+                      :class="crop.selected ? 'bg-green-500 animate-pulse' : 'bg-gray-500'"
                     ></div>
                     <span class="text-sm text-gray-400">
-                      {{ crop.isSelected ? 'Seleccionado' : 'No seleccionado' }}
+                      {{ crop.selected ? 'Seleccionado' : 'No seleccionado' }}
                     </span>
                   </div>
                 </div>
@@ -112,7 +112,7 @@
                   </div>
                   <div class="text-center">
                     <div class="text-2xl font-bold text-blue-200 mb-2">
-                      {{ crop.minHumidity }}% - {{ crop.maxHumidity }}%
+                      {{ crop.humidity_min }}% - {{ crop.humidity_max }}%
                     </div>
                     <div class="text-sm text-blue-300">Rango óptimo</div>
                   </div>
@@ -126,7 +126,7 @@
                   </div>
                   <div class="text-center">
                     <div class="text-2xl font-bold text-red-200 mb-2">
-                      {{ crop.maxTemperature }}°C
+                      {{ crop.temperature_max }}°C
                     </div>
                     <div class="text-sm text-red-300">Temperatura máxima tolerada</div>
                   </div>
@@ -141,21 +141,13 @@
                 <span class="ml-3">Información de Crecimiento</span>
               </h2>
               
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="flex justify-center">
                 <div class="text-center">
                   <div class="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span class="text-2xl font-bold text-green-400">{{ crop.growthDays }}</span>
+                    <span class="text-2xl font-bold text-green-400">{{ crop.growth_days || 'N/A' }}</span>
                   </div>
                   <h4 class="font-medium text-white mb-1">Días de Crecimiento</h4>
                   <p class="text-sm text-gray-400">Días hasta cosecha</p>
-                </div>
-                
-                <div class="text-center">
-                  <div class="w-16 h-16 bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span class="text-2xl font-bold text-purple-400">{{ crop.waterFrequency }}</span>
-                  </div>
-                  <h4 class="font-medium text-white mb-1">Frecuencia de Riego</h4>
-                  <p class="text-sm text-gray-400">veces por semana</p>
                 </div>
               </div>
             </div>
@@ -173,12 +165,12 @@
                   <div class="flex items-center space-x-3">
                     <div 
                       class="w-4 h-4 rounded-full"
-                      :class="crop.isSelected ? 'bg-green-500 animate-pulse' : 'bg-gray-500'"
+                      :class="crop.selected ? 'bg-green-500 animate-pulse' : 'bg-gray-500'"
                     ></div>
                     <span class="text-gray-300">Seleccionado</span>
                   </div>
-                  <span class="text-sm font-medium" :class="crop.isSelected ? 'text-green-400' : 'text-gray-500'">
-                    {{ crop.isSelected ? 'Sí' : 'No' }}
+                  <span class="text-sm font-medium" :class="crop.selected ? 'text-green-400' : 'text-gray-500'">
+                    {{ crop.selected ? 'Sí' : 'No' }}
                   </span>
                 </div>
 
@@ -196,11 +188,19 @@
                   </span>
                 </div>
 
-                <!-- Growing Season -->
+                <!-- Category -->
                 <div class="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-                  <span class="text-gray-300">Temporada de Cultivo</span>
+                  <span class="text-gray-300">Categoría</span>
                   <span class="text-sm font-medium text-gray-400">
-                    {{ crop.growingSeason }}
+                    {{ crop.category }}
+                  </span>
+                </div>
+
+                <!-- Temporada -->
+                <div class="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
+                  <span class="text-gray-300">Temporada</span>
+                  <span class="text-sm font-medium text-gray-400">
+                    {{ crop.session || 'No especificada' }}
                   </span>
                 </div>
               </div>
@@ -212,14 +212,16 @@
               
               <div class="space-y-3">
                 <button
+                  v-if="isUserCrop"
                   @click="toggleSelection"
                   class="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center space-x-2"
                 >
                   <CheckIcon />
-                  <span>{{ crop.isSelected ? 'Deseleccionar' : 'Seleccionar' }} Cultivo</span>
+                  <span>{{ crop.selected ? 'Deseleccionar' : 'Seleccionar' }} Cultivo</span>
                 </button>
                 
                 <button
+                  v-if="isUserCrop"
                   @click="handleEdit"
                   class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center space-x-2"
                 >
@@ -244,9 +246,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToastNotifications } from '~/composables/useToastNotifications'
+import { useCropStore } from '~/stores/crop'
+import { useUserStore } from '~/stores/user'
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -259,6 +263,11 @@ import {
   EditIcon
 } from '~/assets/icons'
 
+// Middleware de autenticación
+definePageMeta({
+  middleware: 'auth'
+})
+
 // Meta del documento
 useHead({
   title: 'Ver Cultivo - VIVANTIA',
@@ -270,11 +279,18 @@ useHead({
 const route = useRoute()
 const router = useRouter()
 const { toast } = useToastNotifications()
+const cropStore = useCropStore()
+const userStore = useUserStore()
 
 // Estado reactivo
 const crop = ref(null)
 const loading = ref(true)
 const error = ref(null)
+
+// Computed para determinar si es el cultivo del usuario
+const isUserCrop = computed(() => {
+  return crop.value && userStore.user && crop.value.user_id === userStore.user.id
+})
 
 // Cargar información del cultivo
 const loadCrop = async () => {
@@ -282,32 +298,28 @@ const loadCrop = async () => {
   error.value = null
   
   try {
-    const cropId = route.params.id
+    const cropId = parseInt(route.params.id)
+    console.log('🔄 Ver Cultivo: Cargando cultivo ID:', cropId)
     
-    // Simular carga de datos (en una implementación real, esto sería una llamada a la API)
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Intentar obtener el cultivo del store primero
+    let foundCrop = cropStore.crops.find(c => c.id === cropId)
     
-    // Datos simulados del cultivo con información relevante
-    const mockCrop = {
-      id: cropId,
-      name: 'Tomate Cherry',
-      description: 'Variedad de tomate pequeño y dulce, ideal para ensaladas y aperitivos',
-      category: 'Hortalizas',
-      minHumidity: 30,
-      maxHumidity: 70,
-      maxTemperature: 28,
-      isSelected: true,
-      waterPumpActive: false,
-      growthDays: 75,
-      waterFrequency: '2-3',
-      growingSeason: 'Primavera-Verano'
+    if (!foundCrop) {
+      // Si no está en el store, cargar desde la API
+      const result = await cropStore.fetchCropById(cropId)
+      foundCrop = result.data
     }
     
-    crop.value = mockCrop
+    if (!foundCrop) {
+      throw new Error('Cultivo no encontrado')
+    }
+    
+    crop.value = foundCrop
+    console.log('✅ Ver Cultivo: Cultivo cargado:', foundCrop.name)
     
   } catch (err) {
-    error.value = 'No se pudo cargar la información del cultivo'
-    console.error('Error loading crop:', err)
+    error.value = err.response?.data?.message || err.message || 'No se pudo cargar la información del cultivo'
+    console.error('❌ Ver Cultivo: Error loading crop:', err)
   } finally {
     loading.value = false
   }
@@ -322,10 +334,25 @@ const handleEdit = () => {
   router.push(`/cultivos/editar/${crop.value.id}`)
 }
 
-const toggleSelection = () => {
-  if (crop.value) {
-    crop.value.isSelected = !crop.value.isSelected
-    toast.success(`Cultivo ${crop.value.isSelected ? 'seleccionado' : 'deseleccionado'} exitosamente`)
+const toggleSelection = async () => {
+  if (!crop.value || !isUserCrop.value) {
+    toast.warning('Solo puedes seleccionar/deseleccionar tus propios cultivos')
+    return
+  }
+  
+  try {
+    if (crop.value.selected) {
+      const result = await cropStore.deselectCrop(crop.value.id)
+      crop.value = result.data
+      toast.success(`Cultivo "${crop.value.name}" deseleccionado exitosamente`)
+    } else {
+      const result = await cropStore.selectCrop(crop.value.id)
+      crop.value = result.data
+      toast.success(`Cultivo "${crop.value.name}" seleccionado exitosamente`)
+    }
+  } catch (error) {
+    console.error('Error toggling crop selection:', error)
+    toast.error(error.response?.data?.message || 'Error al cambiar selección del cultivo')
   }
 }
 

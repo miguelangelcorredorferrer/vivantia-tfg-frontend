@@ -10,6 +10,7 @@ class Crop {
     this.humidity_min = data.humidity_min;
     this.humidity_max = data.humidity_max;
     this.temperature_max = data.temperature_max;
+    this.session = data.session;
     this.created_at = data.created_at;
     this.selected = data.selected || false;
   }

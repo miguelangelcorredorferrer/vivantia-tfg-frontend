@@ -27,9 +27,11 @@
           <tr>
             <th scope="col" class="px-6 py-4 font-medium">Cultivo</th>
             <th scope="col" class="px-6 py-4 font-medium">Categoría</th>
+            <th scope="col" class="px-6 py-4 font-medium text-center">Temporada</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Humedad (%)</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Temp. Máx. (°C)</th>
-            <th scope="col" class="px-6 py-4 font-medium text-center">Bomba</th>
+            <th scope="col" class="px-6 py-4 font-medium text-center">Crecimiento (días)</th>
+            <th scope="col" class="px-6 py-4 font-medium text-center">Estado Bomba</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Seleccionado</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Acciones</th>
           </tr>
@@ -39,7 +41,7 @@
             v-for="crop in crops" 
             :key="crop.id"
             class="hover:bg-gray-800/30 transition-colors duration-150"
-            :class="{ 'bg-green-900/20 border-green-500/30': crop.isSelected }"
+            :class="{ 'bg-green-900/20 border-green-500/30': crop.selected }"
           >
             <!-- Cultivo -->
             <td class="px-6 py-4">
@@ -61,10 +63,18 @@
               </span>
             </td>
 
+            <!-- Temporada -->
+            <td class="px-6 py-4 text-center">
+              <div class="text-gray-300">
+                <div class="text-sm font-medium">{{ crop.session || 'N/A' }}</div>
+                <div class="text-xs text-gray-500">Temporada</div>
+              </div>
+            </td>
+
             <!-- Humedad -->
             <td class="px-6 py-4 text-center">
               <div class="text-gray-300">
-                <div class="text-sm font-medium">{{ crop.minHumidity }}% - {{ crop.maxHumidity }}%</div>
+                <div class="text-sm font-medium">{{ crop.humidity_min }}% - {{ crop.humidity_max }}%</div>
                 <div class="text-xs text-gray-500">Rango óptimo</div>
               </div>
             </td>
@@ -72,8 +82,16 @@
             <!-- Temperatura Máxima -->
             <td class="px-6 py-4 text-center">
               <div class="text-gray-300">
-                <div class="text-sm font-medium">{{ crop.maxTemperature }}°C</div>
+                <div class="text-sm font-medium">{{ crop.temperature_max }}°C</div>
                 <div class="text-xs text-gray-500">Máximo</div>
+              </div>
+            </td>
+
+            <!-- Días de crecimiento -->
+            <td class="px-6 py-4 text-center">
+              <div class="text-gray-300">
+                <div class="text-sm font-medium">{{ crop.growth_days || 'N/A' }}</div>
+                <div class="text-xs text-gray-500">días</div>
               </div>
             </td>
 
@@ -99,13 +117,13 @@
             <td class="px-6 py-4 text-center">
               <div class="flex flex-col items-center space-y-2">
                 <CropSwitch
-                  :model-value="crop.isSelected"
+                  :model-value="crop.selected"
                   :label="`Seleccionar ${crop.name}`"
                   @change="(value) => handleToggleSelection(crop.id, value)"
-                  :disabled="!crop.isSelected && hasSelectedCrop"
+                  :disabled="!crop.selected && hasSelectedCrop"
                 />
-                <span class="text-xs font-medium" :class="crop.isSelected ? 'text-green-400' : 'text-gray-500'">
-                  {{ crop.isSelected ? 'Seleccionado' : 'No seleccionado' }}
+                <span class="text-xs font-medium" :class="crop.selected ? 'text-green-400' : 'text-gray-500'">
+                  {{ crop.selected ? 'Seleccionado' : 'No seleccionado' }}
                 </span>
               </div>
             </td>
@@ -194,7 +212,7 @@ const cropToDelete = ref(null)
 
 // Computed para obtener el cultivo seleccionado
 const selectedCrop = computed(() => {
-  return props.crops.find(crop => crop.isSelected)
+  return props.crops.find(crop => crop.selected)
 })
 
 // Computed para verificar si hay un cultivo seleccionado
@@ -206,9 +224,9 @@ const hasSelectedCrop = computed(() => {
 const handleToggleSelection = (cropId, value) => {
   const crop = props.crops.find(c => c.id === cropId)
   
-  if (value && hasSelectedCrop.value && !crop.isSelected) {
+  if (value && hasSelectedCrop.value && !crop.selected) {
     // Ya hay un cultivo seleccionado, mostrar advertencia
-    toast.deviceAddError()
+    toast.warning('Solo puedes tener un cultivo seleccionado a la vez')
     return
   }
   
@@ -230,8 +248,8 @@ const handleEdit = (crop) => {
 
 // Función para manejar la eliminación
 const handleDelete = (crop) => {
-  if (crop.isSelected) {
-    toast.deviceAddError()
+  if (crop.selected) {
+    toast.warning('No puedes eliminar un cultivo que está seleccionado')
     return
   }
   

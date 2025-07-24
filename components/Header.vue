@@ -6,11 +6,9 @@ defineEmits(['toggle-sidebar'])
 
 const userStore = useUserStore()
 
-// Función para cerrar sesión
-const handleLogout = () => {
-  userStore.logout()
-  // Redirigir al login
-  navigateTo('/auth/login')
+// Función para ir al perfil
+const goToProfile = () => {
+  navigateTo('/profile')
 }
 </script>
 
@@ -56,27 +54,15 @@ const handleLogout = () => {
             <p class="text-xs text-gray-300">{{ userStore.userEmail }}</p>
           </div>
           
-          <!-- Dropdown de usuario -->
-          <div class="relative">
-            <button 
-              class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg"
-              title="Menú de usuario"
-            >
-              <span class="text-white font-semibold text-sm">
-                {{ userStore.userName.charAt(0).toUpperCase() }}
-              </span>
-            </button>
-          </div>
-          
-          <!-- Botón de cerrar sesión -->
+          <!-- Botón de perfil de usuario -->
           <button 
-            @click="handleLogout"
-            class="p-2 rounded-lg hover:bg-gray-600 transition-colors text-gray-300 hover:text-white"
-            title="Cerrar sesión"
+            @click="goToProfile"
+            class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg"
+            title="Ir a mi perfil"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
+            <span class="text-white font-semibold text-sm">
+              {{ userStore.userName.charAt(0).toUpperCase() }}
+            </span>
           </button>
         </div>
 

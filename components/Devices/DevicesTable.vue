@@ -1,27 +1,37 @@
 <template>
-  <BaseCard title="Dispositivos Registrados">
-    <template #header-actions>
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-2">
-          <span class="text-sm text-gray-300 font-bold">Total: {{ devices.length }}</span>
-          
+  <div>
+    <!-- Filtros -->
+    <DevicesFilter 
+      :device-store="deviceStore"
+      @filter-change="handleFilterChange"
+    />
+    
+    <BaseCard title="Dispositivos Registrados">
+      <template #header-actions>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-300 font-bold">Total: {{ filteredDevices.length }} de {{ deviceStore.deviceCount }}</span>
+          </div>
+          <div class="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
+            <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            Solo 1 dispositivo activo permitido
+          </div>
         </div>
-        <div class="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
-          <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-          </svg>
-          Solo 1 dispositivo activo permitido
-        </div>
-      </div>
-    </template>
+      </template>
 
     <div class="overflow-x-auto">
-      <div v-if="devices.length === 0" class="text-center py-12">
+      <div v-if="filteredDevices.length === 0" class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
         </svg>
-        <h3 class="text-lg font-medium text-white mb-2">No hay dispositivos registrados</h3>
-        <p class="text-gray-400">Registra tu primer dispositivo usando el formulario de arriba</p>
+        <h3 class="text-lg font-medium text-white mb-2">
+          {{ deviceStore.deviceCount === 0 ? 'No hay dispositivos registrados' : 'No se encontraron dispositivos' }}
+        </h3>
+        <p class="text-gray-400">
+          {{ deviceStore.deviceCount === 0 ? 'Registra tu primer dispositivo usando el formulario de arriba' : 'Intenta ajustar los filtros de búsqueda' }}
+        </p>
       </div>
 
       <table v-else class="w-full text-sm text-left">
@@ -32,13 +42,14 @@
             <th scope="col" class="px-6 py-4 font-medium">AppEUI</th>
             <th scope="col" class="px-6 py-4 font-medium">DevEUI</th>
             <th scope="col" class="px-6 py-4 font-medium">AppKey</th>
-            <th scope="col" class="px-6 py-4 font-medium text-center">Actions</th>
+            <th scope="col" class="px-6 py-4 font-medium text-center">Estado</th>
+            <th scope="col" class="px-6 py-4 font-medium text-center">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-600">
           <tr 
-            v-for="(device, index) in devices" 
-            :key="index"
+            v-for="(device, index) in filteredDevices" 
+            :key="device.id || index"
             class="hover:bg-gray-800/30 transition-colors duration-150"
           >
             <!-- Device Name -->
@@ -123,14 +134,14 @@
               </div>
             </td>
 
-            <!-- Actions -->
+            <!-- Estado -->
             <td class="px-6 py-4">
               <div class="flex items-center justify-center space-x-3">
                 <!-- Switch -->
                 <CustomSwitch
                   v-model="device.isActive"
                   :label="`Toggle device ${device.deviceName}`"
-                  @change="(value) => handleToggleDevice(index, value)"
+                  @change="(value) => handleToggleDevice(device, value)"
                 />
                 
                 <!-- Database Status Icon -->
@@ -140,11 +151,41 @@
                 />
               </div>
             </td>
+
+            <!-- Acciones -->
+            <td class="px-6 py-4">
+              <div class="flex items-center justify-center space-x-3">
+                <!-- Botón Editar -->
+                <button
+                  @click="handleEditDevice(device)"
+                  class="flex items-center space-x-2 px-3 py-2 rounded-md text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  :title="`Editar ${device.deviceName}`"
+                  aria-label="Editar dispositivo"
+                >
+                  <EditIcon class="w-5 h-5" />
+                  <span class="text-sm font-medium">Editar</span>
+                </button>
+                
+                <!-- Botón Eliminar -->
+                <button
+                  @click="handleDeleteDevice(device)"
+                  class="flex items-center space-x-2 px-3 py-2 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                  :title="`Eliminar ${device.deviceName}`"
+                  aria-label="Eliminar dispositivo"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  <span class="text-sm font-medium">Borrar</span>
+                </button>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
-  </BaseCard>
+    </BaseCard>
+  </div>
 </template>
 
 <script setup>
@@ -153,15 +194,17 @@ import { useToastNotifications } from '~/composables/useToastNotifications'
 import BaseCard from '../Cards/BaseCard.vue'
 import CustomSwitch from '../SwitchPlugin/CustomSwitch.vue'
 import DatabaseStatusIcon from './DatabaseStatusIcon.vue'
+import DevicesFilter from './DevicesFilter.vue'
+import EditIcon from '~/assets/icons/EditIcon.vue'
 
 const props = defineProps({
-  devices: {
-    type: Array,
-    default: () => []
+  deviceStore: {
+    type: Object,
+    required: true
   }
 })
 
-const emit = defineEmits(['toggle-device'])
+const emit = defineEmits(['toggle-device', 'edit-device', 'delete-device'])
 const { deviceActivated, deviceDeactivated, appKeyCopied, appKeyCopyError } = useToastNotifications()
 
 // Estado para controlar la visibilidad de AppKeys
@@ -170,8 +213,17 @@ const visibleAppKeys = ref({})
 // Estado para controlar el feedback de copiado
 const copiedKeys = ref({})
 
-const activeDevicesCount = computed(() => {
-  return props.devices.filter(device => device.isActive).length
+// Estado para filtros
+const currentFilters = ref({
+  deviceName: '',
+  enddeviceId: ''
+})
+
+// Dispositivos filtrados
+const filteredDevices = computed(() => {
+  const filtered = props.deviceStore.filterDevices(currentFilters.value)
+  console.log('🔍 Dispositivos filtrados en tabla:', filtered)
+  return filtered
 })
 
 const formatHex = (hex, isLong = false) => {
@@ -186,18 +238,38 @@ const formatHex = (hex, isLong = false) => {
   return hex.replace(/(.{4})/g, '$1 ').trim()
 }
 
-const handleToggleDevice = (index, value) => {
-  const device = props.devices[index]
-  
-  emit('toggle-device', { index, isActive: value })
-  
-  // Mostrar toast según el estado del dispositivo
-  if (value) {
-    // Dispositivo activado
-    deviceActivated(device.deviceName)
-  } else {
-    // Dispositivo desactivado
-    deviceDeactivated(device.deviceName)
+// Manejo de filtros
+const handleFilterChange = (filters) => {
+  currentFilters.value = { ...filters }
+}
+
+// Manejo del toggle de dispositivo
+const handleToggleDevice = async (device, value) => {
+  try {
+    await props.deviceStore.toggleDeviceActive(device.id, value)
+    
+    // Mostrar toast según el estado del dispositivo
+    if (value) {
+      deviceActivated(device.deviceName)
+    } else {
+      deviceDeactivated(device.deviceName)
+    }
+    
+    emit('toggle-device', { device, isActive: value })
+  } catch (error) {
+    console.error('Error al cambiar estado del dispositivo:', error)
+  }
+}
+
+// Manejo de edición
+const handleEditDevice = (device) => {
+  emit('edit-device', device)
+}
+
+// Manejo de eliminación
+const handleDeleteDevice = (device) => {
+  if (confirm(`¿Estás seguro de que quieres eliminar el dispositivo "${device.deviceName}"?`)) {
+    emit('delete-device', device)
   }
 }
 
