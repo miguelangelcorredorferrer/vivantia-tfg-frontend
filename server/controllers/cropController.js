@@ -167,7 +167,44 @@ const getAllCropsByUserId = async (req, res) => {
   }
 };
 
-// Obtener todos los cultivos
+// Obtener todos los cultivos con información de usuario
+const getAllCropsWithUsers = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        c.*,
+        u.name as user_name,
+        u.email as user_email
+      FROM crops c
+      LEFT JOIN users u ON c.user_id = u.id
+      ORDER BY c.created_at DESC
+    `;
+    const result = await pool.query(query);
+    
+    const cropsWithUsers = result.rows.map(row => ({
+      ...row,
+      user: {
+        id: row.user_id,
+        name: row.user_name,
+        email: row.user_email
+      }
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: cropsWithUsers.length,
+      data: cropsWithUsers
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener cultivos con usuarios',
+      error: error.message
+    });
+  }
+};
+
+// Obtener todos los cultivos (mantener para compatibilidad)
 const getAllCrops = async (req, res) => {
   try {
     const query = 'SELECT * FROM crops ORDER BY created_at DESC';
@@ -526,6 +563,7 @@ export {
   getCropByUserId,
   getAllCropsByUserId,
   getAllCrops,
+  getAllCropsWithUsers,
   getSelectedCropByUserId,
   getCropCategories,
   updateCrop,

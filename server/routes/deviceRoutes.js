@@ -6,6 +6,7 @@ import {
   getDevicesByUserId,
   getDeviceByEndDeviceId,
   getAllDevices,
+  getAllDevicesWithUsers,
   getActiveDevices,
   updateDevice,
   activateDevice,
@@ -20,6 +21,7 @@ const router = express.Router();
 // Rutas básicas CRUD (requieren autenticación)
 router.post('/', createDevice);
 router.get('/', getAllDevices); // Pública para admin
+router.get('/with-users', getAllDevicesWithUsers); // Para admin con información de usuarios
 router.get('/:id', authMiddleware, getDeviceById);
 router.put('/:id', authMiddleware, updateDevice);
 router.delete('/:id', authMiddleware, deleteDevice);

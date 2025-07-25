@@ -25,6 +25,13 @@ export default {
             headers: getAuthHeaders()
         })
     },
+    getAllWithUsers() {
+        return $fetch('/crops/with-users', {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
     getCategories() {
         return $fetch('/crops/categories', {
             method: 'GET',

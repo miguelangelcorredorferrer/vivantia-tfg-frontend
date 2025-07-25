@@ -9,9 +9,9 @@ import BaseCard from '~/components/Cards/BaseCard.vue'
 import WorkingTemperatureChart from '~/components/Charts/WorkingTemperatureChart.vue'
 import WorkingHumidityChart from '~/components/Charts/WorkingHumidityChart.vue'
 
-// Configurar middleware de autenticación
+// Configurar middleware de autenticación y redirección para admins
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'admin-redirect']
 })
 
 // Obtener stores

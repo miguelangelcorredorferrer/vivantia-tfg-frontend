@@ -25,6 +25,13 @@ export default {
             headers: getAuthHeaders()
         })
     },
+    getAllWithUsers() {
+        return $fetch('/devices/with-users', {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
     getById(id) {
         return $fetch(`/devices/${id}`, {
             method: 'GET',

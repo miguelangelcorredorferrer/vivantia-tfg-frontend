@@ -35,8 +35,12 @@ const goToProfile = () => {
             </svg>
           </div>
           <div class="hidden sm:block">
-            <h1 class="text-xl font-bold text-white">DASHBOARD</h1>
-            <p class="text-xs text-gray-400">Performance</p>
+            <h1 class="text-xl font-bold text-white">
+              {{ userStore.isAdmin ? 'PANEL DE ADMINISTRACIÓN' : 'DASHBOARD' }}
+            </h1>
+            <p class="text-xs text-gray-400">
+              {{ userStore.isAdmin ? 'Centro de Control' : 'Performance' }}
+            </p>
           </div>
         </div>
       </div>

@@ -31,6 +31,7 @@ export const useUserStore = defineStore('user', () => {
   const userName = computed(() => user.value?.name || '')
   const userEmail = computed(() => user.value?.email || '')
   const isEmailVerified = computed(() => user.value?.emailVerified || false)
+  const isAdmin = computed(() => user.value?.role === 'admin')
 
   // Actions
   const login = async (credentials) => {
@@ -186,6 +187,7 @@ export const useUserStore = defineStore('user', () => {
     userName,
     userEmail,
     isEmailVerified,
+    isAdmin,
     
     // Actions
     login,

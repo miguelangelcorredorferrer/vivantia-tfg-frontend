@@ -95,7 +95,7 @@ const getUserByEmail = async (req, res) => {
 // Obtener todos los usuarios
 const getAllUsers = async (req, res) => {
   try {
-    const query = 'SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC';
+    const query = 'SELECT id, email, name, role, verified, created_at FROM users ORDER BY created_at DESC';
     const result = await pool.query(query);
     
     const users = result.rows.map(row => new User(row));

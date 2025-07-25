@@ -8,18 +8,19 @@ import {
   deleteUser,
   getCurrentUserProfile
 } from '../controllers/userController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Rutas básicas CRUD
-router.post('/', createUser);
-router.get('/', getAllUsers);
-router.get('/:id', getUserById);
-router.put('/:id', updateUser);
-router.delete('/:id', deleteUser);
+// Rutas básicas CRUD (protegidas para admin)
+router.post('/', authMiddleware, createUser);
+router.get('/', authMiddleware, getAllUsers);
+router.get('/:id', authMiddleware, getUserById);
+router.put('/:id', authMiddleware, updateUser);
+router.delete('/:id', authMiddleware, deleteUser);
 
 // Rutas específicas
-router.get('/email/:email', getUserByEmail);
-router.get('/profile/current', getCurrentUserProfile);
+router.get('/email/:email', authMiddleware, getUserByEmail);
+router.get('/profile/current', authMiddleware, getCurrentUserProfile);
 
 export default router;

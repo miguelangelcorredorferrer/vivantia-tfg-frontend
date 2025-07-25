@@ -194,6 +194,43 @@ const getAllDevices = async (req, res) => {
   }
 };
 
+// Obtener todos los dispositivos con información de usuario
+const getAllDevicesWithUsers = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        d.*,
+        u.name as user_name,
+        u.email as user_email
+      FROM devices d
+      LEFT JOIN users u ON d.user_id = u.id
+      ORDER BY d.created_at DESC
+    `;
+    const result = await pool.query(query);
+    
+    const devicesWithUsers = result.rows.map(row => ({
+      ...row,
+      user: {
+        id: row.user_id,
+        name: row.user_name,
+        email: row.user_email
+      }
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: devicesWithUsers.length,
+      data: devicesWithUsers
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener dispositivos con usuarios',
+      error: error.message
+    });
+  }
+};
+
 // Obtener dispositivos activos
 const getActiveDevices = async (req, res) => {
   try {
@@ -471,6 +508,7 @@ export {
   findDeviceByEndDeviceId,
   getDeviceByEndDeviceId,
   getAllDevices,
+  getAllDevicesWithUsers,
   getActiveDevices,
   updateDevice,
   activateDevice,

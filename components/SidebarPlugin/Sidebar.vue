@@ -1,5 +1,7 @@
 <script setup>
 import SidebarItem from './SidebarItem.vue'
+
+const userStore = useUserStore()
 </script>
 
 <template>
@@ -26,7 +28,8 @@ import SidebarItem from './SidebarItem.vue'
     
     <!-- Navegación principal -->
     <nav class="px-3">
-      <div class="space-y-2">
+      <!-- Menú para usuarios normales -->
+      <div v-if="!userStore.isAdmin" class="space-y-2">
         <SidebarItem 
           icon="dashboard" 
           label="Dashboard" 
@@ -60,6 +63,37 @@ import SidebarItem from './SidebarItem.vue'
           label="Alertas" 
           to="/alertas" 
           :active="$route.path === '/alertas'"
+        />
+      </div>
+
+      <!-- Menú para administradores -->
+      <div v-else class="space-y-2">
+        <SidebarItem 
+          icon="users" 
+          label="Gestión de Usuarios" 
+          to="/admin/users" 
+          :active="$route.path === '/admin/users'"
+        />
+        
+        <SidebarItem 
+          icon="plant" 
+          label="Gestión de Cultivos" 
+          to="/admin/crops" 
+          :active="$route.path === '/admin/crops'"
+        />
+        
+        <SidebarItem 
+          icon="devices" 
+          label="Gestión de Dispositivos" 
+          to="/admin/devices" 
+          :active="$route.path === '/admin/devices'"
+        />
+        
+        <SidebarItem 
+          icon="logs" 
+          label="Logs del Sistema" 
+          to="/admin/logs" 
+          :active="$route.path === '/admin/logs'"
         />
       </div>
     </nav>

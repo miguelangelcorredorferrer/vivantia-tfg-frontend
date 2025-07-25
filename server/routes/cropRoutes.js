@@ -6,6 +6,7 @@ import {
   getCropByUserId,
   getAllCropsByUserId,
   getAllCrops,
+  getAllCropsWithUsers,
   getSelectedCropByUserId,
   getCropCategories,
   updateCrop,
@@ -20,6 +21,7 @@ const router = express.Router();
 // Rutas básicas CRUD (requieren autenticación)
 router.post('/', authMiddleware, createCrop);
 router.get('/', getAllCrops); // Pública para admin
+router.get('/with-users', getAllCropsWithUsers); // Para admin con información de usuarios
 router.get('/categories', getCropCategories); // Pública
 router.get('/:id', authMiddleware, getCropById);
 router.put('/:id', authMiddleware, updateCrop);
