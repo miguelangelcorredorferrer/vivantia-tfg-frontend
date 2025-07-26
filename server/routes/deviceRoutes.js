@@ -13,13 +13,14 @@ import {
   deactivateDevice,
   deleteDevice,
   getDeviceSensorReadings,
-  getDeviceLatestReading
+  getDeviceLatestReading,
+  checkActiveDevicesForUser
 } from '../controllers/deviceController.js';
 
 const router = express.Router();
 
 // Rutas básicas CRUD (requieren autenticación)
-router.post('/', createDevice);
+router.post('/', authMiddleware, createDevice);
 router.get('/', getAllDevices); // Pública para admin
 router.get('/with-users', getAllDevicesWithUsers); // Para admin con información de usuarios
 router.get('/:id', authMiddleware, getDeviceById);
@@ -28,6 +29,7 @@ router.delete('/:id', authMiddleware, deleteDevice);
 
 // Rutas por usuario (requieren autenticación)
 router.get('/user/:user_id', authMiddleware, getDevicesByUserId);
+router.get('/user/:user_id/active', authMiddleware, checkActiveDevicesForUser);
 
 // Rutas por filtros (requieren autenticación)
 router.get('/active/all', authMiddleware, getActiveDevices);

@@ -18,7 +18,8 @@ const formData = ref({
   email: '',
   password: '',
   role: 'visitante',
-  verified: false
+  verified: false,
+  token: '' // Token como cadena vacía
 })
 
 // Estados de carga y error

@@ -265,6 +265,9 @@ export const useCropStore = defineStore('crop', () => {
       
       currentCrop.value = selectedCropData
       
+      // Forzar la reactividad para asegurar que la UI se actualice
+      crops.value = [...crops.value]
+      
       console.log('✅ CropStore: Cultivo seleccionado:', selectedCropData.name)
       return { success: true, data: selectedCropData }
     } catch (error) {
@@ -293,6 +296,9 @@ export const useCropStore = defineStore('crop', () => {
       if (currentCrop.value?.id === id) {
         currentCrop.value = { ...currentCrop.value, selected: false }
       }
+      
+      // Forzar la reactividad para asegurar que la UI se actualice
+      crops.value = [...crops.value]
       
       console.log('✅ CropStore: Cultivo deseleccionado:', deselectedCrop.name)
       return { success: true, data: deselectedCrop }

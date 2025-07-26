@@ -46,6 +46,45 @@ const handleEditDevice = (device) => {
   // Navegar a la página de edición
   navigateTo(`/admin/devices/editar/${device.id}`)
 }
+
+// Manejar activación de dispositivo
+const devicesTableRef = ref(null)
+
+const handleActivateDevice = async (device, force = false) => {
+  try {
+    const result = await adminStore.activateDeviceWithValidation(device.id, force)
+    
+    if (result.success) {
+      toast.success(result.message || 'Dispositivo activado exitosamente')
+    } else if (result.requiresConfirmation) {
+      // Mostrar modal de confirmación
+      if (devicesTableRef.value) {
+        devicesTableRef.value.showActivationConfirmation(
+          result.activeDevices,
+          device,
+          device.user
+        )
+      }
+    }
+  } catch (error) {
+    console.error('Error al activar dispositivo:', error)
+    toast.error('Error al activar dispositivo')
+  }
+}
+
+// Manejar desactivación de dispositivo
+const handleDeactivateDevice = async (device) => {
+  try {
+    const result = await adminStore.deactivateDevice(device.id)
+    
+    if (result.success) {
+      toast.success(result.message || 'Dispositivo desactivado exitosamente')
+    }
+  } catch (error) {
+    console.error('Error al desactivar dispositivo:', error)
+    toast.error('Error al desactivar dispositivo')
+  }
+}
 </script>
 
 <template>
@@ -126,10 +165,13 @@ const handleEditDevice = (device) => {
 
     <!-- Tabla de dispositivos -->
     <DevicesTable 
+      ref="devicesTableRef"
       :devices="adminStore.filteredDevices"
       :is-loading="adminStore.isLoading"
       @delete-device="handleDeleteDevice"
       @edit-device="handleEditDevice"
+      @activate-device="handleActivateDevice"
+      @deactivate-device="handleDeactivateDevice"
     />
   </div>
 </template> 

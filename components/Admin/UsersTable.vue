@@ -1,6 +1,7 @@
 <script setup>
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import DeleteConfirmModal from './DeleteConfirmModal.vue'
+import UserDeletionModal from './UserDeletionModal.vue'
 
 const props = defineProps({
   users: {
@@ -19,7 +20,13 @@ const { toast } = useToastNotifications()
 
 // Estado del modal de confirmación
 const showDeleteModal = ref(false)
+const showUserDeletionModal = ref(false)
 const userToDelete = ref(null)
+const deletionData = ref({
+  user: null,
+  stats: {},
+  totalRelatedData: 0
+})
 
 const formatDate = (dateString) => {
   const date = new Date(dateString)
@@ -75,19 +82,53 @@ const handleDeleteUser = (user) => {
 
 const confirmDelete = async () => {
   try {
-    await emit('delete-user', userToDelete.value.id)
-    toast.success('Usuario eliminado exitosamente')
+    const result = await emit('delete-user', userToDelete.value.id)
+    
+    if (result && result.requiresConfirmation) {
+      // Mostrar modal de confirmación con datos relacionados
+      deletionData.value = {
+        user: result.user,
+        stats: result.stats,
+        totalRelatedData: result.totalRelatedData
+      }
+      showDeleteModal.value = false
+      showUserDeletionModal.value = true
+    } else {
+      toast.success('Usuario eliminado exitosamente')
+      showDeleteModal.value = false
+      userToDelete.value = null
+    }
   } catch (error) {
     toast.error('Error al eliminar usuario')
-  } finally {
     showDeleteModal.value = false
     userToDelete.value = null
   }
 }
 
+const confirmUserDeletion = async () => {
+  try {
+    const result = await emit('delete-user', userToDelete.value.id, true) // force = true
+    
+    if (result && result.success) {
+      // El toast se maneja en el componente padre
+      showUserDeletionModal.value = false
+      userToDelete.value = null
+      deletionData.value = { user: null, stats: {}, totalRelatedData: 0 }
+    }
+  } catch (error) {
+    toast.error('Error al eliminar usuario')
+  } finally {
+    showUserDeletionModal.value = false
+    userToDelete.value = null
+    deletionData.value = { user: null, stats: {}, totalRelatedData: 0 }
+  }
+}
+
 const cancelDelete = () => {
   showDeleteModal.value = false
+  showUserDeletionModal.value = false
   userToDelete.value = null
+  deletionData.value = { user: null, stats: {}, totalRelatedData: 0 }
 }
 </script>
 
@@ -245,5 +286,15 @@ const cancelDelete = () => {
     item-type="usuario"
     @confirm="confirmDelete"
     @cancel="cancelDelete"
+  />
+
+  <!-- Modal de confirmación de eliminación de usuario y datos -->
+  <UserDeletionModal
+    :is-visible="showUserDeletionModal"
+    :user="deletionData.user"
+    :stats="deletionData.stats"
+    :total-related-data="deletionData.totalRelatedData"
+    @confirm="confirmUserDeletion"
+    @close="cancelDelete"
   />
 </template> 

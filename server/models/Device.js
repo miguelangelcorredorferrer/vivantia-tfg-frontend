@@ -8,6 +8,9 @@ class Device {
     this.dev_eui = data.dev_eui;
     this.app_key = data.app_key;
     this.is_active_communication = data.is_active_communication || false;
+    this.ttn_region = data.ttn_region;
+    this.ttn_app_id = data.ttn_app_id;
+    this.ttn_access_key = data.ttn_access_key;
     this.created_at = data.created_at;
   }
 
@@ -36,8 +39,26 @@ class Device {
     };
   }
 
+  // Obtener información TTN
+  getTTNInfo() {
+    return {
+      region: this.ttn_region,
+      app_id: this.ttn_app_id,
+      access_key: this.ttn_access_key,
+      dev_eui: this.dev_eui
+    };
+  }
 
+  // Verificar si tiene configuración TTN completa
+  hasTTNConfig() {
+    return !!(this.ttn_region && this.ttn_app_id && this.ttn_access_key);
+  }
 
+  // Obtener URL de la API TTN
+  getTTNApiUrl() {
+    if (!this.hasTTNConfig()) return null;
+    return `https://${this.ttn_region}.cloud.thethings.network/api/v3/as/applications/${this.ttn_app_id}/devices/${this.dev_eui}/down/push`;
+  }
 }
 
 export default Device; 

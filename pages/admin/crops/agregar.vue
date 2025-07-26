@@ -17,6 +17,8 @@ const { toast } = useToastNotifications()
 const formData = ref({
   user_id: '',
   name: '',
+  description: '',
+  image: '',
   category: '',
   humidity_min: '',
   humidity_max: '',
@@ -33,6 +35,10 @@ const users = ref([])
 const isLoading = ref(false)
 const isSaving = ref(false)
 const error = ref(null)
+
+// Variables para manejo de imagen
+const selectedImageName = ref('')
+const selectedImageFile = ref(null)
 
 // Cargar usuarios al montar el componente
 onMounted(async () => {
@@ -66,6 +72,7 @@ const handleSubmit = async () => {
     
     // Validar campos obligatorios
     if (!formData.value.user_id || !formData.value.name || 
+        !formData.value.description || !formData.value.category ||
         !formData.value.humidity_min || !formData.value.humidity_max || 
         !formData.value.temperature_max || !formData.value.growth_days || 
         !formData.value.session) {
@@ -92,6 +99,44 @@ const handleSubmit = async () => {
 // Función para cancelar y volver
 const handleCancel = () => {
   navigateTo('/admin/crops')
+}
+
+// Función para manejar el cambio de imagen
+const handleImageChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    // Validar que sea una imagen
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor selecciona un archivo de imagen válido')
+      return
+    }
+    
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen no puede superar los 5MB')
+      return
+    }
+    
+    selectedImageFile.value = file
+    selectedImageName.value = file.name
+    
+    // Convertir a base64 para enviar al backend
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      formData.value.image = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+// Función para limpiar la imagen seleccionada
+const clearImage = () => {
+  selectedImageFile.value = null
+  selectedImageName.value = ''
+  formData.value.image = ''
+  if ($refs.imageInput) {
+    $refs.imageInput.value = ''
+  }
 }
 </script>
 
@@ -187,14 +232,68 @@ const handleCancel = () => {
           <!-- Categoría -->
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
-              Categoría
+              Categoría *
             </label>
             <input
               v-model="formData.category"
               type="text"
+              required
               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Ej: Hortalizas"
             />
+          </div>
+
+          <!-- Descripción -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Descripción *
+            </label>
+            <textarea
+              v-model="formData.description"
+              rows="3"
+              required
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              placeholder="Descripción del cultivo, características especiales, cuidados necesarios..."
+            ></textarea>
+          </div>
+
+          <!-- Imagen -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Imagen del Cultivo
+            </label>
+            <div class="flex items-center space-x-4">
+              <input
+                ref="imageInput"
+                type="file"
+                accept="image/*"
+                @change="handleImageChange"
+                class="hidden"
+              />
+              <button
+                type="button"
+                @click="$refs.imageInput.click()"
+                class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-md transition-colors flex items-center space-x-2"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <span>Seleccionar Imagen</span>
+              </button>
+              <div v-if="selectedImageName" class="flex items-center space-x-2 flex-1">
+                <span class="text-green-400 text-sm">
+                  {{ selectedImageName }}
+                </span>
+                <button
+                  type="button"
+                  @click="clearImage"
+                  class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors"
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Selecciona una imagen del cultivo (opcional, máximo 5MB)</p>
           </div>
 
           <!-- Humedad mínima -->
@@ -280,7 +379,7 @@ const handleCancel = () => {
           </div>
 
           <!-- Estado de selección -->
-          <div>
+          <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-300 mb-2">
               Estado de Selección
             </label>

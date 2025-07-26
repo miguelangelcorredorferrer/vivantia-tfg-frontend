@@ -64,6 +64,15 @@ export default {
         })
     },
     
+    // Verificar dispositivos activos de un usuario
+    checkActiveDevicesForUser(userId) {
+        return $fetch(`/devices/user/${userId}/active`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    
     // Rutas por filtros
     getActiveDevices() {
         return $fetch('/devices/active/all', {
@@ -81,9 +90,10 @@ export default {
     },
     
     // Rutas de acciones
-    activateDevice(id) {
+    activateDevice(id, force = false) {
         return $fetch(`/devices/${id}/activate`, {
             method: 'PUT',
+            body: { force },
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
         })

@@ -20,6 +20,9 @@ export const useDeviceStore = defineStore('device', () => {
       appKey: backendDevice.app_key,
       isActive: backendDevice.is_active_communication,
       userId: backendDevice.user_id,
+      ttnRegion: backendDevice.ttn_region,
+      ttnAppId: backendDevice.ttn_app_id,
+      ttnAccessKey: backendDevice.ttn_access_key,
       createdAt: backendDevice.created_at
     }
   }
@@ -173,17 +176,52 @@ export const useDeviceStore = defineStore('device', () => {
         throw new Error('No tienes permisos para cambiar el estado de este dispositivo')
       }
       
-      const response = isActive 
-        ? await DeviceAPI.activateDevice(deviceId)
-        : await DeviceAPI.deactivateDevice(deviceId)
+      let response
       
-      // Actualizar el estado del dispositivo en el array
-      if (response.data) {
-        devices.value[deviceIndex].is_active_communication = isActive
-        // Si es el dispositivo actual, actualizarlo también
-        if (device.value?.id === deviceId) {
-          device.value.is_active_communication = isActive
+      if (isActive) {
+        // Si se está activando, usar la lógica de activación con validación
+        try {
+          response = await DeviceAPI.activateDevice(deviceId, false) // force = false para validación
+        } catch (error) {
+          // Si hay un error 409 (conflicto), significa que hay otro dispositivo activo
+          if (error.status === 409) {
+            // Activar con force = true para desactivar automáticamente los demás
+            response = await DeviceAPI.activateDevice(deviceId, true)
+          } else {
+            throw error
+          }
         }
+      } else {
+        // Si se está desactivando, proceder normalmente
+        response = await DeviceAPI.deactivateDevice(deviceId)
+      }
+      
+      // Actualizar el estado de todos los dispositivos en el array
+      if (response.data) {
+        // Si se activó un dispositivo, desactivar todos los demás
+        if (isActive) {
+          devices.value.forEach((device, index) => {
+            if (device.id === deviceId) {
+              devices.value[index].is_active_communication = true
+            } else {
+              devices.value[index].is_active_communication = false
+            }
+          })
+          
+          // Si es el dispositivo actual, actualizarlo también
+          if (device.value?.id === deviceId) {
+            device.value.is_active_communication = true
+          }
+        } else {
+          // Si se desactivó, solo actualizar el dispositivo específico
+          devices.value[deviceIndex].is_active_communication = false
+          if (device.value?.id === deviceId) {
+            device.value.is_active_communication = false
+          }
+        }
+        
+        // Forzar la reactividad de Vue
+        devices.value = [...devices.value]
       }
       
       console.log(`✅ Dispositivo ${isActive ? 'activado' : 'desactivado'}`)

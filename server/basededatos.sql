@@ -11,9 +11,6 @@ CREATE TYPE alert_category AS ENUM (
   'irrigation'      -- Actividad de riego
 );
 
-
-
-
 CREATE TYPE alert_subtype AS ENUM (
   -- User alerts
   'user_registered', 'user_logged_in', 'username_changed', 'password_changed',
@@ -33,6 +30,9 @@ CREATE TYPE alert_subtype AS ENUM (
 );
 
 ALTER TABLE crops DROP CONSTRAINT crops_user_id_key;
+ALTER TABLE devices ADD COLUMN ttn_region VARCHAR(10);
+ALTER TABLE devices ADD COLUMN ttn_app_id VARCHAR(100);
+ALTER TABLE devices ADD COLUMN ttn_access_key VARCHAR(255);
 
 
 CREATE TABLE users (

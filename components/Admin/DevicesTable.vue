@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import DeleteConfirmModal from '~/components/Admin/DeleteConfirmModal.vue'
+import DeviceActivationModal from '~/components/Admin/DeviceActivationModal.vue'
 import CustomSwitch from '~/components/SwitchPlugin/CustomSwitch.vue'
 
 // Props
@@ -17,7 +18,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['delete-device', 'edit-device'])
+const emit = defineEmits(['delete-device', 'edit-device', 'activate-device', 'deactivate-device'])
 
 // Composables
 const { toast } = useToastNotifications()
@@ -25,6 +26,12 @@ const { toast } = useToastNotifications()
 // Estado local
 const showDeleteModal = ref(false)
 const deviceToDelete = ref(null)
+const showActivationModal = ref(false)
+const activationModalData = ref({
+  activeDevices: [],
+  targetDevice: null,
+  targetUser: null
+})
 
 // Función para formatear fecha
 const formatDate = (dateString) => {
@@ -53,7 +60,6 @@ const handleDelete = (device) => {
 // Función para confirmar eliminación
 const confirmDelete = () => {
   if (deviceToDelete.value) {
-    // Emitir el evento para que el componente padre maneje la eliminación
     emit('delete-device', deviceToDelete.value.id)
   }
   showDeleteModal.value = false
@@ -70,6 +76,55 @@ const cancelDelete = () => {
 const handleEdit = (device) => {
   emit('edit-device', device)
 }
+
+// Función para manejar cambio de estado del switch
+const handleSwitchChange = async (device, newValue) => {
+  if (newValue) {
+    // Intentar activar el dispositivo
+    emit('activate-device', device, false) // false = no forzar inicialmente
+  } else {
+    // Desactivar el dispositivo
+    emit('deactivate-device', device)
+  }
+}
+
+// Función para mostrar modal de confirmación de activación
+const showActivationConfirmation = (activeDevices, targetDevice, targetUser) => {
+  activationModalData.value = {
+    activeDevices,
+    targetDevice,
+    targetUser
+  }
+  showActivationModal.value = true
+}
+
+// Función para confirmar activación forzada
+const confirmActivation = () => {
+  if (activationModalData.value.targetDevice) {
+    emit('activate-device', activationModalData.value.targetDevice, true) // true = forzar
+  }
+  showActivationModal.value = false
+  activationModalData.value = {
+    activeDevices: [],
+    targetDevice: null,
+    targetUser: null
+  }
+}
+
+// Función para cancelar activación
+const cancelActivation = () => {
+  showActivationModal.value = false
+  activationModalData.value = {
+    activeDevices: [],
+    targetDevice: null,
+    targetUser: null
+  }
+}
+
+// Exponer función para mostrar confirmación desde el padre
+defineExpose({
+  showActivationConfirmation
+})
 </script>
 
 <template>
@@ -136,6 +191,15 @@ const handleEdit = (device) => {
               AppKey
             </th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+              TTN Region
+            </th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+              TTN App ID
+            </th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+              TTN Access Key
+            </th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
               Estado Comunicación
             </th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -188,12 +252,28 @@ const handleEdit = (device) => {
               <div class="text-sm text-gray-400 font-mono">{{ maskAppKey(device.app_key) }}</div>
             </td>
 
+            <!-- TTN Region -->
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <div class="text-sm text-gray-300 font-mono">{{ device.ttn_region }}</div>
+            </td>
+
+            <!-- TTN App ID -->
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <div class="text-sm text-gray-300 font-mono">{{ device.ttn_app_id }}</div>
+            </td>
+
+            <!-- TTN Access Key -->
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <div class="text-sm text-gray-400 font-mono">{{ maskAppKey(device.ttn_access_key) }}</div>
+            </td>
+
             <!-- Estado Comunicación -->
             <td class="px-6 py-4 whitespace-nowrap text-center">
               <div class="flex flex-col items-center space-y-1">
                 <CustomSwitch
                   :model-value="device.is_active_communication"
-                  :disabled="true"
+                  @update:model-value="(newValue) => handleSwitchChange(device, newValue)"
+                  :disabled="isLoading"
                   label="Estado de comunicación"
                   class="scale-90"
                 />
@@ -253,5 +333,15 @@ const handleEdit = (device) => {
     :item-type="'dispositivo'"
     @confirm="confirmDelete"
     @cancel="cancelDelete"
+  />
+
+  <!-- Modal de confirmación de activación -->
+  <DeviceActivationModal
+    :is-visible="showActivationModal"
+    :active-devices="activationModalData.activeDevices"
+    :target-device="activationModalData.targetDevice"
+    :target-user="activationModalData.targetUser"
+    @confirm="confirmActivation"
+    @close="cancelActivation"
   />
 </template> 

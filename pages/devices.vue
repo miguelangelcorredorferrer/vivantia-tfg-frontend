@@ -43,7 +43,10 @@ const handleDeviceAdded = async (newDeviceData) => {
       app_eui: newDeviceData.appEui,
       dev_eui: newDeviceData.devEui,
       app_key: newDeviceData.appKey,
-      is_active_communication: false // Estado inicial inactivo
+      is_active_communication: false, // Estado inicial inactivo
+      ttn_region: newDeviceData.ttnRegion || null,
+      ttn_app_id: newDeviceData.ttnAppId || null,
+      ttn_access_key: newDeviceData.ttnAccessKey || null
     }
     
     console.log('📝 Datos a enviar:', deviceToAdd)

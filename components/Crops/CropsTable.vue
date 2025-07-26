@@ -10,7 +10,7 @@
         </div>
         <div class="flex items-center space-x-1 text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
           <component :is="getIcon('info')" />
-          <span>Solo 1 cultivo seleccionado permitido</span>
+          <span>Selección automática: al seleccionar un cultivo se deseleccionan los demás</span>
         </div>
       </div>
     </template>
@@ -129,7 +129,6 @@
                   :model-value="crop.selected"
                   :label="`Seleccionar ${crop.name}`"
                   @change="(value) => handleToggleSelection(crop.id, value)"
-                  :disabled="!crop.selected && hasSelectedCrop"
                 />
                 <span class="text-xs font-medium" :class="crop.selected ? 'text-green-400' : 'text-gray-500'">
                   {{ crop.selected ? 'Seleccionado' : 'No seleccionado' }}
@@ -144,7 +143,7 @@
                 <div class="flex flex-col items-center space-y-1">
                   <button
                     @click="handleView(crop)"
-                    class="p-2 text-gray-400 hover:text-green-400 hover:bg-green-900/20 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    class="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-900/20 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     title="Ver detalles del cultivo"
                   >
                     <component :is="getIcon('notes')" />
@@ -231,15 +230,7 @@ const hasSelectedCrop = computed(() => {
 
 // Función para manejar la selección de cultivos
 const handleToggleSelection = (cropId, value) => {
-  const crop = props.crops.find(c => c.id === cropId)
-  
-  if (value && hasSelectedCrop.value && !crop.selected) {
-    // Ya hay un cultivo seleccionado, mostrar advertencia
-    toast.warning('Solo puedes tener un cultivo seleccionado a la vez')
-    return
-  }
-  
-  // Solo emitir el evento, las alertas las maneja la página principal
+  // Permitir la selección automática - el store se encargará de deseleccionar los demás
   emit('toggle-selection', { cropId, isSelected: value })
 }
 

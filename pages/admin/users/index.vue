@@ -32,12 +32,21 @@ const handleClearFilters = () => {
 }
 
 // Manejar eliminación de usuario
-const handleDeleteUser = async (userId) => {
+const handleDeleteUser = async (userId, force = false) => {
   try {
-    await adminStore.deleteUser(userId)
-    toast.success('Usuario eliminado exitosamente')
+    const result = await adminStore.deleteUser(userId, force)
+    
+    if (result.success) {
+      toast.success(result.message || 'Usuario eliminado exitosamente')
+      return result
+    } else if (result.requiresConfirmation) {
+      // Retornar el resultado para que el componente hijo maneje la confirmación
+      return result
+    }
   } catch (error) {
+    console.error('Error al eliminar usuario:', error)
     toast.error('Error al eliminar usuario')
+    throw error
   }
 }
 </script>

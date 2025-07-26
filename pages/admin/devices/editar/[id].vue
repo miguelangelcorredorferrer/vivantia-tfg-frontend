@@ -23,7 +23,10 @@ const formData = ref({
   app_eui: '',
   dev_eui: '',
   app_key: '',
-  is_active_communication: false
+  is_active_communication: false,
+  ttn_region: '',
+  ttn_app_id: '',
+  ttn_access_key: ''
 })
 
 // Estado del usuario propietario (solo lectura)
@@ -63,7 +66,10 @@ const loadDeviceData = async () => {
       app_eui: device.app_eui || '',
       dev_eui: device.dev_eui || '',
       app_key: device.app_key || '',
-      is_active_communication: device.is_active_communication || false
+      is_active_communication: device.is_active_communication || false,
+      ttn_region: device.ttn_region || '',
+      ttn_app_id: device.ttn_app_id || '',
+      ttn_access_key: device.ttn_access_key || ''
     }
     
     // Información del usuario propietario
@@ -100,7 +106,10 @@ const handleSubmit = async () => {
       enddevice_id: formData.value.enddevice_id,
       app_eui: formData.value.app_eui,
       dev_eui: formData.value.dev_eui,
-      is_active_communication: formData.value.is_active_communication
+      is_active_communication: formData.value.is_active_communication,
+      ttn_region: formData.value.ttn_region,
+      ttn_app_id: formData.value.ttn_app_id,
+      ttn_access_key: formData.value.ttn_access_key
     }
     
     // Actualizar dispositivo
@@ -279,6 +288,76 @@ const handleCancel = () => {
               <span class="text-white">Activar comunicación</span>
             </div>
             <p class="text-xs text-gray-500 mt-1">Controla si el dispositivo puede enviar datos</p>
+          </div>
+        </div>
+
+        <!-- Separador TTN Configuration -->
+        <div class="border-t border-gray-600 pt-6">
+          <h3 class="text-lg font-medium text-white mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+            </svg>
+            Configuración TTN (The Things Network)
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- TTN Region -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                TTN Region
+              </label>
+              <select
+                v-model="formData.ttn_region"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Seleccionar región</option>
+                <option value="eu1">Europe 1 (eu1)</option>
+                <option value="nam1">North America 1 (nam1)</option>
+                <option value="au1">Australia 1 (au1)</option>
+                <option value="as1">Asia 1 (as1)</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Región del servidor TTN</p>
+            </div>
+
+            <!-- TTN App ID -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                TTN Application ID
+              </label>
+              <input
+                v-model="formData.ttn_app_id"
+                type="text"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="my-ttn-application"
+              />
+              <p class="text-xs text-gray-500 mt-1">ID de la aplicación en TTN</p>
+            </div>
+
+            <!-- TTN Access Key -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                TTN Access Key
+              </label>
+              <input
+                v-model="formData.ttn_access_key"
+                type="password"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                placeholder="••••••••••••••••"
+              />
+              <p class="text-xs text-gray-500 mt-1">Clave de acceso para la API TTN</p>
+            </div>
+          </div>
+          
+          <div class="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+            <div class="flex items-start">
+              <svg class="w-5 h-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="text-sm text-blue-300">
+                <p class="font-medium mb-1">Configuración TTN</p>
+                <p>Los campos TTN son necesarios para el control remoto de la bomba de riego a través de The Things Network.</p>
+              </div>
+            </div>
           </div>
         </div>
 

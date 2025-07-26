@@ -6,12 +6,12 @@ import { handleNotFoundError, handleBadRequestError, handleInternalServerError, 
 const createCrop = async (req, res) => {
   try {
     const {
-      name, description, image, category, growth_days,
+      user_id, name, description, image, category, growth_days,
       humidity_min, humidity_max, temperature_max, session, selected = false
     } = req.body;
 
-    // Obtener user_id del usuario autenticado
-    const user_id = req.user.id;
+    // Determinar el user_id: si se proporciona en el body (admin) o usar el usuario autenticado (usuario normal)
+    const finalUserId = user_id || req.user.id;
 
     // Validar campos obligatorios
     if (!name) {
@@ -28,7 +28,7 @@ const createCrop = async (req, res) => {
     `;
     
     const cleanValues = [
-      user_id, 
+      finalUserId, 
       name, 
       description || null, 
       image || null, 
@@ -281,8 +281,8 @@ const updateCrop = async (req, res) => {
       });
     }
 
-    // Verificar que el usuario autenticado es el propietario del cultivo
-    if (existingCrop.user_id !== authenticatedUser.id) {
+    // Verificar que el usuario autenticado es el propietario del cultivo O es administrador
+    if (existingCrop.user_id !== authenticatedUser.id && authenticatedUser.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para actualizar este cultivo'
@@ -359,8 +359,8 @@ const selectCrop = async (req, res) => {
       });
     }
 
-    // Verificar que el usuario autenticado es el propietario del cultivo
-    if (existingCrop.user_id !== authenticatedUser.id) {
+    // Verificar que el usuario autenticado es el propietario del cultivo O es administrador
+    if (existingCrop.user_id !== authenticatedUser.id && authenticatedUser.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para seleccionar este cultivo'
@@ -417,8 +417,8 @@ const deselectCrop = async (req, res) => {
       });
     }
 
-    // Verificar que el usuario autenticado es el propietario del cultivo
-    if (existingCrop.user_id !== authenticatedUser.id) {
+    // Verificar que el usuario autenticado es el propietario del cultivo O es administrador
+    if (existingCrop.user_id !== authenticatedUser.id && authenticatedUser.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para deseleccionar este cultivo'
@@ -466,8 +466,8 @@ const deleteCrop = async (req, res) => {
       });
     }
 
-    // Verificar que el usuario autenticado es el propietario del cultivo
-    if (existingCrop.user_id !== authenticatedUser.id) {
+    // Verificar que el usuario autenticado es el propietario del cultivo O es administrador
+    if (existingCrop.user_id !== authenticatedUser.id && authenticatedUser.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para eliminar este cultivo'

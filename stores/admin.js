@@ -103,23 +103,40 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
-  const deleteUser = async (userId) => {
+  const deleteUser = async (userId, force = false) => {
     try {
       isLoading.value = true
       error.value = null
       
-      await UserAPI.delete(userId)
+      const response = await UserAPI.delete(userId, force)
       
-      // Remover usuario de la lista local
-      const index = users.value.findIndex(user => user.id === userId)
-      if (index !== -1) {
-        users.value.splice(index, 1)
+      if (response.success) {
+        // Remover usuario de la lista local
+        const index = users.value.findIndex(user => user.id === userId)
+        if (index !== -1) {
+          users.value.splice(index, 1)
+        }
+        
+        console.log('✅ AdminStore: Usuario eliminado exitosamente')
+        return { success: true, message: response.message }
       }
       
-      console.log('✅ AdminStore: Usuario eliminado exitosamente')
-      return true
+      throw new Error(response.message || 'Error al eliminar usuario')
     } catch (err) {
       console.error('❌ AdminStore: Error eliminando usuario:', err)
+      
+      // Si el error es un 409 (conflicto), significa que requiere confirmación
+      if (err.status === 409 || err.statusCode === 409) {
+        return {
+          success: false,
+          requiresConfirmation: true,
+          user: err.data?.user || null,
+          stats: err.data?.stats || {},
+          totalRelatedData: err.data?.totalRelatedData || 0,
+          message: err.data?.message || 'El usuario tiene datos relacionados'
+        }
+      }
+      
       error.value = 'Error al eliminar usuario'
       throw err
     } finally {
@@ -190,22 +207,98 @@ export const useAdminStore = defineStore('admin', () => {
   const deleteDevice = async (deviceId) => {
     try {
       isLoading.value = true
-      error.value = null
+      const response = await DeviceAPI.delete(deviceId)
       
-      await DeviceAPI.delete(deviceId)
-      
-      // Remover dispositivo de la lista local
-      const index = devices.value.findIndex(device => device.id === deviceId)
-      if (index !== -1) {
-        devices.value.splice(index, 1)
+      if (response.success) {
+        devices.value = devices.value.filter(device => device.id !== deviceId)
+        return { success: true }
       }
       
-      console.log('✅ AdminStore: Dispositivo eliminado exitosamente')
-      return true
-    } catch (err) {
-      console.error('❌ AdminStore: Error eliminando dispositivo:', err)
-      error.value = 'Error al eliminar dispositivo'
-      throw err
+      throw new Error(response.message || 'Error al eliminar dispositivo')
+    } catch (error) {
+      console.error('Error al eliminar dispositivo:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Verificar dispositivos activos de un usuario
+  const checkActiveDevicesForUser = async (userId) => {
+    try {
+      const response = await DeviceAPI.checkActiveDevicesForUser(userId)
+      return response
+    } catch (error) {
+      console.error('Error al verificar dispositivos activos:', error)
+      throw error
+    }
+  }
+
+  // Activar dispositivo con validación
+  const activateDeviceWithValidation = async (deviceId, force = false) => {
+    try {
+      isLoading.value = true
+      const response = await DeviceAPI.activateDevice(deviceId, force)
+      
+      if (response.success) {
+        // Actualizar el estado del dispositivo en el store
+        const deviceIndex = devices.value.findIndex(device => device.id === deviceId)
+        if (deviceIndex !== -1) {
+          devices.value[deviceIndex].is_active_communication = true
+          
+          // Si fue una activación forzada, desactivar otros dispositivos del mismo usuario
+          if (force && devices.value[deviceIndex].user_id) {
+            const userId = devices.value[deviceIndex].user_id
+            devices.value.forEach(device => {
+              if (device.user_id === userId && device.id !== deviceId) {
+                device.is_active_communication = false
+              }
+            })
+          }
+        }
+        return { success: true, data: response.data, message: response.message }
+      }
+      
+      throw new Error(response.message || 'Error al activar dispositivo')
+    } catch (error) {
+      console.error('Error al activar dispositivo:', error)
+      
+      // Si el error es un 409 (conflicto), significa que requiere confirmación
+      if (error.status === 409 || error.statusCode === 409) {
+        return {
+          success: false,
+          requiresConfirmation: true,
+          activeDevices: error.data?.activeDevices || [],
+          targetDevice: error.data?.targetDevice || null,
+          message: error.data?.message || 'El usuario ya tiene un dispositivo activo'
+        }
+      }
+      
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Desactivar dispositivo
+  const deactivateDevice = async (deviceId) => {
+    try {
+      isLoading.value = true
+      const response = await DeviceAPI.deactivateDevice(deviceId)
+      
+      if (response.success) {
+        // Actualizar el estado del dispositivo en el store
+        const deviceIndex = devices.value.findIndex(device => device.id === deviceId)
+        if (deviceIndex !== -1) {
+          devices.value[deviceIndex].is_active_communication = false
+        }
+        return { success: true, data: response.data, message: response.message }
+      }
+      
+      throw new Error(response.message || 'Error al desactivar dispositivo')
+    } catch (error) {
+      console.error('Error al desactivar dispositivo:', error)
+      throw error
     } finally {
       isLoading.value = false
     }
@@ -301,6 +394,9 @@ export const useAdminStore = defineStore('admin', () => {
     deleteCrop,
     fetchAllDevices,
     deleteDevice,
+    checkActiveDevicesForUser,
+    activateDeviceWithValidation,
+    deactivateDevice,
     updateFilters,
     updateCropFilters,
     updateDeviceFilters,

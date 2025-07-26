@@ -6,12 +6,34 @@ import { handleNotFoundError, handleBadRequestError, handleInternalServerError, 
 const createDevice = async (req, res) => {
   try {
     const {
-      user_id, device_name, enddevice_id, app_eui, dev_eui, app_key, is_active_communication = false
+      user_id, device_name, enddevice_id, app_eui, dev_eui, app_key, is_active_communication = false,
+      ttn_region, ttn_app_id, ttn_access_key
     } = req.body;
 
+    // Determinar el user_id: si se proporciona en el body (admin) o usar el usuario autenticado (usuario normal)
+    const finalUserId = user_id || req.user.id;
+
     // Validar campos obligatorios
-    if (!user_id || !device_name || !enddevice_id || !app_eui || !dev_eui || !app_key) {
+    if (!device_name || !enddevice_id || !app_eui || !dev_eui || !app_key) {
       return handleBadRequestError('Todos los campos obligatorios deben ser proporcionados', res);
+    }
+
+    // Validar formato hexadecimal de AppEUI (16 caracteres)
+    const appEuiRegex = /^[A-Fa-f0-9]{16}$/;
+    if (!appEuiRegex.test(app_eui)) {
+      return handleBadRequestError('AppEUI debe tener exactamente 16 caracteres hexadecimales', res);
+    }
+
+    // Validar formato hexadecimal de DevEUI (16 caracteres)
+    const devEuiRegex = /^[A-Fa-f0-9]{16}$/;
+    if (!devEuiRegex.test(dev_eui)) {
+      return handleBadRequestError('DevEUI debe tener exactamente 16 caracteres hexadecimales', res);
+    }
+
+    // Validar formato hexadecimal de AppKey (32 caracteres)
+    const appKeyRegex = /^[A-Fa-f0-9]{32}$/;
+    if (!appKeyRegex.test(app_key)) {
+      return handleBadRequestError('AppKey debe tener exactamente 32 caracteres hexadecimales', res);
     }
 
     // Verificar que no exista un dispositivo con el mismo enddevice_id
@@ -48,13 +70,17 @@ const createDevice = async (req, res) => {
 
     const query = `
       INSERT INTO devices (
-        user_id, device_name, enddevice_id, app_eui, dev_eui, app_key, is_active_communication
+        user_id, device_name, enddevice_id, app_eui, dev_eui, app_key, is_active_communication,
+        ttn_region, ttn_app_id, ttn_access_key
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
     
-    const values = [user_id, device_name, enddevice_id, app_eui, dev_eui, app_key, is_active_communication];
+    const values = [
+      finalUserId, device_name, enddevice_id, app_eui, dev_eui, app_key, is_active_communication,
+      ttn_region, ttn_app_id, ttn_access_key
+    ];
     
     const result = await pool.query(query, values);
     const device = new Device(result.rows[0]);
@@ -258,6 +284,7 @@ const updateDevice = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+    const authenticatedUser = req.user;
 
     // Verificar si el dispositivo existe
     const existingDevice = await findDeviceById(id);
@@ -265,6 +292,14 @@ const updateDevice = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Dispositivo no encontrado'
+      });
+    }
+
+    // Verificar permisos: el usuario debe ser el propietario del dispositivo o un administrador
+    if (existingDevice.user_id !== authenticatedUser.id && authenticatedUser.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para realizar esta acción'
       });
     }
 
@@ -322,10 +357,76 @@ const updateDevice = async (req, res) => {
   }
 };
 
+// Verificar dispositivos activos de un usuario
+const checkActiveDevicesForUser = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    
+    const query = 'SELECT * FROM devices WHERE user_id = $1 AND is_active_communication = true';
+    const result = await pool.query(query, [user_id]);
+    
+    const activeDevices = result.rows.map(row => new Device(row));
+
+    res.status(200).json({
+      success: true,
+      count: activeDevices.length,
+      data: activeDevices
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al verificar dispositivos activos',
+      error: error.message
+    });
+  }
+};
+
 // Activar comunicación del dispositivo
 const activateDevice = async (req, res) => {
   try {
     const { id } = req.params;
+    const { force = false } = req.body; // Parámetro para forzar la activación
+    const authenticatedUser = req.user;
+
+    // Verificar si el dispositivo existe
+    const existingDevice = await findDeviceById(id);
+    if (!existingDevice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dispositivo no encontrado'
+      });
+    }
+
+    // Verificar permisos: el usuario debe ser el propietario del dispositivo o un administrador
+    if (existingDevice.user_id !== authenticatedUser.id && authenticatedUser.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para realizar esta acción'
+      });
+    }
+
+    // Si no es force, verificar si ya hay dispositivos activos del mismo usuario
+    if (!force) {
+      const activeDevicesQuery = 'SELECT * FROM devices WHERE user_id = $1 AND is_active_communication = true AND id != $2';
+      const activeDevicesResult = await pool.query(activeDevicesQuery, [existingDevice.user_id, id]);
+      
+      if (activeDevicesResult.rows.length > 0) {
+        const activeDevices = activeDevicesResult.rows.map(row => new Device(row));
+        return res.status(409).json({
+          success: false,
+          message: 'El usuario ya tiene un dispositivo activo',
+          requiresConfirmation: true,
+          activeDevices: activeDevices,
+          targetDevice: existingDevice
+        });
+      }
+    }
+
+    // Si es force=true, desactivar todos los demás dispositivos del usuario
+    if (force) {
+      const deactivateOthersQuery = 'UPDATE devices SET is_active_communication = false WHERE user_id = $1 AND id != $2';
+      await pool.query(deactivateOthersQuery, [existingDevice.user_id, id]);
+    }
 
     const query = 'UPDATE devices SET is_active_communication = true WHERE id = $1 RETURNING *';
     const result = await pool.query(query, [id]);
@@ -341,7 +442,9 @@ const activateDevice = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Dispositivo activado exitosamente',
+      message: force 
+        ? 'Dispositivo activado exitosamente. Los demás dispositivos del usuario han sido desactivados.' 
+        : 'Dispositivo activado exitosamente',
       data: activatedDevice
     });
   } catch (error) {
@@ -357,6 +460,24 @@ const activateDevice = async (req, res) => {
 const deactivateDevice = async (req, res) => {
   try {
     const { id } = req.params;
+    const authenticatedUser = req.user;
+
+    // Verificar si el dispositivo existe
+    const existingDevice = await findDeviceById(id);
+    if (!existingDevice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Dispositivo no encontrado'
+      });
+    }
+
+    // Verificar permisos: el usuario debe ser el propietario del dispositivo o un administrador
+    if (existingDevice.user_id !== authenticatedUser.id && authenticatedUser.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para realizar esta acción'
+      });
+    }
 
     const query = 'UPDATE devices SET is_active_communication = false WHERE id = $1 RETURNING *';
     const result = await pool.query(query, [id]);
@@ -388,6 +509,7 @@ const deactivateDevice = async (req, res) => {
 const deleteDevice = async (req, res) => {
   try {
     const { id } = req.params;
+    const authenticatedUser = req.user;
 
     // Verificar si el dispositivo existe
     const existingDevice = await findDeviceById(id);
@@ -395,6 +517,14 @@ const deleteDevice = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Dispositivo no encontrado'
+      });
+    }
+
+    // Verificar permisos: el usuario debe ser el propietario del dispositivo o un administrador
+    if (existingDevice.user_id !== authenticatedUser.id && authenticatedUser.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para realizar esta acción'
       });
     }
 
@@ -510,6 +640,7 @@ export {
   getAllDevices,
   getAllDevicesWithUsers,
   getActiveDevices,
+  checkActiveDevicesForUser,
   updateDevice,
   activateDevice,
   deactivateDevice,

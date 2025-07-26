@@ -40,9 +40,21 @@ export default {
             headers: getAuthHeaders()
         })
     },
-    delete(id) {
-        return $fetch(`/users/${id}`, {
+    // Eliminar usuario
+    delete(userId, force = false) {
+        return $fetch(`/users/${userId}`, {
             method: 'DELETE',
+            body: { force },
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+
+    // Eliminar cuenta propia
+    deleteOwnAccount(password) {
+        return $fetch('/users/account/delete', {
+            method: 'DELETE',
+            body: { password },
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
         })
