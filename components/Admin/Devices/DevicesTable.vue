@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import DeleteConfirmModal from '~/components/Admin/DeleteConfirmModal.vue'
-import DeviceActivationModal from '~/components/Admin/DeviceActivationModal.vue'
+import DeleteConfirmModal from '../DeleteConfirmModal.vue'
+import DeviceActivationModal from './DeviceActivationModal.vue'
 import CustomSwitch from '~/components/SwitchPlugin/CustomSwitch.vue'
 
 // Props
@@ -139,7 +139,7 @@ defineExpose({
           </p>
         </div>
         <button
-          @click="navigateTo('/admin/devices/agregar')"
+          @click="navigateTo('/admin/dispositivos/agregar')"
           class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
         >
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

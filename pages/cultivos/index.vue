@@ -113,7 +113,7 @@ watch(() => userStore.user?.id, async (userId) => {
           <p class="text-gray-400 mt-2">Gestiona y configura tus cultivos para el sistema de riego automatizado</p>
         </div>
         <NuxtLink 
-          to="/cultivos/agregar/agregarCultivo"
+          to="/cultivos/agregar"
           class="group inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 transform hover:scale-105"
         >
           <svg class="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">

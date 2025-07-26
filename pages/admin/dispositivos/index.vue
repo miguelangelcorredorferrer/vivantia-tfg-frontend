@@ -1,8 +1,8 @@
 <script setup>
 import { useAdminStore } from '~/stores/admin'
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import DevicesFilter from '~/components/Admin/DevicesFilter.vue'
-import DevicesTable from '~/components/Admin/DevicesTable.vue'
+import DevicesFilter from '~/components/Admin/Devices/DevicesFilter.vue'
+import DevicesTable from '~/components/Admin/Devices/DevicesTable.vue'
 
 // Configurar middleware de administrador
 definePageMeta({
@@ -44,7 +44,7 @@ const handleDeleteDevice = async (deviceId) => {
 // Manejar edición de dispositivo
 const handleEditDevice = (device) => {
   // Navegar a la página de edición
-  navigateTo(`/admin/devices/editar/${device.id}`)
+  navigateTo(`/admin/dispositivos/editar/${device.id}`)
 }
 
 // Manejar activación de dispositivo

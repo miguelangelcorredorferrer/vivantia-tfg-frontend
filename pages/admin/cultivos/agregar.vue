@@ -85,7 +85,7 @@ const handleSubmit = async () => {
     toast.success('Cultivo creado exitosamente')
     
     // Redirigir de vuelta a la lista de cultivos
-    await navigateTo('/admin/crops')
+    await navigateTo('/admin/cultivos')
     
   } catch (err) {
     console.error('❌ Error creando cultivo:', err)
@@ -98,7 +98,7 @@ const handleSubmit = async () => {
 
 // Función para cancelar y volver
 const handleCancel = () => {
-  navigateTo('/admin/crops')
+  navigateTo('/admin/cultivos')
 }
 
 // Función para manejar el cambio de imagen

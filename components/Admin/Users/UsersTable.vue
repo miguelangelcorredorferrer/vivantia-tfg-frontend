@@ -1,6 +1,6 @@
 <script setup>
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import DeleteConfirmModal from './DeleteConfirmModal.vue'
+import DeleteConfirmModal from '../DeleteConfirmModal.vue'
 import UserDeletionModal from './UserDeletionModal.vue'
 
 const props = defineProps({
@@ -144,7 +144,7 @@ const cancelDelete = () => {
           </p>
         </div>
         <button
-          @click="navigateTo('/admin/users/agregar')"
+          @click="navigateTo('/admin/usuarios/agregar')"
           class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md transition-colors"
         >
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,7 +249,7 @@ const cancelDelete = () => {
             <td class="px-6 py-4 whitespace-nowrap text-center">
               <div class="flex items-center justify-center space-x-2">
                 <button
-                  @click="navigateTo(`/admin/users/editar/${user.id}`)"
+                  @click="navigateTo(`/admin/usuarios/editar/${user.id}`)"
                   class="inline-flex items-center px-2 py-1 text-yellow-400 border border-yellow-400 rounded-md hover:bg-yellow-400/10 transition-colors"
                   title="Editar usuario"
                 >

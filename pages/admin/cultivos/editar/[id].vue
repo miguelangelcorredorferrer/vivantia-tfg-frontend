@@ -51,11 +51,11 @@ onMounted(async () => {
       }
     } else {
       toast.error('Cultivo no encontrado')
-      router.push('/admin/crops')
+      router.push('/admin/cultivos')
     }
   } catch (error) {
     toast.error('Error al cargar cultivo')
-    router.push('/admin/crops')
+    router.push('/admin/cultivos')
   } finally {
     isLoading.value = false
   }
@@ -91,7 +91,7 @@ const saveCrop = async () => {
     await adminStore.fetchAllCrops()
     
     toast.success('Cultivo actualizado exitosamente')
-    router.push('/admin/crops')
+    router.push('/admin/cultivos')
   } catch (error) {
     console.error('Error al actualizar cultivo:', error)
     toast.error('Error al actualizar cultivo')
@@ -101,7 +101,7 @@ const saveCrop = async () => {
 }
 
 const goBack = () => {
-  router.push('/admin/crops')
+  router.push('/admin/cultivos')
 }
 
 const resetForm = () => {

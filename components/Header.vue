@@ -8,7 +8,7 @@ const userStore = useUserStore()
 
 // Función para ir al perfil
 const goToProfile = () => {
-  navigateTo('/profile')
+  navigateTo('/perfil')
 }
 </script>
 

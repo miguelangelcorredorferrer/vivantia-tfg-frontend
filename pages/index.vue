@@ -13,7 +13,7 @@ const userStore = useUserStore()
     if (userStore.isAuthenticated && userStore.user?.verified) {
       // Si es admin, redirigir directamente a gestión de usuarios
       if (userStore.isAdmin) {
-        await navigateTo('/admin/users')
+        await navigateTo('/admin/usuarios')
       } else {
         // Si es usuario normal, redirigir al dashboard
         await navigateTo('/dashboard')

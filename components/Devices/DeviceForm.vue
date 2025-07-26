@@ -215,7 +215,7 @@ const handleSubmit = async () => {
   isLoading.value = true
   
   try {
-    // Emitir evento con los datos del dispositivo para que pages/devices.vue lo maneje
+    // Emitir evento con los datos del dispositivo para que pages/dispositivos.vue lo maneje
     emit('device-added', { ...formData })
     
     // Mostrar toast de éxito

@@ -25,11 +25,11 @@ onMounted(async () => {
       crop.value = foundCrop
     } else {
       toast.error('Cultivo no encontrado')
-      router.push('/admin/crops')
+      router.push('/admin/cultivos')
     }
   } catch (error) {
     toast.error('Error al cargar cultivo')
-    router.push('/admin/crops')
+    router.push('/admin/cultivos')
   } finally {
     isLoading.value = false
   }
@@ -57,7 +57,7 @@ const getSelectedBadgeClass = (selected) => {
 }
 
 const goBack = () => {
-  router.push('/admin/crops')
+  router.push('/admin/cultivos')
 }
 </script>
 

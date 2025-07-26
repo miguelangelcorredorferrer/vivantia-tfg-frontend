@@ -23,8 +23,8 @@ const currentDate = computed(() => {
         <!-- Información del desarrollador -->
         <div class="mb-2 md:mb-0">
           <p class="text-xs">
-            Desarrollado por <span class="font-semibold text-white">Tu Nombre</span>
-            <span class="text-gray-500 ml-2">© 2024 IoT Dashboard</span>
+            Desarrollado por <span class="font-semibold text-white">Miguel Ángel Corredor Ferrer (i12cofem@uco.es)</span>
+            <span class="text-gray-500 ml-2">|  2025 Agronomía Inteligente</span>
           </p>
         </div>
 

@@ -39,9 +39,9 @@ const userStore = useUserStore()
         
         <SidebarItem 
           icon="devices" 
-          label="Devices" 
-          to="/devices" 
-          :active="$route.path === '/devices'"
+          label="Dispositivos" 
+          to="/dispositivos" 
+          :active="$route.path === '/dispositivos'"
         />
         
         <SidebarItem 
@@ -71,22 +71,22 @@ const userStore = useUserStore()
         <SidebarItem 
           icon="users" 
           label="Gestión de Usuarios" 
-          to="/admin/users" 
-          :active="$route.path === '/admin/users'"
+          to="/admin/usuarios" 
+          :active="$route.path === '/admin/usuarios'"
         />
         
         <SidebarItem 
           icon="plant" 
           label="Gestión de Cultivos" 
-          to="/admin/crops" 
-          :active="$route.path === '/admin/crops'"
+          to="/admin/cultivos" 
+          :active="$route.path === '/admin/cultivos'"
         />
         
         <SidebarItem 
           icon="devices" 
           label="Gestión de Dispositivos" 
-          to="/admin/devices" 
-          :active="$route.path === '/admin/devices'"
+          to="/admin/dispositivos" 
+          :active="$route.path === '/admin/dispositivos'"
         />
         
         <SidebarItem 

@@ -1,8 +1,8 @@
 <script setup>
 import { useAdminStore } from '~/stores/admin'
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import UsersFilter from '~/components/Admin/UsersFilter.vue'
-import UsersTable from '~/components/Admin/UsersTable.vue'
+import UsersFilter from '~/components/Admin/Users/UsersFilter.vue'
+import UsersTable from '~/components/Admin/Users/UsersTable.vue'
 
 // Configurar middleware de administrador
 definePageMeta({

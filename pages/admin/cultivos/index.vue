@@ -1,8 +1,8 @@
 <script setup>
 import { useAdminStore } from '~/stores/admin'
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import CropsFilter from '~/components/Admin/CropsFilter.vue'
-import CropsTable from '~/components/Admin/CropsTable.vue'
+import CropsFilter from '~/components/Admin/Crops/CropsFilter.vue'
+import CropsTable from '~/components/Admin/Crops/CropsTable.vue'
 
 // Configurar middleware de administrador
 definePageMeta({

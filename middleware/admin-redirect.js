@@ -15,6 +15,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   // Si el usuario está autenticado y es admin, redirigir a gestión de usuarios
   if (userStore.isAuthenticated && userStore.isAdmin) {
     console.log('🔄 Admin redirect: Redirigiendo admin del dashboard a gestión de usuarios')
-    return navigateTo('/admin/users')
+    return navigateTo('/admin/usuarios')
   }
 }) 

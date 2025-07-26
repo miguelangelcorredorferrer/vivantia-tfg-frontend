@@ -1,6 +1,6 @@
 <script setup>
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import DeleteConfirmModal from './DeleteConfirmModal.vue'
+import DeleteConfirmModal from '../DeleteConfirmModal.vue'
 
 const props = defineProps({
   crops: {
@@ -66,12 +66,12 @@ const cancelDelete = () => {
 
 const handleEditCrop = (crop) => {
   // Navegar a la página de edición
-  navigateTo(`/admin/crops/editar/${crop.id}`)
+  navigateTo(`/admin/cultivos/editar/${crop.id}`)
 }
 
 const handleViewCrop = (crop) => {
   // Navegar a la página de visualización
-  navigateTo(`/admin/crops/ver/${crop.id}`)
+  navigateTo(`/admin/cultivos/ver/${crop.id}`)
 }
 </script>
 
@@ -87,7 +87,7 @@ const handleViewCrop = (crop) => {
           </p>
         </div>
         <button
-          @click="navigateTo('/admin/crops/agregar')"
+          @click="navigateTo('/admin/cultivos/agregar')"
           class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
         >
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
