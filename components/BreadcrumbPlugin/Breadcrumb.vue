@@ -14,15 +14,10 @@
         
         <!-- Elemento del breadcrumb -->
         <div class="flex items-center">
-          <component 
-            :is="item.clickable ? 'NuxtLink' : 'span'"
-            :to="item.clickable ? item.to : undefined"
-            class="flex items-center space-x-1 transition-colors duration-200"
-            :class="[
-              item.clickable 
-                ? 'text-gray-400 hover:text-white cursor-pointer' 
-                : 'text-white font-medium'
-            ]"
+          <NuxtLink
+            v-if="item.clickable"
+            :to="item.to"
+            class="flex items-center space-x-1 transition-colors duration-200 text-gray-400 hover:text-white cursor-pointer"
           >
             <!-- Icono -->
             <component 
@@ -33,7 +28,22 @@
             
             <!-- Texto -->
             <span>{{ item.label }}</span>
-          </component>
+          </NuxtLink>
+          
+          <span
+            v-else
+            class="flex items-center space-x-1 text-white font-medium"
+          >
+            <!-- Icono -->
+            <component 
+              :is="item.icon" 
+              class="w-4 h-4 flex-shrink-0"
+              v-if="item.icon"
+            />
+            
+            <!-- Texto -->
+            <span>{{ item.label }}</span>
+          </span>
         </div>
       </li>
     </ol>
@@ -48,36 +58,134 @@ const route = useRoute()
 
 const breadcrumbItems = computed(() => {
   const items = []
+  const pathSegments = route.path.split('/').filter(segment => segment)
   
   // Mapear nombres de rutas a etiquetas legibles
   const routeLabels = {
     'dashboard': 'Dashboard',
+    'dispositivos': 'Dispositivos',
     'devices': 'Dispositivos',
-    'widgets': 'Widgets',
     'cultivos': 'Cultivos',
+    'crops': 'Cultivos',
+    'modo': 'Modos de Riego',
+    'modos': 'Modos de Riego',
+    'automatico': 'Modo Automático',
+    'manual': 'Modo Manual',
+    'programado': 'Modo Programado',
+    'alertas': 'Alertas',
+    'alerts': 'Alertas',
+    'perfil': 'Perfil',
+    'profile': 'Perfil',
+    'admin': 'Administración',
+    'usuarios': 'Usuarios',
+    'users': 'Usuarios',
+    'agregar': 'Agregar',
+    'add': 'Agregar',
+    'editar': 'Editar',
+    'edit': 'Editar',
+    'ver': 'Ver',
+    'view': 'Ver',
     'analytics': 'Analytics',
+    'widgets': 'Widgets',
     'settings': 'Configuración'
   }
   
-  // Obtener la ruta actual sin el '/' inicial
-  const currentRoute = route.path.substring(1)
+  // Mapear rutas a iconos
+  const routeIcons = {
+    'dashboard': 'home',
+    'dispositivos': 'device',
+    'devices': 'device',
+    'cultivos': 'plant',
+    'crops': 'plant',
+    'modo': 'watering',
+    'modos': 'watering',
+    'automatico': 'automatic',
+    'manual': 'manual',
+    'programado': 'programmed',
+    'alertas': 'warning',
+    'alerts': 'warning',
+    'perfil': 'user',
+    'profile': 'user',
+    'admin': 'dashboard',
+    'usuarios': 'user',
+    'users': 'user',
+    'agregar': 'edit',
+    'add': 'edit',
+    'editar': 'edit',
+    'edit': 'edit',
+    'ver': 'home',
+    'view': 'home',
+    'analytics': 'dashboard',
+    'widgets': 'dashboard',
+    'settings': 'dashboard'
+  }
   
-  // Si estamos en la página principal (dashboard), solo mostrar Dashboard
-  if (currentRoute === 'dashboard') {
-    items.push({
-      label: routeLabels['dashboard'],
-      to: '/dashboard',
-      icon: getIcon('dashboard'),
-      clickable: false
-    })
-  } else {
+  // Construir breadcrumb jerárquico
+  let currentPath = ''
+  
+  for (let i = 0; i < pathSegments.length; i++) {
+    const segment = pathSegments[i]
+    currentPath += `/${segment}`
     
-    // Agregar la página actual (no clickeable)
+    // Determinar si es clickeable (todos excepto el último)
+    const isClickable = i < pathSegments.length - 1
+    
+    // Obtener etiqueta
+    let label = routeLabels[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
+    
+    // Si es un ID (número), mostrar la acción correspondiente
+    if (!isNaN(segment) && i > 0) {
+      const parentSegment = pathSegments[i - 1]
+      if (parentSegment === 'editar' || parentSegment === 'edit') {
+        label = 'Editar Cultivo'
+      } else if (parentSegment === 'ver' || parentSegment === 'view') {
+        label = 'Ver Cultivo'
+      } else if (parentSegment === 'usuarios' || parentSegment === 'users') {
+        label = 'Editar Usuario'
+      } else if (parentSegment === 'dispositivos' || parentSegment === 'devices') {
+        label = 'Editar Dispositivo'
+      } else {
+        label = 'Detalles'
+      }
+    }
+    
+    // Obtener icono
+    let iconName = routeIcons[segment] || 'home'
+    
+    // Si es un ID, usar el icono de la acción correspondiente
+    if (!isNaN(segment) && i > 0) {
+      const parentSegment = pathSegments[i - 1]
+      if (parentSegment === 'editar' || parentSegment === 'edit') {
+        iconName = 'edit'
+      } else if (parentSegment === 'ver' || parentSegment === 'view') {
+        iconName = 'home'
+      } else {
+        iconName = 'edit'
+      }
+    }
+    
+    // Solo agregar si no es un segmento de acción (editar, ver) cuando va seguido de un ID
+    const nextSegment = pathSegments[i + 1]
+    const isActionSegment = (segment === 'editar' || segment === 'edit' || segment === 'ver' || segment === 'view')
+    const nextIsId = nextSegment && !isNaN(nextSegment)
+    
+    if (!(isActionSegment && nextIsId)) {
+      items.push({
+        label,
+        to: currentPath,
+        icon: getIcon(iconName),
+        clickable: isClickable
+      })
+    }
+  }
+  
+  // Si no hay elementos, agregar Dashboard como inicio
+  if (items.length === 0) {
     items.push({
-      label: routeLabels[currentRoute] || currentRoute.charAt(0).toUpperCase() + currentRoute.slice(1),
-      to: `/${currentRoute}`,
-      icon: getIcon(currentRoute),
-      clickable: true
+      label: 'Dashboard',
+      to: '/dashboard',
+      icon: getIcon('home'),
+      clickable: false
     })
   }
   

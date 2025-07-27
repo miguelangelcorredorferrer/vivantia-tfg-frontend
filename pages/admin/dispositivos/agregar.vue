@@ -4,9 +4,9 @@ import { useToastNotifications } from '~/composables/useToastNotifications'
 import DeviceAPI from '~/api/DeviceAPI'
 import UserAPI from '~/api/UserAPI'
 
-// Configurar middleware de administrador
+// Configurar middleware
 definePageMeta({
-  middleware: 'admin'
+  middleware: ['auth', 'admin', 'visitor-block']
 })
 
 // Stores y composables

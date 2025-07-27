@@ -7,9 +7,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   // Solo aplicar si estamos intentando acceder al dashboard
   if (to.path !== '/dashboard') return
   
-  // Esperar a que el store esté inicializado
-  if (!userStore.isInitialized) {
-    await userStore.init()
+  // Si está en modo demo, no redirigir
+  if (userStore.isDemoMode) {
+    console.log('🎭 Admin redirect: Modo demo activo, no redirigir')
+    return
   }
   
   // Si el usuario está autenticado y es admin, redirigir a gestión de usuarios

@@ -4,9 +4,9 @@ import { useToastNotifications } from '~/composables/useToastNotifications'
 import { AlertsIcon } from '~/assets/icons'
 import AlertsTable from '~/components/Alerts/AlertsTable.vue'
 
-// Configurar middleware de autenticación
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 
 // Meta del documento

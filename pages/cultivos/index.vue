@@ -6,9 +6,9 @@ import { useUserStore } from '~/stores/user'
 import CropsFilter from '~/components/Crops/CropsFilter.vue'
 import CropsTable from '~/components/Crops/CropsTable.vue'
 
-// Configurar middleware de autenticación
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 
 const { toast } = useToastNotifications()

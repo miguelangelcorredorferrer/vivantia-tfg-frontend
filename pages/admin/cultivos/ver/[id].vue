@@ -2,9 +2,9 @@
 import { useAdminStore } from '~/stores/admin'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 
-// Configurar middleware de administrador
+// Configurar middleware
 definePageMeta({
-  middleware: 'admin'
+  middleware: ['auth', 'admin', 'visitor-block']
 })
 
 const route = useRoute()

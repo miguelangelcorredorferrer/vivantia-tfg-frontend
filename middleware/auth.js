@@ -8,7 +8,22 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   
   console.log('🔄 Middleware auth: Verificando acceso a:', to.path)
   
+  // Verificar si está en modo demo PRIMERO
+  if (userStore.isDemoMode) {
+    console.log('🎭 Middleware auth: Modo demo activo, permitiendo acceso')
+    return
+  }
+  
   const savedToken = localStorage.getItem('AUTH_TOKEN')
+  const demoMode = localStorage.getItem('DEMO_MODE')
+  
+  // Si hay modo demo guardado en localStorage, activarlo
+  if (demoMode === 'true') {
+    console.log('🎭 Middleware auth: Activando modo demo desde localStorage')
+    userStore.enterDemoMode()
+    return
+  }
+  
   console.log('🔍 Middleware auth: localStorage token =', !!savedToken)
   console.log('🔍 Middleware auth: userStore.token =', !!userStore.token)
   console.log('🔍 Middleware auth: userStore.user =', !!userStore.user)
@@ -42,8 +57,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
   }
   
-  // Solo verificar si NO hay token en absoluto (ni en store ni en localStorage)  
-  if (!userStore.token && !savedToken) {
+  // Solo verificar si NO hay token en absoluto (ni en store ni en localStorage) Y no está en modo demo  
+  if (!userStore.token && !savedToken && !userStore.isDemoMode) {
     console.log('❌ Middleware auth: No hay token, redirigiendo al login')
     return navigateTo('/auth/login')
   }
@@ -54,14 +69,14 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return // Permitir acceso mientras se inicializa
   }
   
-  // Si el usuario está autenticado pero no verificado
-  if (userStore.user && !userStore.user.verified) {
+  // Si el usuario está autenticado pero no verificado (excluyendo modo demo)
+  if (userStore.user && !userStore.user.verified && !userStore.isDemoMode) {
     console.log('❌ Middleware auth: Cuenta no verificada')
     return navigateTo('/auth/verify-email')
   }
   
-  // Si no está autenticado después de la inicialización
-  if (!userStore.isAuthenticated) {
+  // Si no está autenticado después de la inicialización (excluyendo modo demo)
+  if (!userStore.isAuthenticated && !userStore.isDemoMode) {
     console.log('❌ Middleware auth: Usuario no autenticado')
     return navigateTo('/auth/login')
   }

@@ -1,34 +1,12 @@
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="mb-8">
-      <nav class="flex mb-4" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
-          <li class="inline-flex items-center">
-            <nuxt-link 
-              to="/cultivos" 
-              class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-white transition-colors"
-            >
-              <component :is="getIcon('plant')" class="w-4 h-4 mr-2" />
-              Cultivos
-            </nuxt-link>
-          </li>
-          <li>
-            <div class="flex items-center">
-              <component :is="getIcon('breadcrumbArrow')" class="w-6 h-6 text-gray-400" />
-              <span class="ml-1 text-sm font-medium text-gray-300">Agregar</span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-      
-      <h1 class="text-3xl font-bold text-white">
-        Agregar Cultivo
-      </h1>
-      <p class="text-gray-400 mt-2">
-        Configura un nuevo cultivo para el sistema de riego automatizado
-      </p>
-    </div>
+  <div class="space-y-8">
+    <!-- Título de la página -->
+    <h1 class="text-3xl font-bold text-white">
+      Agregar Cultivo
+    </h1>
+    <p class="text-gray-400 text-lg">
+      Configura un nuevo cultivo para el sistema de riego automatizado
+    </p>
 
     <!-- Formulario de creación -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -370,8 +348,8 @@
 
 <script setup>
 definePageMeta({
-  middleware: 'auth'
-})
+  middleware: ['auth', 'visitor-block']
+}) 
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToastNotifications } from '~/composables/useToastNotifications'

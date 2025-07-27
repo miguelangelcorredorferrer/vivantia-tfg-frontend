@@ -1,34 +1,12 @@
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
+  <div class="space-y-8">
+    <!-- Título de la página -->
     <div class="mb-8">
-      <nav class="flex mb-4" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
-          <li class="inline-flex items-center">
-            <nuxt-link 
-              to="/cultivos" 
-              class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-white transition-colors"
-            >
-              <component :is="getIcon('plant')" class="w-4 h-4 mr-2" />
-              Cultivos
-            </nuxt-link>
-          </li>
-          <li>
-            <div class="flex items-center">
-              <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-              </svg>
-              <span class="ml-1 text-sm font-medium text-gray-300">Editar</span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-      
       <h1 class="text-3xl font-bold text-white">
         Editar Cultivo: {{ crop?.name || 'Cargando...' }}
       </h1>
-      <p class="text-gray-400 mt-2">
-        Modifica las propiedades del cultivo para optimizar el sistema de riego
+      <p class="text-gray-400 text-lg">
+        Modifica la configuración del cultivo seleccionado
       </p>
     </div>
 
@@ -400,9 +378,9 @@ import { useUserStore } from '~/stores/user'
 import { getIcon } from '~/assets/icons'
 import BaseCard from '~/components/Cards/BaseCard.vue'
 
-// Middleware de autenticación
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 
 const route = useRoute()

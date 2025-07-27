@@ -192,8 +192,9 @@
 </template>
 
 <script setup>
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { useIrrigationModes } from '~/composables/useIrrigationModes'

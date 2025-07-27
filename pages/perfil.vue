@@ -3,9 +3,9 @@ import { ref, reactive } from 'vue'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import UserAPI from '~/api/UserAPI'
 
-// Configurar middleware de autenticación
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 
 // Stores

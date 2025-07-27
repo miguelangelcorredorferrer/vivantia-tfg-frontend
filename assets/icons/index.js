@@ -348,6 +348,56 @@ export const getIcon = (iconName) => {
     danger: dangerIcon,
     warning: warningIcon,
     cancel: cancelIcon,
+    // Iconos para modos de riego
+    automatic: () => h('svg', {
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      viewBox: '0 0 24 24',
+      class: 'w-4 h-4'
+    }, [
+      h('path', { d: 'M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83' })
+    ]),
+    manual: () => h('svg', {
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      viewBox: '0 0 24 24',
+      class: 'w-4 h-4'
+    }, [
+      h('path', { d: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' })
+    ]),
+    programmed: () => h('svg', {
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      viewBox: '0 0 24 24',
+      class: 'w-4 h-4'
+    }, [
+      h('rect', { x: '3', y: '4', width: '18', height: '18', rx: '2', ry: '2' }),
+      h('line', { x1: '16', y1: '2', x2: '16', y2: '6' }),
+      h('line', { x1: '8', y1: '2', x2: '8', y2: '6' }),
+      h('line', { x1: '3', y1: '10', x2: '21', y2: '10' })
+    ]),
+    // Iconos para administración
+    user: () => h('svg', {
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      viewBox: '0 0 24 24',
+      class: 'w-4 h-4'
+    }, [
+      h('path', { d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' }),
+      h('circle', { cx: '12', cy: '7', r: '4' })
+    ]),
     breadcrumbArrow: () => h('svg', {
       fill: 'currentColor',
       viewBox: '0 0 20 20',

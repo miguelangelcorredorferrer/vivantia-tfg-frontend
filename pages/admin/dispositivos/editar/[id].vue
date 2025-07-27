@@ -3,9 +3,9 @@ import { useAdminStore } from '~/stores/admin'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import DeviceAPI from '~/api/DeviceAPI'
 
-// Configurar middleware de administrador
+// Configurar middleware
 definePageMeta({
-  middleware: 'admin'
+  middleware: ['auth', 'admin', 'visitor-block']
 })
 
 // Obtener el ID del dispositivo de la URL

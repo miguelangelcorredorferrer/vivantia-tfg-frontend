@@ -4,9 +4,9 @@ import { useToastNotifications } from '~/composables/useToastNotifications'
 import DevicesFilter from '~/components/Admin/Devices/DevicesFilter.vue'
 import DevicesTable from '~/components/Admin/Devices/DevicesTable.vue'
 
-// Configurar middleware de administrador
+// Configurar middleware
 definePageMeta({
-  middleware: 'admin'
+  middleware: ['auth', 'admin', 'visitor-block']
 })
 
 // Stores y composables

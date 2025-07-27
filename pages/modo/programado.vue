@@ -1,24 +1,6 @@
 <template>
   <div class="space-y-8">
-    <div class="max-w-4xl mx-auto">
-      <!-- Breadcrumb -->
-      <nav class="flex mb-6" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
-          <li class="inline-flex items-center">
-            <NuxtLink to="/modo" class="inline-flex items-center text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
-              <HomeIcon />
-              Modos de Riego
-            </NuxtLink>
-          </li>
-          <li>
-            <div class="flex items-center">
-              <ChevronRightIcon />
-              <span class="ml-1 text-sm font-medium text-gray-400 md:ml-2">Modo Programado</span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-
+    <div class="max-w-2xl mx-auto">
       <!-- Widget de estado programado cuando está activo (solo cuando está configurado pero no regando ni pausado) -->
       <div v-if="isProgrammedActive && !isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
@@ -603,8 +585,9 @@
 </template>
 
 <script setup>
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { useIrrigationModes } from '~/composables/useIrrigationModes'

@@ -1,24 +1,40 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import AuthAPI from '../api/AuthAPI'
+import { demoData } from '~/utils/demoData'
 
 export const useUserStore = defineStore('user', () => {
-  // Estado
+  // Estado existente
   const user = ref(null)
   const token = ref(null)
   const isLoading = ref(false)
   
+  // Nuevo estado para modo demo
+  const isDemoMode = ref(false)
+  
   // Inicializar token solo en el cliente para evitar problemas de hidratación
   if (process.client) {
     token.value = localStorage.getItem('AUTH_TOKEN')
+    // Verificar si hay modo demo guardado
+    const savedDemoMode = localStorage.getItem('DEMO_MODE')
+    if (savedDemoMode === 'true') {
+      isDemoMode.value = true
+      user.value = { ...demoData.user }
+    }
     console.log('🔄 Store: Token inicializado desde localStorage:', !!token.value)
+    console.log('🔄 Store: Modo demo inicializado:', isDemoMode.value)
   }
 
-  // Getters (computed)
+  // Getters (computed) - extendidos para modo demo
   const isAuthenticated = computed(() => {
     // En el servidor, siempre devolver false para evitar problemas de hidratación
     if (!process.client) {
       return false
+    }
+    
+    // En modo demo, consideramos al usuario como "autenticado"
+    if (isDemoMode.value) {
+      return true
     }
     
     const result = !!token.value && !!user.value
@@ -28,10 +44,34 @@ export const useUserStore = defineStore('user', () => {
     }
     return result
   })
-  const userName = computed(() => user.value?.name || '')
-  const userEmail = computed(() => user.value?.email || '')
-  const isEmailVerified = computed(() => user.value?.emailVerified || false)
-  const isAdmin = computed(() => user.value?.role === 'admin')
+  
+  const userName = computed(() => {
+    if (isDemoMode.value) {
+      return demoData.user.name
+    }
+    return user.value?.name || ''
+  })
+  
+  const userEmail = computed(() => {
+    if (isDemoMode.value) {
+      return demoData.user.email
+    }
+    return user.value?.email || ''
+  })
+  
+  const isEmailVerified = computed(() => {
+    if (isDemoMode.value) {
+      return false // Demo user no está verificado
+    }
+    return user.value?.emailVerified || false
+  })
+  
+  const isAdmin = computed(() => {
+    if (isDemoMode.value) {
+      return false // Demo user nunca es admin
+    }
+    return user.value?.role === 'admin'
+  })
 
   // Actions
   const login = async (credentials) => {
@@ -100,8 +140,11 @@ export const useUserStore = defineStore('user', () => {
   const logout = () => {
     user.value = null
     token.value = null
+    isDemoMode.value = false
+    
     if (process.client) {
       localStorage.removeItem('AUTH_TOKEN')
+      localStorage.removeItem('DEMO_MODE')
     }
   }
 
@@ -164,6 +207,47 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // Nuevas acciones para modo demo
+  const enterDemoMode = () => {
+    console.log('🎭 Store: Activando modo demo')
+    console.log('🔍 Store: Estado antes del demo:', {
+      isDemoMode: isDemoMode.value,
+      user: user.value,
+      token: token.value
+    })
+    
+    isDemoMode.value = true
+    user.value = { ...demoData.user }
+    token.value = null
+    
+    if (process.client) {
+      localStorage.setItem('DEMO_MODE', 'true')
+      localStorage.removeItem('AUTH_TOKEN')
+      console.log('💾 Store: localStorage actualizado - DEMO_MODE:', localStorage.getItem('DEMO_MODE'))
+    }
+    
+    console.log('🔍 Store: Estado después del demo:', {
+      isDemoMode: isDemoMode.value,
+      user: user.value,
+      token: token.value,
+      isAuthenticated: isAuthenticated.value
+    })
+    
+    console.log('✅ Store: Modo demo activado')
+  }
+  
+  const exitDemoMode = () => {
+    console.log('🎭 Store: Saliendo del modo demo')
+    isDemoMode.value = false
+    user.value = null
+    
+    if (process.client) {
+      localStorage.removeItem('DEMO_MODE')
+    }
+    
+    console.log('✅ Store: Modo demo desactivado')
+  }
+
   // Inicializar usuario si hay token
   const init = async () => {
     if (token.value && process.client) {
@@ -181,6 +265,7 @@ export const useUserStore = defineStore('user', () => {
     user,
     token,
     isLoading,
+    isDemoMode,
     
     // Getters
     isAuthenticated,
@@ -199,6 +284,8 @@ export const useUserStore = defineStore('user', () => {
     updatePassword,
     verifyAccount,
     changePassword,
+    enterDemoMode,
+    exitDemoMode,
     init
   }
 }) 

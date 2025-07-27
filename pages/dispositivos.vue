@@ -7,9 +7,9 @@ import DeviceForm from '~/components/Devices/DeviceForm.vue'
 import DevicesTable from '~/components/Devices/DevicesTable.vue'
 import DeviceEditModal from '~/components/Devices/DeviceEditModal.vue'
 
-// Configurar middleware de autenticación
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 
 // Stores

@@ -87,6 +87,35 @@ const clearError = (field) => {
     delete errors.value[field]
   }
 }
+
+// Función para activar modo demo
+const startDemoMode = () => {
+  try {
+    console.log('🎭 Activando modo demo...')
+    console.log('🔍 Estado antes:', {
+      isDemoMode: userStore.isDemoMode,
+      isAuthenticated: userStore.isAuthenticated,
+      user: userStore.user
+    })
+    
+    userStore.enterDemoMode()
+    
+    console.log('🔍 Estado después:', {
+      isDemoMode: userStore.isDemoMode,
+      isAuthenticated: userStore.isAuthenticated,
+      user: userStore.user
+    })
+    
+    toast.info('Bienvenido al modo demo de Vivantia')
+    
+    console.log('🔄 Redirigiendo al dashboard...')
+    // Usar navigateTo en lugar de router.push para mejor compatibilidad
+    navigateTo('/dashboard')
+  } catch (error) {
+    console.error('❌ Error activando modo demo:', error)
+    toast.error('Error al acceder al modo demo')
+  }
+}
 </script>
 
 <template>
@@ -156,7 +185,48 @@ const clearError = (field) => {
           Iniciando sesión...
         </span>
       </button>
+      
+      <!-- Separador -->
+      <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-2 bg-white text-gray-500">o</span>
+        </div>
+      </div>
+
+      <!-- Botón de Vista Previa -->
+      <button
+        type="button"
+        @click="startDemoMode"
+        class="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 border border-gray-300"
+      >
+        <span class="flex items-center justify-center">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          Vista Previa
+        </span>
+      </button>
     </form>
+
+    <!-- Información sobre vista previa -->
+    <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-blue-700">
+            <strong>Vista Previa:</strong> Explora las funcionalidades de Vivantia con datos de demostración antes de registrarte.
+          </p>
+        </div>
+      </div>
+    </div>
 
     <!-- Información adicional -->
     <div class="mt-6 text-center">

@@ -1,24 +1,7 @@
 <template>
   <div class="space-y-8">
+    <!-- Título de la página -->
     <div class="max-w-4xl mx-auto">
-      <!-- Breadcrumb -->
-      <nav class="flex mb-6" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
-          <li class="inline-flex items-center">
-            <NuxtLink to="/cultivos" class="inline-flex items-center text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
-              <HomeIcon />
-              Cultivos
-            </NuxtLink>
-          </li>
-          <li>
-            <div class="flex items-center">
-              <ChevronRightIcon />
-              <span class="ml-1 text-sm font-medium text-gray-400 md:ml-2">Ver Cultivo</span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
@@ -263,9 +246,9 @@ import {
   EditIcon
 } from '~/assets/icons'
 
-// Middleware de autenticación
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 
 // Meta del documento

@@ -1,7 +1,7 @@
 <script setup>
-// Configurar middleware de autenticación
+// Configurar middleware
 definePageMeta({
-  middleware: 'auth'
+  middleware: ['auth', 'visitor-block']
 })
 
 import { useToastNotifications } from '~/composables/useToastNotifications'
@@ -170,24 +170,6 @@ onUnmounted(() => {
 <template>
   <div class="space-y-8">
     <div class="max-w-2xl mx-auto">
-      <!-- Breadcrumb -->
-      <nav class="flex mb-6" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
-          <li class="inline-flex items-center">
-            <NuxtLink to="/modo" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
-              <HomeIcon />
-              Modos de Riego
-            </NuxtLink>
-          </li>
-          <li>
-            <div class="flex items-center">
-              <ChevronRightIcon />
-              <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Modo Manual</span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-
       <!-- Título y descripción -->
       <div class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 mb-8 hover:bg-gray-900/80 transition-colors">
         <div class="flex items-center mb-4">

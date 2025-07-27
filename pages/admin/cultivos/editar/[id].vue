@@ -2,9 +2,9 @@
 import { useAdminStore } from '~/stores/admin'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 
-// Configurar middleware de administrador
+// Configurar middleware
 definePageMeta({
-  middleware: 'admin'
+  middleware: ['auth', 'admin', 'visitor-block']
 })
 
 const route = useRoute()
@@ -294,13 +294,22 @@ const resetForm = () => {
               <label for="session" class="block text-sm font-medium text-gray-300 mb-2">
                 Sesión de Cultivo
               </label>
-              <input
+              <select
                 id="session"
                 v-model="form.session"
-                type="text"
-                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Sesión de cultivo"
-              />
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">Seleccionar temporada...</option>
+                <option value="Primavera">Primavera</option>
+                <option value="Verano">Verano</option>
+                <option value="Otoño">Otoño</option>
+                <option value="Invierno">Invierno</option>
+                <option value="Primavera/Verano">Primavera/Verano</option>
+                <option value="Verano/Otoño">Verano/Otoño</option>
+                <option value="Otoño/Invierno">Otoño/Invierno</option>
+                <option value="Invierno/Primavera">Invierno/Primavera</option>
+                <option value="Todo el año">Todo el año</option>
+              </select>
             </div>
             
             <div>

@@ -8,6 +8,7 @@ import { getIcon } from '~/assets/icons'
 import BaseCard from '~/components/Cards/BaseCard.vue'
 import WorkingTemperatureChart from '~/components/Charts/WorkingTemperatureChart.vue'
 import WorkingHumidityChart from '~/components/Charts/WorkingHumidityChart.vue'
+import { demoData, getSimulatedReading } from '~/utils/demoData'
 
 // Configurar middleware de autenticación y redirección para admins
 definePageMeta({
@@ -19,43 +20,360 @@ const cropStore = useCropStore()
 const deviceStore = useDeviceStore()
 const userStore = useUserStore()
 
-// Obtener datos de sensores
+// Estados para datos demo
+const demoCurrentReading = ref(null)
+const demoInterval = ref(null)
+const demoDataPoints = ref([])
+const maxDemoDataPoints = 20
+
+// Función para generar datos demo progresivamente
+const generateDemoDataPoint = () => {
+  const now = new Date()
+  const timeLabel = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  
+  // Usar los valores base de la imagen
+  const baseTemperature = 19.5
+  const baseHumidity = 68.3
+  
+  // Generar variaciones realistas
+  const temperatureVariation = (Math.random() - 0.5) * 2 // ±1°C
+  const humidityVariation = (Math.random() - 0.5) * 3 // ±1.5%
+  
+  const temperature = Math.max(18, Math.min(22, baseTemperature + temperatureVariation))
+  const humidity = Math.max(65, Math.min(72, baseHumidity + humidityVariation))
+  
+  const newPoint = {
+    time: timeLabel,
+    temperature: parseFloat(temperature.toFixed(1)),
+    humidity: parseFloat(humidity.toFixed(1))
+  }
+  
+  // Añadir nuevo punto
+  demoDataPoints.value.push(newPoint)
+  
+  // Mantener solo los últimos N puntos
+  if (demoDataPoints.value.length > maxDemoDataPoints) {
+    demoDataPoints.value.shift()
+  }
+  
+  // Actualizar lectura actual
+  demoCurrentReading.value = {
+    temperature: newPoint.temperature,
+    humidity: newPoint.humidity,
+    timestamp: now.toISOString()
+  }
+  
+  console.log('🎭 Demo data point added:', newPoint)
+}
+
+// Función para simular datos en tiempo real en modo demo
+const startDemoSimulation = () => {
+  if (userStore.isDemoMode) {
+    console.log('🎭 Starting demo simulation...')
+    
+    // Generar algunos datos iniciales rápidamente
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        generateDemoDataPoint()
+      }, i * 300)
+    }
+    
+    // Actualizar cada 3 segundos
+    demoInterval.value = setInterval(() => {
+      generateDemoDataPoint()
+    }, 3000)
+  }
+}
+
+const stopDemoSimulation = () => {
+  if (demoInterval.value) {
+    clearInterval(demoInterval.value)
+    demoInterval.value = null
+  }
+}
+
+// Obtener datos de sensores (mantener funcionalidad existente)
+const sensorDataComposable = useSensorData()
 const {
-  temperatureData,
-  humidityData,
-  currentTemperature,
-  currentHumidity,
-  temperatureTrend,
-  humidityTrend,
-  cropThresholds,
-  formattedTemperature,
-  formattedHumidity
-} = useSensorData()
+  temperatureData: realTemperatureData,
+  humidityData: realHumidityData,
+  currentTemperature: realCurrentTemperature,
+  currentHumidity: realCurrentHumidity,
+  temperatureTrend: realTemperatureTrend,
+  humidityTrend: realHumidityTrend,
+  cropThresholds: realCropThresholds,
+  formattedTemperature: realFormattedTemperature,
+  formattedHumidity: realFormattedHumidity
+} = sensorDataComposable
+
+// Datos computados que cambian según el modo
+const temperatureData = computed(() => {
+  if (userStore.isDemoMode) {
+    // En modo demo, usar datos demo directamente
+    const demoHistory = demoDataPoints.value
+    return {
+      labels: demoHistory.map(item => item.time),
+      datasets: [
+        {
+          label: 'Temperatura (°C)',
+          data: demoHistory.map(item => item.temperature),
+          borderColor: '#ef4444',
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          tension: 0.6,
+          fill: false,
+          pointBackgroundColor: '#ef4444',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 8
+        },
+        {
+          label: 'Umbral Máximo (28°C)',
+          data: demoHistory.map(() => 28), // Línea constante en 28°C
+          borderColor: '#fbbf24',
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          borderDash: [10, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        }
+      ]
+    }
+  }
+  return realTemperatureData.value
+})
+
+const humidityData = computed(() => {
+  if (userStore.isDemoMode) {
+    // En modo demo, usar datos demo directamente
+    const demoHistory = demoDataPoints.value
+    return {
+      labels: demoHistory.map(item => item.time),
+      datasets: [
+        {
+          label: 'Humedad (%)',
+          data: demoHistory.map(item => item.humidity),
+          borderColor: '#3b82f6',
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          tension: 0.6,
+          fill: false,
+          pointBackgroundColor: '#3b82f6',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 8
+        },
+        {
+          label: 'Umbral Mínimo (40%)',
+          data: demoHistory.map(() => 40), // Línea constante en 40%
+          borderColor: '#60a5fa',
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          borderDash: [10, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        },
+        {
+          label: 'Umbral Máximo (80%)',
+          data: demoHistory.map(() => 80), // Línea constante en 80%
+          borderColor: '#1d4ed8',
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          borderDash: [5, 10],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        }
+      ]
+    }
+  }
+  return realHumidityData.value
+})
+
+const currentTemperature = computed(() => {
+  if (userStore.isDemoMode) {
+    return demoCurrentReading.value?.temperature || demoDataPoints.value[demoDataPoints.value.length - 1]?.temperature || demoData.sensorData.current.temperature
+  }
+  return realCurrentTemperature.value
+})
+
+const currentHumidity = computed(() => {
+  if (userStore.isDemoMode) {
+    return demoCurrentReading.value?.humidity || demoDataPoints.value[demoDataPoints.value.length - 1]?.humidity || demoData.sensorData.current.humidity
+  }
+  return realCurrentHumidity.value
+})
+
+const temperatureTrend = computed(() => {
+  if (userStore.isDemoMode) {
+    return { direction: 'down', percentage: 8.3, value: 19.5 }
+  }
+  return realTemperatureTrend.value
+})
+
+const humidityTrend = computed(() => {
+  if (userStore.isDemoMode) {
+    return { direction: 'down', percentage: 4.3, value: 68.3 }
+  }
+  return realHumidityTrend.value
+})
+
+const cropThresholds = computed(() => {
+  if (userStore.isDemoMode) {
+    return {
+      humidityMin: demoData.crop.humidity_min,
+      humidityMax: demoData.crop.humidity_max,
+      temperatureMax: demoData.crop.temperature_max
+    }
+  }
+  return realCropThresholds.value
+})
+
+const formattedTemperature = computed(() => {
+  if (userStore.isDemoMode) {
+    return `${currentTemperature.value.toFixed(1)}°C`
+  }
+  return realFormattedTemperature.value
+})
+
+const formattedHumidity = computed(() => {
+  if (userStore.isDemoMode) {
+    return `${currentHumidity.value.toFixed(1)}%`
+  }
+  return realFormattedHumidity.value
+})
+
+// Datos de dispositivo y cultivo para demo
+const currentDevice = computed(() => {
+  if (userStore.isDemoMode) {
+    return demoData.device
+  }
+  return deviceStore.activeDevices.length > 0 ? deviceStore.activeDevices[0] : null
+})
+
+const currentCrop = computed(() => {
+  if (userStore.isDemoMode) {
+    return demoData.crop
+  }
+  // Buscar el cultivo seleccionado en el array de cultivos (igual que activeDevices)
+  const selectedCrop = cropStore.crops.find(crop => crop.selected)
+  return selectedCrop || null
+})
+
+const hasActiveDevice = computed(() => {
+  if (userStore.isDemoMode) {
+    return true
+  }
+  return deviceStore.activeDevices.length > 0
+})
+
+const hasSelectedCrop = computed(() => {
+  if (userStore.isDemoMode) {
+    return true
+  }
+  // Verificar si hay un cultivo seleccionado en el array (igual que activeDevices)
+  return cropStore.crops.some(crop => crop.selected)
+})
 
 // Cargar datos al montar el componente
 onMounted(async () => {
   try {
-    // Cargar cultivo del usuario si no está cargado
-    if (userStore.user?.id && !cropStore.currentCrop) {
-      await cropStore.fetchUserCrop(userStore.user.id)
-    }
-    
-    // Cargar dispositivos del usuario si no están cargados
-    if (userStore.user?.id && deviceStore.devices.length === 0) {
-      await deviceStore.fetchUserDevice(userStore.user.id)
+    if (userStore.isDemoMode) {
+      // Modo demo: iniciar simulación
+      console.log('🎭 Dashboard: Iniciando modo demo')
+      
+      // Inicializar con datos base
+      demoCurrentReading.value = {
+        temperature: demoData.sensorData.current.temperature,
+        humidity: demoData.sensorData.current.humidity,
+        timestamp: new Date().toISOString()
+      }
+      
+      // Generar algunos datos iniciales
+      for (let i = 0; i < 5; i++) {
+        const timeLabel = new Date(Date.now() - (4 - i) * 3000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        const baseTemp = 19.5 + (Math.random() - 0.5) * 2
+        const baseHumidity = 68.3 + (Math.random() - 0.5) * 3
+        
+        demoDataPoints.value.push({
+          time: timeLabel,
+          temperature: parseFloat(baseTemp.toFixed(1)),
+          humidity: parseFloat(baseHumidity.toFixed(1))
+        })
+      }
+      
+      startDemoSimulation()
+    } else {
+      // Modo real: cargar datos normales
+      console.log('📊 Dashboard: Cargando datos reales')
+      
+      // Cargar todos los cultivos del usuario si no están cargados
+      if (userStore.user?.id && cropStore.crops.length === 0) {
+        await cropStore.fetchAllUserCrops(userStore.user.id)
+      }
+      
+      // Cargar dispositivos del usuario si no están cargados
+      if (userStore.user?.id && deviceStore.devices.length === 0) {
+        await deviceStore.fetchUserDevice(userStore.user.id)
+      }
     }
   } catch (error) {
     console.error('Error cargando datos del dashboard:', error)
   }
 })
 
+// Observar cambios en el array de cultivos para actualizar el dashboard automáticamente
+watch(() => cropStore.crops, (newCrops) => {
+  if (!userStore.isDemoMode) {
+    console.log('🔄 Dashboard: Array de cultivos actualizado, cultivos:', newCrops.length)
+    const selectedCrop = newCrops.find(crop => crop.selected)
+    if (selectedCrop) {
+      console.log('✅ Dashboard: Cultivo seleccionado detectado:', selectedCrop.name)
+    }
+  }
+}, { deep: true })
 
+// Limpiar intervalos al desmontar
+onUnmounted(() => {
+  stopDemoSimulation()
+})
 
 
 </script>
 
 <template>
   <div class="dashboard-container space-y-8">
+    <!-- Banner informativo para modo demo -->
+    <div v-if="userStore.isDemoMode" class="bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border border-orange-500/30 rounded-xl p-4 shadow-lg">
+      <div class="flex items-center space-x-3">
+        <div class="flex-shrink-0">
+          <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-medium text-orange-300">🎭 Modo Vista Previa</h3>
+          <p class="text-sm text-orange-200">
+            Estás viendo una demostración con datos simulados. 
+            <span class="font-medium">Las funcionalidades están limitadas.</span> 
+            Para acceder a todas las características, 
+            <button @click="userStore.exitDemoMode(); navigateTo('/auth/login')" class="underline hover:text-white transition-colors">
+              inicia sesión aquí
+            </button>.
+          </p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+          <span class="text-sm text-orange-300 font-medium">DEMO</span>
+        </div>
+      </div>
+    </div>
+    
     <!-- Título de la página -->
     <div class="flex items-center justify-between">
       <div>
@@ -157,7 +475,7 @@ onMounted(async () => {
           </div>
           <div>
             <p class="text-sm text-gray-400">Cultivo actual</p>
-            <p class="text-white font-semibold">{{ cropStore.currentCrop?.name || '-' }}</p>
+            <p class="text-white font-semibold">{{ currentCrop?.name || '-' }}</p>
           </div>
         </div>
       </BaseCard>
@@ -198,30 +516,30 @@ onMounted(async () => {
               <h4 class="text-lg font-bold text-white">Cultivo Seleccionado</h4>
             </div>
             
-            <div v-if="cropStore.currentCrop && cropStore.isCurrentCropSelected" class="space-y-3">
+            <div v-if="hasSelectedCrop" class="space-y-3">
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Nombre:</span>
-                 <span class="text-white font-bold text-lg">{{ cropStore.currentCrop.name }}</span>
+                 <span class="text-white font-bold text-lg">{{ currentCrop.name }}</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Categoría:</span>
-                 <span class="text-green-400 font-bold text-lg">{{ cropStore.currentCrop.category }}</span>
+                 <span class="text-green-400 font-bold text-lg">{{ currentCrop.category }}</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Humedad Mínima:</span>
-                 <span class="text-blue-400 font-bold text-lg">{{ cropStore.currentCrop.humidity_min }}%</span>
+                 <span class="text-blue-400 font-bold text-lg">{{ currentCrop.humidity_min }}%</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Humedad Máxima:</span>
-                 <span class="text-blue-400 font-bold text-lg">{{ cropStore.currentCrop.humidity_max }}%</span>
+                 <span class="text-blue-400 font-bold text-lg">{{ currentCrop.humidity_max }}%</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Temperatura Máxima:</span>
-                 <span class="text-red-400 font-bold text-lg">{{ cropStore.currentCrop.temperature_max }}°C</span>
+                 <span class="text-red-400 font-bold text-lg">{{ currentCrop.temperature_max }}°C</span>
                </div>
               
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
@@ -237,12 +555,12 @@ onMounted(async () => {
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Días de Crecimiento:</span>
-                 <span class="text-white font-bold text-lg">{{ cropStore.currentCrop.growth_days }} días</span>
+                 <span class="text-white font-bold text-lg">{{ currentCrop.growth_days }} días</span>
                </div>
                
                <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                  <span class="text-gray-300 font-medium">Temporada:</span>
-                 <span class="text-purple-400 font-bold text-lg">{{ cropStore.currentCrop.session }}</span>
+                 <span class="text-purple-400 font-bold text-lg">{{ currentCrop.session }}</span>
                </div>
             </div>
             
@@ -303,15 +621,15 @@ onMounted(async () => {
               <h4 class="text-lg font-bold text-white">Dispositivo Registrado</h4>
             </div>
             
-            <div v-if="deviceStore.activeDevices.length > 0" class="space-y-3">
+            <div v-if="hasActiveDevice" class="space-y-3">
               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                 <span class="text-gray-300 font-medium">Nombre:</span>
-                <span class="text-white font-bold text-lg">{{ deviceStore.activeDevices[0]?.deviceName }}</span>
+                <span class="text-white font-bold text-lg">{{ currentDevice?.deviceName }}</span>
               </div>
               
               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
                 <span class="text-gray-300 font-medium">ID del Dispositivo:</span>
-                <span class="text-gray-300 font-mono font-bold text-lg">{{ deviceStore.activeDevices[0]?.enddeviceId }}</span>
+                <span class="text-gray-300 font-mono font-bold text-lg">{{ currentDevice?.enddeviceId }}</span>
               </div>
               
               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">

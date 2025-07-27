@@ -4,9 +4,9 @@ import { useToastNotifications } from '~/composables/useToastNotifications'
 import CropAPI from '~/api/CropAPI'
 import UserAPI from '~/api/UserAPI'
 
-// Configurar middleware de administrador
+// Configurar middleware
 definePageMeta({
-  middleware: 'admin'
+  middleware: ['auth', 'admin', 'visitor-block']
 })
 
 // Stores y composables
@@ -374,6 +374,10 @@ const clearImage = () => {
               <option value="Verano">Verano</option>
               <option value="Otoño">Otoño</option>
               <option value="Invierno">Invierno</option>
+              <option value="Primavera/Verano">Primavera/Verano</option>
+              <option value="Verano/Otoño">Verano/Otoño</option>
+              <option value="Otoño/Invierno">Otoño/Invierno</option>
+              <option value="Invierno/Primavera">Invierno/Primavera</option>
               <option value="Todo el año">Todo el año</option>
             </select>
           </div>

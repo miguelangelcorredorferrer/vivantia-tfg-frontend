@@ -10,6 +10,12 @@ const userStore = useUserStore()
 const goToProfile = () => {
   navigateTo('/perfil')
 }
+
+// Función para ir a la página de inicio de sesión
+const goToLogin = () => {
+  userStore.exitDemoMode()
+  navigateTo('/auth/login')
+}
 </script>
 
 <template>
@@ -36,10 +42,10 @@ const goToProfile = () => {
           </div>
           <div class="hidden sm:block">
             <h1 class="text-xl font-bold text-white">
-              {{ userStore.isAdmin ? 'PANEL DE ADMINISTRACIÓN' : 'DASHBOARD' }}
+              {{ userStore.isAdmin ? 'PANEL DE ADMINISTRACIÓN' : (userStore.isDemoMode ? 'VISTA PREVIA - VIVANTIA' : 'DASHBOARD') }}
             </h1>
             <p class="text-xs text-gray-400">
-              {{ userStore.isAdmin ? 'Centro de Control' : 'Performance' }}
+              {{ userStore.isAdmin ? 'Centro de Control' : (userStore.isDemoMode ? 'Modo Demo' : 'Performance') }}
             </p>
           </div>
         </div>
@@ -48,8 +54,8 @@ const goToProfile = () => {
       <!-- Sección derecha con información de usuario -->
       <div class="flex items-center space-x-4">
         
-        <!-- Información del usuario logueado -->
-        <div v-if="userStore.isAuthenticated" class="flex items-center space-x-3">
+        <!-- Información del usuario autenticado REAL -->
+        <div v-if="userStore.isAuthenticated && !userStore.isDemoMode" class="flex items-center space-x-3">
           <!-- Saludo personalizado -->
           <div class="hidden sm:block text-right">
             <p class="text-sm font-medium text-white">
@@ -67,6 +73,29 @@ const goToProfile = () => {
             <span class="text-white font-semibold text-sm">
               {{ userStore.userName.charAt(0).toUpperCase() }}
             </span>
+          </button>
+        </div>
+
+        <!-- Modo Demo/Visitante -->
+        <div v-else-if="userStore.isDemoMode" class="flex items-center space-x-3">
+          <!-- Información del modo demo -->
+          <div class="hidden sm:block text-right">
+            <p class="text-sm font-medium text-orange-300">
+              Vista Previa - Modo Demo
+            </p>
+            <p class="text-xs text-gray-300">Funcionalidades limitadas</p>
+          </div>
+          
+          <!-- Botón de iniciar sesión -->
+          <button 
+            @click="goToLogin"
+            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg"
+            title="Iniciar sesión"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+            </svg>
+            Iniciar Sesión
           </button>
         </div>
 

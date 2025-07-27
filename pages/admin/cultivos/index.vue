@@ -4,9 +4,9 @@ import { useToastNotifications } from '~/composables/useToastNotifications'
 import CropsFilter from '~/components/Admin/Crops/CropsFilter.vue'
 import CropsTable from '~/components/Admin/Crops/CropsTable.vue'
 
-// Configurar middleware de administrador
+// Configurar middleware
 definePageMeta({
-  middleware: 'admin'
+  middleware: ['auth', 'admin', 'visitor-block']
 })
 
 // Stores y composables
