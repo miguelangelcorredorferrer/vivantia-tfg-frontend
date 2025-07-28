@@ -13,6 +13,10 @@ const props = defineProps({
   data: {
     type: Object,
     required: true
+  },
+  temperatureMax: {
+    type: Number,
+    default: 28
   }
 })
 
@@ -50,7 +54,7 @@ const createChart = async () => {
           pointRadius: 5,
           pointHoverRadius: 8
         }, {
-          label: 'Umbral Máximo (28°C)',
+          label: `Umbral Máximo (${props.temperatureMax}°C)`,
           data: [],
           borderColor: '#fbbf24',
           backgroundColor: 'transparent',
@@ -160,19 +164,25 @@ const updateChart = () => {
   try {
     const labels = props.data.labels || []
     const tempData = props.data.datasets?.[0]?.data || []
-    const thresholdData = props.data.datasets?.[1]?.data || []
+    
+    // Generar datos del umbral basado en el cultivo seleccionado
+    const thresholdData = labels.map(() => props.temperatureMax)
     
     console.log('📊 Updating temperature chart:', {
       labels: labels.length,
       tempData: tempData.length,
       latestTemp: tempData[tempData.length - 1],
-      latestTime: labels[labels.length - 1]
+      latestTime: labels[labels.length - 1],
+      temperatureMax: props.temperatureMax
     })
     
     // Actualizar datos del chart
     chart.data.labels = [...labels]
     chart.data.datasets[0].data = [...tempData]
     chart.data.datasets[1].data = [...thresholdData]
+    
+    // Actualizar la etiqueta del umbral
+    chart.data.datasets[1].label = `Umbral Máximo (${props.temperatureMax}°C)`
     
     // Actualizar sin animación para tiempo real
     chart.update('none')
@@ -194,6 +204,14 @@ watch(() => props.data, (newData) => {
   deep: true, 
   immediate: false 
 })
+
+// Watcher para detectar cambios en el umbral de temperatura
+watch(() => props.temperatureMax, (newThreshold) => {
+  console.log('🌡️ Temperature threshold changed:', newThreshold)
+  nextTick(() => {
+    updateChart()
+  })
+}, { immediate: false })
 
 onMounted(async () => {
   console.log('🎯 Temperature chart component mounted')

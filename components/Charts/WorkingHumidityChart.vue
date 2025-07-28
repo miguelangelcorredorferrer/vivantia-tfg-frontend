@@ -13,6 +13,14 @@ const props = defineProps({
   data: {
     type: Object,
     required: true
+  },
+  humidityMin: {
+    type: Number,
+    default: 40
+  },
+  humidityMax: {
+    type: Number,
+    default: 80
   }
 })
 
@@ -50,7 +58,7 @@ const createChart = async () => {
           pointRadius: 5,
           pointHoverRadius: 8
         }, {
-          label: 'Umbral Mínimo (40%)',
+          label: `Umbral Mínimo (${props.humidityMin}%)`,
           data: [],
           borderColor: '#60a5fa',
           backgroundColor: 'transparent',
@@ -60,7 +68,7 @@ const createChart = async () => {
           fill: false,
           tension: 0
         }, {
-          label: 'Umbral Máximo (80%)',
+          label: `Umbral Máximo (${props.humidityMax}%)`,
           data: [],
           borderColor: '#1d4ed8',
           backgroundColor: 'transparent',
@@ -172,14 +180,18 @@ const updateChart = () => {
   try {
     const labels = props.data.labels || []
     const humidityData = props.data.datasets?.[0]?.data || []
-    const minThresholdData = props.data.datasets?.[1]?.data || []
-    const maxThresholdData = props.data.datasets?.[2]?.data || []
+    
+    // Generar datos de los umbrales basados en el cultivo seleccionado
+    const minThresholdData = labels.map(() => props.humidityMin)
+    const maxThresholdData = labels.map(() => props.humidityMax)
     
     console.log('📊 Updating humidity chart:', {
       labels: labels.length,
       humidityData: humidityData.length,
       latestHumidity: humidityData[humidityData.length - 1],
-      latestTime: labels[labels.length - 1]
+      latestTime: labels[labels.length - 1],
+      humidityMin: props.humidityMin,
+      humidityMax: props.humidityMax
     })
     
     // Actualizar datos del chart
@@ -187,6 +199,10 @@ const updateChart = () => {
     chart.data.datasets[0].data = [...humidityData]
     chart.data.datasets[1].data = [...minThresholdData]
     chart.data.datasets[2].data = [...maxThresholdData]
+    
+    // Actualizar las etiquetas de los umbrales
+    chart.data.datasets[1].label = `Umbral Mínimo (${props.humidityMin}%)`
+    chart.data.datasets[2].label = `Umbral Máximo (${props.humidityMax}%)`
     
     // Actualizar sin animación para tiempo real
     chart.update('none')
@@ -208,6 +224,14 @@ watch(() => props.data, (newData) => {
   deep: true, 
   immediate: false 
 })
+
+// Watcher para detectar cambios en los umbrales de humedad
+watch([() => props.humidityMin, () => props.humidityMax], ([newMin, newMax]) => {
+  console.log('💧 Humidity thresholds changed:', { min: newMin, max: newMax })
+  nextTick(() => {
+    updateChart()
+  })
+}, { immediate: false })
 
 onMounted(async () => {
   console.log('🎯 Humidity chart component mounted')

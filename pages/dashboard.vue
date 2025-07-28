@@ -127,17 +127,6 @@ const temperatureData = computed(() => {
           pointBorderWidth: 3,
           pointRadius: 5,
           pointHoverRadius: 8
-        },
-        {
-          label: 'Umbral Máximo (28°C)',
-          data: demoHistory.map(() => 28), // Línea constante en 28°C
-          borderColor: '#fbbf24',
-          backgroundColor: 'transparent',
-          borderWidth: 3,
-          borderDash: [10, 5],
-          pointRadius: 0,
-          fill: false,
-          tension: 0
         }
       ]
     }
@@ -165,28 +154,6 @@ const humidityData = computed(() => {
           pointBorderWidth: 3,
           pointRadius: 5,
           pointHoverRadius: 8
-        },
-        {
-          label: 'Umbral Mínimo (40%)',
-          data: demoHistory.map(() => 40), // Línea constante en 40%
-          borderColor: '#60a5fa',
-          backgroundColor: 'transparent',
-          borderWidth: 3,
-          borderDash: [10, 5],
-          pointRadius: 0,
-          fill: false,
-          tension: 0
-        },
-        {
-          label: 'Umbral Máximo (80%)',
-          data: demoHistory.map(() => 80), // Línea constante en 80%
-          borderColor: '#1d4ed8',
-          backgroundColor: 'transparent',
-          borderWidth: 3,
-          borderDash: [5, 10],
-          pointRadius: 0,
-          fill: false,
-          tension: 0
         }
       ]
     }
@@ -404,7 +371,10 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <WorkingTemperatureChart :data="temperatureData" />
+        <WorkingTemperatureChart 
+          :data="temperatureData" 
+          :temperature-max="currentCrop?.temperature_max || 28"
+        />
       </div>
 
       <!-- Información de humedad -->
@@ -427,7 +397,11 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <WorkingHumidityChart :data="humidityData" />
+        <WorkingHumidityChart 
+          :data="humidityData" 
+          :humidity-min="currentCrop?.humidity_min || 40"
+          :humidity-max="currentCrop?.humidity_max || 80"
+        />
       </div>
     </div>
     

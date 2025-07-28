@@ -1,5 +1,6 @@
 <script setup>
 import SidebarItem from './SidebarItem.vue'
+import logoUrl from '~/assets/logovivantia.png'
 
 const userStore = useUserStore()
 </script>
@@ -9,10 +10,8 @@ const userStore = useUserStore()
     <!-- Header de la sidebar con logo y nombre de empresa -->
     <div class="p-6 border-b border-blue-500/20">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-          <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
+        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden">
+          <img :src="logoUrl" alt="Vivantia Logo" class="w-10 h-10 object-contain rounded-full" />
         </div>
         <div>
           <h2 class="text-white font-bold text-lg">VIVANTIA</h2>
