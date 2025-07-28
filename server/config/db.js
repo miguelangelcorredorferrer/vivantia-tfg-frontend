@@ -8,6 +8,8 @@ const pool = new Pool({
     user: 'postgres',
     password: 'root',
     connectionTimeoutMillis: 10000, // 10 segundos
+    // Configuración de zona horaria
+    options: '-c timezone=Europe/Madrid',
     // SSL solo en producción, no en desarrollo local
     ssl: process.env.NODE_ENV === 'production' ? {
         rejectUnauthorized: false

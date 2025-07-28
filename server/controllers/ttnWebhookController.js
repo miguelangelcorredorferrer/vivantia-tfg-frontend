@@ -1,4 +1,5 @@
 import { createSensorReading } from './sensorReadingController.js'
+import DeviceValidationService from '../services/deviceValidationService.js'
 
 // Webhook TTN - Capturar datos de sensores
 const handleTTNUplink = async (req, res) => {
@@ -15,6 +16,17 @@ const handleTTNUplink = async (req, res) => {
       console.error('❌ Payload inválido');
       return res.status(400).send('Datos incompletos');
     }
+    
+    // Validar dispositivo TTN
+    const deviceValidation = await DeviceValidationService.validateTTNDevice(endDeviceIds); //
+    
+    if (!deviceValidation.isValid) {
+      console.error('❌ Dispositivo no autorizado:', deviceValidation.message);
+      return res.status(401).send('Dispositivo no autorizado');
+    }
+    
+    const validatedDevice = deviceValidation.device;
+    console.log('✅ Dispositivo autorizado:', validatedDevice.device_name); //
     
     console.log('🔍 Payload decodificado:', JSON.stringify(payload, null, 2));
     
@@ -41,9 +53,9 @@ const handleTTNUplink = async (req, res) => {
     });
     
     // Preparar datos para guardar en PostgreSQL
-    // Usar device_id = 20 para pruebas (dispositivo existente)
+    // Usar el device_id real del dispositivo validado
     const sensorData = {
-      device_id: 20, // Device ID fijo para pruebas
+      device_id: validatedDevice.id, // Device ID real del dispositivo autorizado //
       humidity: finalHumidity,
       temperature: finalTemperature
     };
@@ -67,7 +79,8 @@ const handleTTNUplink = async (req, res) => {
               humidity: finalHumidity,
               soil_moisture: Number(soil_moisture) || null,
               timestamp: new Date().toISOString(),
-              device_id: 20
+              device_id: validatedDevice.id, //
+              device_name: validatedDevice.device_name //
             };
             
             // TODO: Emitir evento en tiempo real (si usas Socket.IO)

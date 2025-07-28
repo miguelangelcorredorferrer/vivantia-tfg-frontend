@@ -4,6 +4,26 @@ import jwt from 'jsonwebtoken';
 
 // ===== FUNCIONES DE FECHA =====
 
+// Obtener timestamp actual en zona horaria local
+const getCurrentTimestamp = () => {
+  return new Date().toISOString();
+};
+
+// Obtener timestamp actual en zona horaria de Madrid
+const getCurrentTimestampMadrid = () => {
+  const now = new Date();
+  return now.toLocaleString('es-ES', { 
+    timeZone: 'Europe/Madrid',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+};
+
 // Formatear fecha en español con formato específico
 const formatDateToSpanish = (date) => {
   if (!date) return '';
@@ -153,6 +173,8 @@ const generateJWT = (id) => {
 
 export {
   // Funciones de fecha
+  getCurrentTimestamp,
+  getCurrentTimestampMadrid,
   formatDateToSpanish,
   getTimeAgo,
   formatDuration,

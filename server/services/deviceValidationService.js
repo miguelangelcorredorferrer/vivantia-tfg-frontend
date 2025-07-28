@@ -15,10 +15,10 @@ class DeviceValidationService {
       
       // Query para buscar dispositivo que coincida con las credenciales
       const query = `
-        SELECT id, device_name, enddevice_id, tt_app_id, dev_eui, is_active_communication
+        SELECT id, device_name, enddevice_id, ttn_app_id, dev_eui, is_active_communication
         FROM devices 
         WHERE enddevice_id = $1 
-        AND tt_app_id = $2 
+        AND ttn_app_id = $2 
         AND dev_eui = $3
         AND is_active_communication = true
         LIMIT 1
