@@ -7,9 +7,10 @@
         Estado del Sistema de Riego
       </h2>
       
+      <!-- Primera fila - Estado del sistema -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Modo Actual -->
-        <div class="bg-gray-800/80 border border-blue-500/30 p-4 rounded-lg hover:bg-gray-800/90 transition-colors">
+        <div class="bg-gray-600/60 border border-blue-500/30 p-4 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-blue-400">Modo Actual</h3>
             <div :class="getCurrentModeColor()" class="w-3 h-3 rounded-full"></div>
@@ -17,26 +18,26 @@
           <p class="text-2xl font-bold text-white">{{ currentModeDisplay }}</p>
         </div>
 
+        <!-- Dispositivo Activo -->
+        <div class="bg-gray-600/60 border border-blue-500/30 p-4 rounded-lg hover:bg-gray-600/80 transition-colors">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-medium text-blue-400">Dispositivo Activo</h3>
+            <DeviceIcon />
+          </div>
+          <p class="text-2xl font-bold text-white">{{ activeDeviceName || '-' }}</p>
+        </div>
+
         <!-- Cultivo en Riego -->
-        <div class="bg-gray-800/80 border border-green-500/30 p-4 rounded-lg hover:bg-gray-800/90 transition-colors">
+        <div class="bg-gray-600/60 border border-green-500/30 p-4 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-green-400">Cultivo en Riego</h3>
             <PlantIcon />
           </div>
-          <p class="text-2xl font-bold text-white">{{ currentCrop || '-' }}</p>
-        </div>
-
-        <!-- Caudal en Curso -->
-        <div class="bg-gray-800/80 border border-cyan-500/30 p-4 rounded-lg hover:bg-gray-800/90 transition-colors">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="font-medium text-cyan-400">Caudal en Curso</h3>
-            <FlowIcon />
-          </div>
-          <p class="text-2xl font-bold text-white">{{ isWatering ? flowRate + ' L/min' : '-' }}</p>
+          <p class="text-2xl font-bold text-white">{{ selectedCropName || '-' }}</p>
         </div>
 
         <!-- Estado de la Bomba -->
-        <div class="bg-gray-800/80 border border-purple-500/30 p-4 rounded-lg hover:bg-gray-800/90 transition-colors">
+        <div class="bg-gray-600/60 border border-purple-500/30 p-4 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-purple-400">Estado Bomba</h3>
             <div :class="[
@@ -51,19 +52,51 @@
         </div>
       </div>
 
-      <!-- Información adicional -->
+      <!-- Segunda fila - Información de riego -->
       <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-gray-800/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-800/80 transition-colors">
+        <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <p class="text-sm text-gray-400">Último Riego</p>
           <p class="font-semibold text-white">{{ lastWatering || 'Nunca' }}</p>
         </div>
-        <div class="bg-gray-800/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-800/80 transition-colors">
+        <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <p class="text-sm text-gray-400">Tiempo Restante</p>
           <p class="font-semibold text-white">{{ remainingTime || '-' }}</p>
         </div>
-        <div class="bg-gray-800/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-800/80 transition-colors">
+        <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <p class="text-sm text-gray-400">Próximo Riego</p>
           <p class="font-semibold text-white">{{ nextWatering || '-' }}</p>
+        </div>
+      </div>
+
+      <!-- Tercera fila - Sensores y caudal -->
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Caudal en Curso -->
+        <div class="bg-gray-600/60 border border-cyan-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-gray-400">Caudal en Curso</p>
+            <FlowIcon />
+          </div>
+          <p class="font-semibold text-white">{{ isWatering ? flowRate + ' L/min' : '-' }}</p>
+        </div>
+
+        <!-- Temperatura Actual -->
+        <div class="bg-gray-600/60 border border-red-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-gray-400">Temperatura Actual</p>
+            <ThermometerIcon />
+          </div>
+          <p class="font-semibold text-white">{{ currentTemperature || '-' }}</p>
+          <p class="text-xs text-red-300">{{ currentTemperature ? '°C' : '' }}</p>
+        </div>
+
+        <!-- Humedad Actual -->
+        <div class="bg-gray-600/60 border border-cyan-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-gray-400">Humedad Actual</p>
+            <HumidityIcon />
+          </div>
+          <p class="font-semibold text-white">{{ currentHumidity || '-' }}</p>
+          <p class="text-xs text-cyan-300">{{ currentHumidity ? '%' : '' }}</p>
         </div>
       </div>
     </div>
@@ -75,7 +108,7 @@
       <!-- Mostrar configuración activa si existe -->
       <div v-if="hasActiveMode" class="mb-6 p-4 bg-yellow-900/30 border border-yellow-500/30 rounded-lg">
         <div class="flex items-center justify-between">
-          <div>
+          <div class="flex-1">
             <h3 class="font-semibold text-yellow-400">Modo {{ currentModeDisplay }} Configurado</h3>
             <p class="text-sm text-yellow-300">{{ getModeDescription() }}</p>
             <div v-if="isWatering || isPaused" class="mt-2">
@@ -94,13 +127,24 @@
                 El riego se activará automáticamente en la fecha programada
               </p>
             </div>
+            
+            <!-- Mensaje informativo para cancelar -->
+            <div class="mt-3 p-3 bg-blue-900/30 border border-blue-500/30 rounded-lg">
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <p class="text-sm text-blue-300 font-medium">Para cancelar o modificar:</p>
+                  <p class="text-xs text-blue-200 mt-1">
+                    <span v-if="activeMode === 'manual'">Accede al <span class="font-semibold">Modo Manual</span> para detener el riego activo.</span>
+                    <span v-else-if="activeMode === 'programado'">Accede al <span class="font-semibold">Modo Programado</span> para cancelar la programación.</span>
+                    <span v-else-if="activeMode === 'automatico'">Accede al <span class="font-semibold">Modo Automático</span> para modificar la configuración.</span>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <button 
-            @click="showCancelModal = true"
-            class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-          >
-            {{ getCancelButtonText() }}
-          </button>
         </div>
       </div>
 
@@ -164,30 +208,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Modal de cancelación -->
-    <div v-if="showCancelModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-gray-800 border border-gray-600/30 p-6 rounded-xl max-w-md w-full mx-4">
-        <h3 class="text-lg font-bold text-white mb-4">Confirmar Cancelación</h3>
-        <p class="text-gray-300 mb-6">
-          {{ getCancelModalText() }}
-        </p>
-        <div class="flex space-x-4">
-          <button 
-            @click="cancelMode"
-            class="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-          >
-            {{ getCancelButtonText() }}
-          </button>
-          <button 
-            @click="showCancelModal = false"
-            class="flex-1 px-4 py-2 bg-gray-600 text-gray-200 rounded-lg hover:bg-gray-500 transition-colors"
-          >
-            Volver
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -198,14 +218,22 @@ definePageMeta({
 })
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { useIrrigationModes } from '~/composables/useIrrigationModes'
+import { useSensorData } from '~/composables/useSensorData'
+import { useDeviceStore } from '~/stores/device'
+import { useCropStore } from '~/stores/crop'
+import { useUserStore } from '~/stores/user'
 import {
-  DashboardIcon,
-  PlantIcon,
-  FlowIcon,
+  dashboardIcon as DashboardIcon,
+  plantIcon as PlantIcon,
+  wateringIcon as FlowIcon,
   ManualModeIcon,
   ProgrammedModeIcon,
-  AutomaticModeIcon
+  AutomaticModeIcon,
+  devicesIcon as DeviceIcon,
+  thermometerIcon as ThermometerIcon,
+  humidityIcon as HumidityIcon
 } from '~/assets/icons'
+import SensorAPI from '~/api/SensorAPI.js'
 
 // Meta del documento
 useHead({
@@ -228,21 +256,98 @@ const {
   clearAllIntervals
 } = useIrrigationModes()
 
+// Stores
+const deviceStore = useDeviceStore()
+const cropStore = useCropStore()
+const userStore = useUserStore()
+
+// Composables
+const { toast } = useToastNotifications()
+const router = useRouter()
+const { realDataPoints, startSimulation } = useSensorData()
+
+// Estados locales para datos de sensores
+const latestSensorData = ref(null)
+const isLoadingSensorData = ref(false)
+
 // Estados locales
 const currentCrop = ref('Tomate Cherry')
 const flowRate = ref(2.5)
 const lastWatering = ref('Ayer 15:30')
 const nextWatering = ref(null)
-const showCancelModal = ref(false)
-
-// Composables
-const { toast } = useToastNotifications()
-const router = useRouter()
 
 // Helper functions para toast
 const showSuccess = (message) => toast.success(message)
 const showError = (message) => toast.error(message)
 const showWarning = (message) => toast.warning(message)
+
+// Función para cargar último dato de sensor del dispositivo activo
+const loadLatestSensorData = async () => {
+  if (!userStore.user?.id || userStore.isDemoMode) return
+  
+  try {
+    isLoadingSensorData.value = true
+    console.log('🌡️ Cargando último dato de sensor para usuario:', userStore.user.id)
+    
+    const response = await SensorAPI.getLatestSensorReadingForActiveDevice(userStore.user.id)
+    
+    if (response.success && response.data) {
+      latestSensorData.value = response.data
+      console.log('✅ Último dato de sensor cargado:', response.data)
+    } else {
+      console.log('❌ No se encontraron datos de sensor')
+      latestSensorData.value = null
+    }
+  } catch (error) {
+    console.error('❌ Error cargando último dato de sensor:', error)
+    latestSensorData.value = null
+  } finally {
+    isLoadingSensorData.value = false
+  }
+}
+
+// Computed para obtener el dispositivo activo
+const activeDeviceName = computed(() => {
+  const activeDevice = deviceStore.activeDevices[0]
+  return activeDevice ? activeDevice.deviceName : null
+})
+
+// Computed para obtener el cultivo seleccionado
+const selectedCropName = computed(() => {
+  const selectedCrop = cropStore.crops.find(crop => crop.selected)
+  return selectedCrop ? selectedCrop.name : null
+})
+
+// Computed para obtener temperatura y humedad más recientes
+const currentTemperature = computed(() => {
+  console.log('🔍 currentTemperature computed - latestSensorData:', latestSensorData.value)
+  
+  if (latestSensorData.value?.temperature !== null && latestSensorData.value?.temperature !== undefined) {
+    console.log('🔍 Temperatura original (tipo):', typeof latestSensorData.value.temperature, latestSensorData.value.temperature)
+    // Convertir a número antes de usar toFixed
+    const temp = Number(latestSensorData.value.temperature).toFixed(1)
+    console.log('🌡️ Temperatura calculada:', temp)
+    return temp
+  }
+  
+  console.log('❌ No hay datos de temperatura disponibles')
+  return null
+})
+
+const currentHumidity = computed(() => {
+  console.log('🔍 currentHumidity computed - latestSensorData:', latestSensorData.value)
+  
+  if (latestSensorData.value?.humidity !== null && latestSensorData.value?.humidity !== undefined) {
+    console.log('🔍 Humedad original (tipo):', typeof latestSensorData.value.humidity, latestSensorData.value.humidity)
+    // Convertir a número antes de usar toFixed
+    const humidity = Number(latestSensorData.value.humidity).toFixed(1)
+    console.log('💧 Humedad calculada:', humidity)
+    return humidity
+  }
+  
+  console.log('❌ No hay datos de humedad disponibles')
+  return null
+})
 
 // Computed
 const currentModeDisplay = computed(() => {
@@ -302,44 +407,6 @@ const selectMode = (mode) => {
   }
 }
 
-const getCancelButtonText = () => {
-  if (isWatering.value) {
-    return 'Cancelar Riego'
-  } else if (activeMode.value === 'programado') {
-    return 'Cancelar Configuración'
-  } else if (activeMode.value === 'automatico') {
-    return 'Cancelar Configuración'
-  } else {
-    return 'Cancelar Configuración'
-  }
-}
-
-const getCancelModalText = () => {
-  if (isWatering.value) {
-    return '¿Estás seguro de que quieres cancelar el riego actual? La bomba se detendrá inmediatamente.'
-  } else if (activeMode.value === 'programado') {
-    return '¿Estás seguro de que quieres cancelar la programación? El riego no se ejecutará en la fecha programada.'
-  } else if (activeMode.value === 'automatico') {
-    return '¿Estás seguro de que quieres deshacer la configuración del modo automático?'
-  } else {
-    return '¿Estás seguro de que quieres deshacer la configuración del modo actual?'
-  }
-}
-
-const cancelMode = () => {
-  if (isWatering.value) {
-    showSuccess('Riego cancelado exitosamente')
-  } else if (activeMode.value === 'programado') {
-    showWarning('Programación cancelada')
-  } else {
-    showWarning('Configuración deshecha')
-  }
-  
-  // Cancelar usando el composable
-  cancelActiveMode()
-  showCancelModal.value = false
-}
-
 // Watchers para asegurar que los cambios se reflejen en tiempo real
 watch(remainingTime, (newValue) => {
   console.log('remainingTime cambió a:', newValue)
@@ -350,6 +417,27 @@ watch(remainingTime, (newValue) => {
     })
   }
 })
+
+// Watcher para monitorear cambios en los datos de sensores
+watch(() => realDataPoints?.value, (newData) => {
+  console.log('🔄 Datos de sensores actualizados:', newData?.length || 0)
+  if (newData && newData.length > 0) {
+    const latestData = newData[newData.length - 1]
+    console.log('🔄 Último dato de sensores:', latestData)
+    console.log('🌡️ Temperatura actual:', currentTemperature.value)
+    console.log('💧 Humedad actual:', currentHumidity.value)
+  }
+}, { deep: true })
+
+// Watcher para monitorear cambios en los datos de sensores del dispositivo activo
+watch(() => latestSensorData.value, (newData) => {
+  if (newData) {
+    console.log('📊 Último dato de sensor actualizado:', newData)
+    console.log('🌡️ Temperatura:', newData.temperature, '°C')
+    console.log('💧 Humedad:', newData.humidity, '%')
+    console.log('📱 Dispositivo:', newData.device?.name)
+  }
+}, { deep: true })
 
 // Watcher para asegurar que el estado se mantenga sincronizado
 watch(hasActiveMode, (newValue) => {
@@ -383,9 +471,115 @@ watch(isPaused, (newValue) => {
   })
 })
 
+// Observar cambios en el array de cultivos para actualizar automáticamente
+watch(() => cropStore.crops, (newCrops) => {
+  if (!userStore.isDemoMode) {
+    console.log('🔄 Modo/index: Array de cultivos actualizado, cultivos:', newCrops.length)
+    const selectedCrop = newCrops.find(crop => crop.selected)
+    if (selectedCrop) {
+      console.log('✅ Modo/index: Cultivo seleccionado detectado:', selectedCrop.name)
+    }
+  }
+}, { deep: true })
+
+// Observar cambios en el array de dispositivos para actualizar automáticamente
+watch(() => deviceStore.devices, (newDevices) => {
+  if (!userStore.isDemoMode) {
+    console.log('🔄 Modo/index: Array de dispositivos actualizado, dispositivos:', newDevices.length)
+    const activeDevice = deviceStore.activeDevices[0]
+    if (activeDevice) {
+      console.log('✅ Modo/index: Dispositivo activo detectado:', activeDevice.deviceName)
+    }
+  }
+}, { deep: true })
+
+// Watchers para datos reactivos
+watch(() => deviceStore.activeDevices, (newDevices) => {
+  console.log('📱 Dispositivos activos actualizados:', newDevices.length)
+  console.log('📱 Dispositivo activo:', activeDeviceName.value)
+}, { deep: true })
+
+watch(() => cropStore.crops, (newCrops) => {
+  console.log('🌱 Cultivos actualizados:', newCrops.length)
+  console.log('🌱 Cultivo seleccionado:', selectedCropName.value)
+}, { deep: true })
+
+watch(() => realDataPoints?.value, (newData) => {
+  console.log('🌡️ Datos de sensores actualizados:', newData?.length || 0)
+  console.log('🌡️ Temperatura actual:', currentTemperature.value)
+  console.log('💧 Humedad actual:', currentHumidity.value)
+}, { deep: true })
+
 // Limpiar intervalos al desmontar el componente
 onUnmounted(() => {
   clearAllIntervals()
+})
+
+// Cargar datos al montar el componente
+onMounted(async () => {
+  try {
+    console.log('🔄 Cargando datos en modo/index.vue...')
+    
+    if (userStore.isDemoMode) {
+      // Modo demo: no necesitamos cargar datos reales
+      console.log('🎭 Modo demo activo en modo/index.vue')
+    } else {
+      // Modo real: cargar datos siguiendo el patrón de dashboard.vue
+      console.log('📊 Modo real: Cargando datos reales')
+      
+      // IMPORTANTE: Cargar primero los cultivos y dispositivos antes de verificar estados
+      if (userStore.user?.id) {
+        // Cargar cultivos primero
+        if (cropStore.crops.length === 0) {
+          console.log('🌱 Cargando cultivos del usuario...')
+          await cropStore.fetchAllUserCrops(userStore.user.id)
+        }
+        
+        // Cargar dispositivos después
+        if (deviceStore.devices.length === 0) {
+          console.log('📱 Cargando dispositivos del usuario...')
+          await deviceStore.fetchUserDevice(userStore.user.id)
+        }
+        
+        console.log('✅ Datos cargados en modo/index.vue - Cultivos:', cropStore.crops.length, 'Dispositivos:', deviceStore.devices.length)
+        console.log('📱 Dispositivos activos:', deviceStore.activeDevices.length)
+        console.log('🌱 Cultivo seleccionado:', selectedCropName.value)
+        
+        // Verificar datos de sensores
+        console.log('🌡️ Datos de sensores iniciales:', realDataPoints.value?.length || 0)
+        console.log('🌡️ Temperatura actual:', currentTemperature.value)
+        console.log('💧 Humedad actual:', currentHumidity.value)
+        
+        // Si no hay datos de sensores, esperar un poco más
+        if (!realDataPoints.value || realDataPoints.value.length === 0) {
+          console.log('⏳ No hay datos de sensores, esperando...')
+          setTimeout(() => {
+            console.log('🌡️ Datos de sensores después de esperar:', realDataPoints.value?.length || 0)
+            console.log('🌡️ Temperatura actual:', currentTemperature.value)
+            console.log('💧 Humedad actual:', currentHumidity.value)
+          }, 2000)
+        }
+        
+        // Inicializar datos de sensores
+        console.log('🚀 Inicializando datos de sensores...')
+        startSimulation()
+        
+        // Cargar último dato de sensor del dispositivo activo
+        console.log('🚀 Cargando datos de sensores...')
+        await loadLatestSensorData()
+        
+        // Configurar actualización automática cada 10 segundos
+        setInterval(async () => {
+          if (!userStore.isDemoMode) {
+            await loadLatestSensorData()
+          }
+        }, 10000)
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error cargando datos en modo/index.vue:', error)
+  }
 })
 
 // Ya no necesitamos simular el tiempo aquí, se maneja en el composable

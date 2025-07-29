@@ -73,7 +73,7 @@ const createChart = async () => {
           borderColor: '#1d4ed8',
           backgroundColor: 'transparent',
           borderWidth: 3,
-          borderDash: [5, 10],
+          borderDash: [10, 5],
           pointRadius: 0,
           fill: false,
           tension: 0
@@ -147,14 +147,13 @@ const createChart = async () => {
               color: '#9ca3af',
               font: { size: 11 },
               callback: function(value) {
-                return value + '%'
+                return value.toFixed(2) + '%'
               }
             },
             grid: {
               color: 'rgba(255, 255, 255, 0.08)'
-            },
-            min: 25,
-            max: 95
+            }
+            // Removidos min y max fijos para usar rangos dinámicos
           }
         },
         elements: {
@@ -185,13 +184,24 @@ const updateChart = () => {
     const minThresholdData = labels.map(() => props.humidityMin)
     const maxThresholdData = labels.map(() => props.humidityMax)
     
+    // Calcular rangos dinámicos para el eje Y
+    const allValues = [...humidityData, props.humidityMin, props.humidityMax]
+    const minValue = Math.min(...allValues)
+    const maxValue = Math.max(...allValues)
+    const range = maxValue - minValue
+    const margin = range * 0.1 // 10% de margen
+    
+    const yAxisMin = Math.max(0, minValue - margin)
+    const yAxisMax = Math.min(100, maxValue + margin)
+    
     console.log('📊 Updating humidity chart:', {
       labels: labels.length,
       humidityData: humidityData.length,
       latestHumidity: humidityData[humidityData.length - 1],
       latestTime: labels[labels.length - 1],
       humidityMin: props.humidityMin,
-      humidityMax: props.humidityMax
+      humidityMax: props.humidityMax,
+      yAxisRange: { min: yAxisMin, max: yAxisMax }
     })
     
     // Actualizar datos del chart
@@ -203,6 +213,10 @@ const updateChart = () => {
     // Actualizar las etiquetas de los umbrales
     chart.data.datasets[1].label = `Umbral Mínimo (${props.humidityMin}%)`
     chart.data.datasets[2].label = `Umbral Máximo (${props.humidityMax}%)`
+    
+    // Actualizar configuración del eje Y con rangos dinámicos
+    chart.options.scales.y.min = yAxisMin
+    chart.options.scales.y.max = yAxisMax
     
     // Actualizar sin animación para tiempo real
     chart.update('none')

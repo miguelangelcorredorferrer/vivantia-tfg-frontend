@@ -434,6 +434,256 @@ const deleteSensorReading = async (req, res) => {
   }
 };
 
+// ===== FUNCIONES PARA DASHBOARD =====
+
+// Obtener el último dato registrado (punto inicial para gráficas)
+const getLatestReadingForDashboard = async (req, res) => {
+  try {
+    const { device_id } = req.params;
+
+    // Obtener los dos últimos datos para calcular el cambio
+    const query = `
+      SELECT * FROM sensor_readings 
+      WHERE device_id = $1 
+      ORDER BY received_at DESC 
+      LIMIT 2
+    `;
+    
+    const result = await pool.query(query, [device_id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontraron datos para este dispositivo'
+      });
+    }
+    
+    const currentReading = new SensorReading(result.rows[0]);
+    const previousReading = result.rows.length > 1 ? new SensorReading(result.rows[1]) : null;
+    
+    // Calcular cambios porcentuales
+    let temperatureChange = 0;
+    let humidityChange = 0;
+    
+    if (previousReading) {
+      if (previousReading.temperature !== null && currentReading.temperature !== null && previousReading.temperature !== 0) {
+        temperatureChange = ((currentReading.temperature - previousReading.temperature) / previousReading.temperature) * 100;
+      }
+      
+      if (previousReading.humidity !== null && currentReading.humidity !== null && previousReading.humidity !== 0) {
+        humidityChange = ((currentReading.humidity - previousReading.humidity) / previousReading.humidity) * 100;
+      }
+    }
+    
+    const responseData = {
+      ...currentReading,
+      changes: {
+        temperature: {
+          value: temperatureChange,
+          direction: temperatureChange > 0 ? 'up' : temperatureChange < 0 ? 'down' : 'stable',
+          formatted: `${temperatureChange > 0 ? '+' : ''}${temperatureChange.toFixed(1)}%`
+        },
+        humidity: {
+          value: humidityChange,
+          direction: humidityChange > 0 ? 'up' : humidityChange < 0 ? 'down' : 'stable',
+          formatted: `${humidityChange > 0 ? '+' : ''}${humidityChange.toFixed(1)}%`
+        }
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Último dato obtenido exitosamente',
+      data: responseData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener último dato',
+      error: error.message
+    });
+  }
+};
+
+// Obtener datos históricos para mostrar evolución en gráficas
+const getReadingsHistoryForDashboard = async (req, res) => {
+  try {
+    const { device_id } = req.params;
+    const { hours = 24, limit = 100 } = req.query;
+
+    const query = `
+      SELECT * FROM sensor_readings 
+      WHERE device_id = $1 
+      AND received_at >= NOW() - INTERVAL '${parseInt(hours)} hours'
+      ORDER BY received_at ASC
+      LIMIT $2
+    `;
+    
+    const result = await pool.query(query, [device_id, parseInt(limit)]);
+    
+    const readings = result.rows.map(row => new SensorReading(row));
+
+    res.status(200).json({
+      success: true,
+      message: 'Datos históricos obtenidos exitosamente',
+      count: readings.length,
+      data: readings
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener datos históricos',
+      error: error.message
+    });
+  }
+};
+
+// Obtener datos nuevos desde un timestamp específico (para actualizaciones en tiempo real)
+const getNewReadingsSince = async (req, res) => {
+  try {
+    const { device_id } = req.params;
+    const { since } = req.query; // Timestamp desde el cual obtener datos nuevos
+
+    if (!since) {
+      return res.status(400).json({
+        success: false,
+        message: 'Parámetro "since" es obligatorio'
+      });
+    }
+
+    const query = `
+      SELECT * FROM sensor_readings 
+      WHERE device_id = $1 
+      AND received_at > $2
+      ORDER BY received_at ASC
+    `;
+    
+    const result = await pool.query(query, [device_id, since]);
+    
+    const readings = result.rows.map(row => new SensorReading(row));
+
+    res.status(200).json({
+      success: true,
+      message: 'Datos nuevos obtenidos exitosamente',
+      count: readings.length,
+      data: readings
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener datos nuevos',
+      error: error.message
+    });
+  }
+};
+
+// Obtener último dato de sensor del dispositivo activo del usuario
+const getLatestSensorReadingForActiveDevice = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    // Buscar el dispositivo activo del usuario
+    const deviceQuery = `
+      SELECT id, device_name FROM devices 
+      WHERE user_id = $1 AND is_active_communication = true 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+    const deviceResult = await pool.query(deviceQuery, [user_id]);
+    
+    console.log('🔍 Buscando dispositivo activo para usuario:', user_id)
+    console.log('🔍 Resultado de búsqueda de dispositivo:', deviceResult.rows.length, 'dispositivos encontrados')
+    
+    if (deviceResult.rows.length === 0) {
+      console.log('❌ No se encontró dispositivo activo para el usuario:', user_id)
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró dispositivo activo para este usuario'
+      });
+    }
+    
+    const activeDevice = deviceResult.rows[0];
+    console.log('✅ Dispositivo activo encontrado:', activeDevice)
+
+    // Obtener el último dato de sensor del dispositivo activo
+    const sensorQuery = `
+      SELECT * FROM sensor_readings 
+      WHERE device_id = $1 
+      ORDER BY received_at DESC 
+      LIMIT 1
+    `;
+    const sensorResult = await pool.query(sensorQuery, [activeDevice.id]);
+    
+    if (sensorResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontraron lecturas para el dispositivo activo'
+      });
+    }
+    
+    const reading = new SensorReading(sensorResult.rows[0]);
+
+    // Obtener el dato anterior para calcular tendencias
+    const previousQuery = `
+      SELECT * FROM sensor_readings 
+      WHERE device_id = $1 
+      ORDER BY received_at DESC 
+      LIMIT 1 OFFSET 1
+    `;
+    const previousResult = await pool.query(previousQuery, [activeDevice.id]);
+    
+    let temperatureChange = 0;
+    let humidityChange = 0;
+    
+    if (previousResult.rows.length > 0) {
+      const previousReading = previousResult.rows[0];
+      
+      if (previousReading.temperature !== null && reading.temperature !== null) {
+        temperatureChange = reading.temperature - previousReading.temperature;
+      }
+      
+      if (previousReading.humidity !== null && reading.humidity !== null) {
+        humidityChange = reading.humidity - previousReading.humidity;
+      }
+    }
+
+    const responseData = {
+      ...reading,
+      device: {
+        id: activeDevice.id,
+        name: activeDevice.device_name
+      },
+      trends: {
+        temperature: {
+          value: temperatureChange,
+          direction: temperatureChange > 0 ? 'up' : temperatureChange < 0 ? 'down' : 'stable',
+          formatted: `${temperatureChange > 0 ? '+' : ''}${temperatureChange.toFixed(1)}°C`
+        },
+        humidity: {
+          value: humidityChange,
+          direction: humidityChange > 0 ? 'up' : humidityChange < 0 ? 'down' : 'stable',
+          formatted: `${humidityChange > 0 ? '+' : ''}${humidityChange.toFixed(1)}%`
+        }
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Último dato del dispositivo activo obtenido exitosamente',
+      data: responseData
+    });
+  } catch (error) {
+    console.error('❌ Error al obtener último dato del dispositivo activo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener último dato del dispositivo activo',
+      error: error.message
+    });
+  }
+};
+
+// Ya no necesitamos simular el tiempo aquí, se maneja en el composable
+
 export {
   createSensorReading,
   findSensorReadingById,
@@ -447,5 +697,10 @@ export {
   deleteOldSensorReadings,
   getDeviceSensorStats,
   updateSensorReading,
-  deleteSensorReading
+  deleteSensorReading,
+  // Funciones para dashboard
+  getLatestReadingForDashboard,
+  getReadingsHistoryForDashboard,
+  getNewReadingsSince,
+  getLatestSensorReadingForActiveDevice
 };

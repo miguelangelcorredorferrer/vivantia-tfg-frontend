@@ -64,6 +64,15 @@ export default {
         })
     },
     
+    // Función específica para obtener último dato del dispositivo activo del usuario
+    getLatestSensorReadingForActiveDevice(userId) {
+        return $fetch(`/sensor-readings/user/${userId}/active-device/latest`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    
     // Rutas por filtros y rangos
     getSensorReadingsByDateRange(startDate, endDate) {
         return $fetch(`/sensor-readings/date-range/${startDate}/${endDate}`, {

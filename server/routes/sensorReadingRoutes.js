@@ -11,7 +11,8 @@ import {
   deleteOldSensorReadings,
   getDeviceSensorStats,
   updateSensorReading,
-  deleteSensorReading
+  deleteSensorReading,
+  getLatestSensorReadingForActiveDevice
 } from '../controllers/sensorReadingController.js';
 
 const router = express.Router();
@@ -26,6 +27,9 @@ router.delete('/:id', deleteSensorReading);
 router.get('/device/:device_id', getSensorReadingsByDeviceId);
 router.get('/device/:device_id/latest', getLatestSensorReadingByDeviceId);
 router.get('/device/:device_id/stats', getDeviceSensorStats);
+
+// Ruta para obtener último dato del dispositivo activo del usuario
+router.get('/user/:user_id/active-device/latest', getLatestSensorReadingForActiveDevice);
 
 // Rutas por filtros y rangos
 router.get('/date-range/:start_date/:end_date', getSensorReadingsByDateRange);

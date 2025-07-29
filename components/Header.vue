@@ -42,7 +42,7 @@ const goToLogin = () => {
           </div>
           <div class="hidden sm:block">
             <h1 class="text-xl font-bold text-white">
-              {{ userStore.isAdmin ? 'PANEL DE ADMINISTRACIÓN' : (userStore.isDemoMode ? 'VISTA PREVIA - VIVANTIA' : 'DASHBOARD') }}
+              {{ userStore.isAdmin ? 'PANEL DE ADMINISTRACIÓN' : (userStore.isDemoMode ? 'VISTA PREVIA - VIVANTIA' : 'Optimiza cada gota, maximiza cada cosecha') }}
             </h1>
             <p class="text-xs text-gray-400">
               {{ userStore.isAdmin ? 'Centro de Control' : (userStore.isDemoMode ? 'Modo Demo' : 'Performance') }}

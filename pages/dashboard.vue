@@ -278,14 +278,21 @@ onMounted(async () => {
       // Modo real: cargar datos normales
       console.log('📊 Dashboard: Cargando datos reales')
       
-      // Cargar todos los cultivos del usuario si no están cargados
-      if (userStore.user?.id && cropStore.crops.length === 0) {
-        await cropStore.fetchAllUserCrops(userStore.user.id)
-      }
-      
-      // Cargar dispositivos del usuario si no están cargados
-      if (userStore.user?.id && deviceStore.devices.length === 0) {
-        await deviceStore.fetchUserDevice(userStore.user.id)
+      // IMPORTANTE: Cargar primero los cultivos y dispositivos antes de verificar estados
+      if (userStore.user?.id) {
+        // Cargar cultivos primero
+        if (cropStore.crops.length === 0) {
+          console.log('🌱 Cargando cultivos del usuario...')
+          await cropStore.fetchAllUserCrops(userStore.user.id)
+        }
+        
+        // Cargar dispositivos después
+        if (deviceStore.devices.length === 0) {
+          console.log('📱 Cargando dispositivos del usuario...')
+          await deviceStore.fetchUserDevice(userStore.user.id)
+        }
+        
+        console.log('✅ Datos del dashboard cargados - Cultivos:', cropStore.crops.length, 'Dispositivos:', deviceStore.devices.length)
       }
     }
   } catch (error) {
@@ -360,14 +367,14 @@ onUnmounted(() => {
             </div>
             <div>
               <h3 class="text-xl font-bold text-white">Temperatura Ambiental</h3>
-              <p class="text-gray-400">Sensor DHT22 - Actualización cada 3s</p>
+              <p class="text-gray-400">Sensor DHT11 - Actualización cada 2 minutos</p>
             </div>
           </div>
           <div class="sensor-display">
             <div class="main-value text-red-400">{{ formattedTemperature }}</div>
             <div class="trend-badge" :class="temperatureTrend.direction === 'up' ? 'trend-up' : temperatureTrend.direction === 'down' ? 'trend-down' : 'trend-neutral'">
               <span class="trend-arrow">{{ temperatureTrend.direction === 'up' ? '↗' : temperatureTrend.direction === 'down' ? '↘' : '→' }}</span>
-              <span class="trend-percent">{{ temperatureTrend.value }}%</span>
+              <span class="trend-percent">{{ temperatureTrend.value }}°C</span>
             </div>
           </div>
         </div>
@@ -385,8 +392,8 @@ onUnmounted(() => {
               <component :is="humidityIcon" />
             </div>
             <div>
-              <h3 class="text-xl font-bold text-white">Humedad Relativa</h3>
-              <p class="text-gray-400">Sensor DHT22 - Actualización cada 3s</p>
+              <h3 class="text-xl font-bold text-white">Humedad del Suelo</h3>
+              <p class="text-gray-400">Sensor Capacitive Soil Moisture - Actualización cada 2 minutos</p>
             </div>
           </div>
           <div class="sensor-display">

@@ -131,14 +131,12 @@ const createChart = async () => {
               color: '#9ca3af',
               font: { size: 11 },
               callback: function(value) {
-                return value + '°C'
+                return value.toFixed(2) + '°C'
               }
             },
             grid: {
               color: 'rgba(255, 255, 255, 0.08)'
-            },
-            min: 15,
-            max: 35
+            }
           }
         },
         elements: {
@@ -163,26 +161,41 @@ const updateChart = () => {
   
   try {
     const labels = props.data.labels || []
-    const tempData = props.data.datasets?.[0]?.data || []
+    const temperatureData = props.data.datasets?.[0]?.data || []
     
     // Generar datos del umbral basado en el cultivo seleccionado
     const thresholdData = labels.map(() => props.temperatureMax)
     
+    // Calcular rangos dinámicos para el eje Y
+    const allValues = [...temperatureData, props.temperatureMax]
+    const minValue = Math.min(...allValues)
+    const maxValue = Math.max(...allValues)
+    const range = maxValue - minValue
+    const margin = range * 0.1 // 10% de margen
+    
+    const yAxisMin = Math.max(0, minValue - margin)
+    const yAxisMax = maxValue + margin
+    
     console.log('📊 Updating temperature chart:', {
       labels: labels.length,
-      tempData: tempData.length,
-      latestTemp: tempData[tempData.length - 1],
+      temperatureData: temperatureData.length,
+      latestTemperature: temperatureData[temperatureData.length - 1],
       latestTime: labels[labels.length - 1],
-      temperatureMax: props.temperatureMax
+      temperatureMax: props.temperatureMax,
+      yAxisRange: { min: yAxisMin, max: yAxisMax }
     })
     
     // Actualizar datos del chart
     chart.data.labels = [...labels]
-    chart.data.datasets[0].data = [...tempData]
+    chart.data.datasets[0].data = [...temperatureData]
     chart.data.datasets[1].data = [...thresholdData]
     
     // Actualizar la etiqueta del umbral
     chart.data.datasets[1].label = `Umbral Máximo (${props.temperatureMax}°C)`
+    
+    // Actualizar configuración del eje Y con rangos dinámicos
+    chart.options.scales.y.min = yAxisMin
+    chart.options.scales.y.max = yAxisMax
     
     // Actualizar sin animación para tiempo real
     chart.update('none')

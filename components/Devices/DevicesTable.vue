@@ -275,6 +275,17 @@
       </table>
     </div>
     </BaseCard>
+
+    <!-- Modal de confirmación para eliminar dispositivo -->
+    <DeleteConfirmModal
+      :is-open="isDeleteModalOpen"
+      title="Eliminar Dispositivo"
+      message="¿Estás seguro de que quieres eliminar este dispositivo? Esta acción eliminará permanentemente el dispositivo y todos sus datos asociados."
+      :item-name="deviceToDelete?.deviceName"
+      item-type="dispositivo"
+      @confirm="confirmDeleteDevice"
+      @cancel="cancelDeleteDevice"
+    />
   </div>
 </template>
 
@@ -287,6 +298,7 @@ import CustomSwitch from '../SwitchPlugin/CustomSwitch.vue'
 import DatabaseStatusIcon from './DatabaseStatusIcon.vue'
 import DevicesFilter from './DevicesFilter.vue'
 import EditIcon from '~/assets/icons/EditIcon.vue'
+import DeleteConfirmModal from '../Admin/DeleteConfirmModal.vue'
 
 const props = defineProps({
   deviceStore: {
@@ -315,6 +327,10 @@ const currentFilters = ref({
   deviceName: '',
   enddeviceId: ''
 })
+
+// Estado del modal de eliminación
+const isDeleteModalOpen = ref(false)
+const deviceToDelete = ref(null)
 
 // Dispositivos filtrados
 const filteredDevices = computed(() => {
@@ -375,11 +391,25 @@ const handleEditDevice = (device) => {
   emit('edit-device', device)
 }
 
-// Manejo de eliminación
+// Manejo de eliminación - Abrir modal
 const handleDeleteDevice = (device) => {
-  if (confirm(`¿Estás seguro de que quieres eliminar el dispositivo "${device.deviceName}"?`)) {
-    emit('delete-device', device)
+  deviceToDelete.value = device
+  isDeleteModalOpen.value = true
+}
+
+// Confirmar eliminación
+const confirmDeleteDevice = () => {
+  if (deviceToDelete.value) {
+    emit('delete-device', deviceToDelete.value)
   }
+  isDeleteModalOpen.value = false
+  deviceToDelete.value = null
+}
+
+// Cancelar eliminación
+const cancelDeleteDevice = () => {
+  isDeleteModalOpen.value = false
+  deviceToDelete.value = null
 }
 
 const toggleAppKeyVisibility = (index) => {
