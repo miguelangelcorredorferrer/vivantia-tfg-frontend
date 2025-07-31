@@ -8,7 +8,6 @@ import authRoutes from './routes/authRoutes.js'
 import cropRoutes from './routes/cropRoutes.js'
 import deviceRoutes from './routes/deviceRoutes.js'
 import irrigationRoutes from './routes/irrigationRoutes.js'
-import pumpActivationRoutes from './routes/pumpActivationRoutes.js'
 import sensorReadingRoutes from './routes/sensorReadingRoutes.js'
 import ttnUplinkRoutes from './routes/ttnUplinkRoutes.js'
 import userRoutes from './routes/userRoutes.js'
@@ -63,7 +62,6 @@ app.use('/api/auth', authRoutes)
 app.use('/api/crops', cropRoutes)
 app.use('/api/devices', deviceRoutes)
 app.use('/api/irrigation', irrigationRoutes)
-app.use('/api/pump-activations', pumpActivationRoutes)
 app.use('/api/sensor-readings', sensorReadingRoutes)
 app.use('/api/ttn', ttnUplinkRoutes)  // Router de TTN
 app.use('/api/users', userRoutes)

@@ -42,12 +42,24 @@ class ManualConfig {
     this.id = data.id;
     this.irrigation_config_id = data.irrigation_config_id;
     this.duration_minutes = data.duration_minutes;
+    this.begin_notification = data.begin_notification || false;
+    this.final_notification = data.final_notification || false;
     this.created_at = data.created_at;
   }
 
   // Obtener duración formateada
   getFormattedDuration() {
     return formatDuration(this.duration_minutes);
+  }
+
+  // Verificar si debe notificar al inicio
+  shouldNotifyAtStart() {
+    return this.begin_notification;
+  }
+
+  // Verificar si debe notificar al final
+  shouldNotifyAtEnd() {
+    return this.final_notification;
   }
 }
 

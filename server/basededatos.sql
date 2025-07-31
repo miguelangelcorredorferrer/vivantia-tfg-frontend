@@ -1,7 +1,7 @@
 CREATE TYPE user_role AS ENUM ('admin', 'usuario', 'visitante');
 CREATE TYPE irrigation_mode AS ENUM ('manual', 'automatic', 'programmed');
 CREATE TYPE frequency_type AS ENUM ('once', 'daily', 'custom');
-CREATE TYPE pump_status AS ENUM ('active', 'completed', 'cancelled', 'paused', 'restart', 'error');
+CREATE TYPE pump_status AS ENUM ('active', 'completed', 'cancelled', 'paused', 'error', 'inactive');
 CREATE TYPE alert_severity AS ENUM ('info', 'success', 'warning', 'error');
 CREATE TYPE alert_category AS ENUM (
   'user',           -- Acciones del usuario (registro, login, cambios)
@@ -33,6 +33,8 @@ ALTER TABLE crops DROP CONSTRAINT crops_user_id_key;
 ALTER TABLE devices ADD COLUMN ttn_region VARCHAR(10);
 ALTER TABLE devices ADD COLUMN ttn_app_id VARCHAR(100);
 ALTER TABLE devices ADD COLUMN ttn_access_key VARCHAR(255);
+ALTER TABLE manual_configs ADD COLUMN begin_notification BOOLEAN DEFAULT FALSE;
+ALTER TABLE manual_configs ADD COLUMN final_notification BOOLEAN DEFAULT FALSE;
 
 
 CREATE TABLE users (

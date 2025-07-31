@@ -41,13 +41,13 @@
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-purple-400">Estado Bomba</h3>
             <div :class="[
-              isPaused ? 'bg-yellow-500' : 
-              isWatering ? 'bg-green-500 animate-pulse' : 
+              irrigationStore.isPaused ? 'bg-yellow-500' : 
+              irrigationStore.isWatering ? 'bg-green-500 animate-pulse' : 
               'bg-gray-400'
             ]" class="w-3 h-3 rounded-full"></div>
           </div>
           <p class="text-2xl font-bold text-white">
-            {{ isPaused ? 'Pausada' : isWatering ? 'Activa' : 'Inactiva' }}
+            {{ irrigationStore.isPaused ? 'Pausada' : irrigationStore.isWatering ? 'Activa' : 'Inactiva' }}
           </p>
         </div>
       </div>
@@ -56,11 +56,11 @@
       <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <p class="text-sm text-gray-400">Último Riego</p>
-          <p class="font-semibold text-white">{{ lastWatering || 'Nunca' }}</p>
+          <p class="font-semibold text-white">{{ lastIrrigationFormatted || 'Nunca' }}</p>
         </div>
         <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <p class="text-sm text-gray-400">Tiempo Restante</p>
-          <p class="font-semibold text-white">{{ remainingTime || '-' }}</p>
+          <p class="font-semibold text-white">{{ irrigationStore.remainingTime || remainingTime || '-' }}</p>
         </div>
         <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <p class="text-sm text-gray-400">Próximo Riego</p>
@@ -76,7 +76,7 @@
             <p class="text-sm text-gray-400">Caudal en Curso</p>
             <FlowIcon />
           </div>
-          <p class="font-semibold text-white">{{ isWatering ? flowRate + ' L/min' : '-' }}</p>
+          <p class="font-semibold text-white">{{ irrigationStore.isWatering ? flowRate + ' L/min' : '-' }}</p>
         </div>
 
         <!-- Temperatura Actual -->
@@ -106,23 +106,23 @@
       <h2 class="text-2xl font-bold text-white mb-6">Seleccionar Modo de Riego</h2>
       
       <!-- Mostrar configuración activa si existe -->
-      <div v-if="hasActiveMode" class="mb-6 p-4 bg-yellow-900/30 border border-yellow-500/30 rounded-lg">
+      <div v-if="irrigationStore.hasActiveMode" class="mb-6 p-4 bg-yellow-900/30 border border-yellow-500/30 rounded-lg">
         <div class="flex items-center justify-between">
           <div class="flex-1">
             <h3 class="font-semibold text-yellow-400">Modo {{ currentModeDisplay }} Configurado</h3>
-            <p class="text-sm text-yellow-300">{{ getModeDescription() }}</p>
-            <div v-if="isWatering || isPaused" class="mt-2">
+            <p class="text-sm text-yellow-300">{{ irrigationStore.getModeDescription() }}</p>
+            <div v-if="irrigationStore.isWatering || irrigationStore.isPaused" class="mt-2">
               <p class="text-sm text-yellow-200">
-                Tiempo restante: <span class="font-bold">{{ remainingTime }}</span>
-                <span v-if="isPaused" class="text-yellow-400 ml-2">(Pausado)</span>
+                Tiempo restante: <span class="font-bold">{{ irrigationStore.remainingTime }}</span>
+                <span v-if="irrigationStore.isPaused" class="text-yellow-400 ml-2">(Pausado)</span>
               </p>
             </div>
-            <div v-else-if="activeMode === 'programado' && remainingTime" class="mt-2">
+            <div v-else-if="irrigationStore.activeMode === 'programado' && irrigationStore.remainingTime" class="mt-2">
               <p class="text-sm text-yellow-200">
-                Tiempo hasta activación: <span class="font-bold">{{ remainingTime }}</span>
+                Tiempo hasta activación: <span class="font-bold">{{ irrigationStore.remainingTime }}</span>
               </p>
             </div>
-            <div v-else-if="activeMode === 'programado'" class="mt-2">
+            <div v-else-if="irrigationStore.activeMode === 'programado'" class="mt-2">
               <p class="text-sm text-yellow-200">
                 El riego se activará automáticamente en la fecha programada
               </p>
@@ -137,9 +137,9 @@
                 <div>
                   <p class="text-sm text-blue-300 font-medium">Para cancelar o modificar:</p>
                   <p class="text-xs text-blue-200 mt-1">
-                    <span v-if="activeMode === 'manual'">Accede al <span class="font-semibold">Modo Manual</span> para detener el riego activo.</span>
-                    <span v-else-if="activeMode === 'programado'">Accede al <span class="font-semibold">Modo Programado</span> para cancelar la programación.</span>
-                    <span v-else-if="activeMode === 'automatico'">Accede al <span class="font-semibold">Modo Automático</span> para modificar la configuración.</span>
+                    <span v-if="irrigationStore.activeMode === 'manual'">Accede al <span class="font-semibold">Modo Manual</span> para detener el riego activo.</span>
+                    <span v-else-if="irrigationStore.activeMode === 'programado'">Accede al <span class="font-semibold">Modo Programado</span> para cancelar la programación.</span>
+                    <span v-else-if="irrigationStore.activeMode === 'automatico'">Accede al <span class="font-semibold">Modo Automático</span> para modificar la configuración.</span>
                   </p>
                 </div>
               </div>
@@ -155,7 +155,7 @@
           @click="selectMode('manual')"
           :class="[
             'group p-6 rounded-xl border-2 transition-all duration-300',
-            canAccessManualMode
+            irrigationStore.canAccessManualMode
               ? 'cursor-pointer bg-gray-800/60 border-blue-500/30 hover:border-blue-400 hover:bg-gray-800/80 transform hover:scale-105' 
               : 'cursor-not-allowed bg-gray-800/30 border-gray-600/20 opacity-50'
           ]"
@@ -174,7 +174,7 @@
           @click="selectMode('programado')"
           :class="[
             'group p-6 rounded-xl border-2 transition-all duration-300',
-            canAccessProgrammedMode
+            irrigationStore.canAccessProgrammedMode
               ? 'cursor-pointer bg-gray-800/60 border-green-500/30 hover:border-green-400 hover:bg-gray-800/80 transform hover:scale-105' 
               : 'cursor-not-allowed bg-gray-800/30 border-gray-600/20 opacity-50'
           ]"
@@ -193,7 +193,7 @@
           @click="selectMode('automatico')"
           :class="[
             'group p-6 rounded-xl border-2 transition-all duration-300',
-            canAccessAutomaticMode
+            irrigationStore.canAccessAutomaticMode
               ? 'cursor-pointer bg-gray-800/60 border-purple-500/30 hover:border-purple-400 hover:bg-gray-800/80 transform hover:scale-105' 
               : 'cursor-not-allowed bg-gray-800/30 border-gray-600/20 opacity-50'
           ]"
@@ -222,6 +222,7 @@ import { useSensorData } from '~/composables/useSensorData'
 import { useDeviceStore } from '~/stores/device'
 import { useCropStore } from '~/stores/crop'
 import { useUserStore } from '~/stores/user'
+import { useIrrigationStore } from '~/stores/irrigation'
 import {
   dashboardIcon as DashboardIcon,
   plantIcon as PlantIcon,
@@ -234,6 +235,7 @@ import {
   humidityIcon as HumidityIcon
 } from '~/assets/icons'
 import SensorAPI from '~/api/SensorAPI.js'
+import IrrigationAPI from '~/api/IrrigationAPI.js'
 
 // Meta del documento
 useHead({
@@ -244,17 +246,7 @@ useHead({
 })
 
 // Sistema de modos de riego
-const {
-  activeMode,
-  isWatering,
-  remainingTime,
-  isPaused,
-  hasActiveMode,
-  canAccessMode,
-  cancelActiveMode,
-  getModeDescription,
-  clearAllIntervals
-} = useIrrigationModes()
+const irrigationStore = useIrrigationStore()
 
 // Stores
 const deviceStore = useDeviceStore()
@@ -269,6 +261,10 @@ const { realDataPoints, startSimulation } = useSensorData()
 // Estados locales para datos de sensores
 const latestSensorData = ref(null)
 const isLoadingSensorData = ref(false)
+
+// Estados locales para última fecha de riego
+const lastIrrigationData = ref(null)
+const isLoadingLastIrrigation = ref(false)
 
 // Estados locales
 const currentCrop = ref('Tomate Cherry')
@@ -303,6 +299,31 @@ const loadLatestSensorData = async () => {
     latestSensorData.value = null
   } finally {
     isLoadingSensorData.value = false
+  }
+}
+
+// Función para cargar la última fecha de riego desde la base de datos
+const loadLastIrrigationDate = async () => {
+  if (!userStore.user?.id || userStore.isDemoMode) return
+  
+  try {
+    isLoadingLastIrrigation.value = true
+    console.log('💧 Cargando última fecha de riego para usuario:', userStore.user.id)
+    
+    const response = await IrrigationAPI.getLastIrrigationDate(userStore.user.id)
+    
+    if (response.success && response.data) {
+      lastIrrigationData.value = response.data
+      console.log('✅ Última fecha de riego cargada:', response.data)
+    } else {
+      console.log('❌ No se encontraron registros de riego')
+      lastIrrigationData.value = null
+    }
+  } catch (error) {
+    console.error('❌ Error cargando última fecha de riego:', error)
+    lastIrrigationData.value = null
+  } finally {
+    isLoadingLastIrrigation.value = false
   }
 }
 
@@ -351,30 +372,17 @@ const currentHumidity = computed(() => {
 
 // Computed
 const currentModeDisplay = computed(() => {
-  return activeMode.value ? activeMode.value.charAt(0).toUpperCase() + activeMode.value.slice(1) : 'Apagado'
+  return irrigationStore.activeMode ? irrigationStore.activeMode.charAt(0).toUpperCase() + irrigationStore.activeMode.slice(1) : 'Apagado'
 })
 
 // Computed para determinar qué modos están disponibles
-const canAccessManualMode = computed(() => {
-  // Manual disponible solo si no hay modo activo o si es el modo actual
-  return !hasActiveMode.value || activeMode.value === 'manual'
-})
-
-const canAccessProgrammedMode = computed(() => {
-  // Programado disponible solo si no hay modo activo o si es el modo actual
-  return !hasActiveMode.value || activeMode.value === 'programado'
-})
-
-const canAccessAutomaticMode = computed(() => {
-  // Automático disponible solo si no hay modo activo o si es el modo actual
-  return !hasActiveMode.value || activeMode.value === 'automatico'
-})
+// Estas variables ahora vienen del irrigationStore
 
 // Métodos
 const getCurrentModeColor = () => {
-  if (!activeMode.value) return 'bg-gray-400'
+  if (!irrigationStore.activeMode) return 'bg-gray-400'
   
-  switch (activeMode.value) {
+  switch (irrigationStore.activeMode) {
     case 'manual': return 'bg-blue-500'
     case 'programado': return 'bg-green-500'
     case 'automatico': return 'bg-purple-500'
@@ -382,21 +390,19 @@ const getCurrentModeColor = () => {
   }
 }
 
-// getModeDescription ahora viene del composable useIrrigationModes
-
 const selectMode = (mode) => {
-  // Verificar si el modo está disponible según los computed
+  // Verificar si el modo está disponible según los computed del store
   let canAccess = false
   
   switch (mode) {
     case 'manual':
-      canAccess = canAccessManualMode.value
+      canAccess = irrigationStore.canAccessManualMode
       break
     case 'programado':
-      canAccess = canAccessProgrammedMode.value
+      canAccess = irrigationStore.canAccessProgrammedMode
       break
     case 'automatico':
-      canAccess = canAccessAutomaticMode.value
+      canAccess = irrigationStore.canAccessAutomaticMode
       break
   }
   
@@ -408,7 +414,7 @@ const selectMode = (mode) => {
 }
 
 // Watchers para asegurar que los cambios se reflejen en tiempo real
-watch(remainingTime, (newValue) => {
+watch(irrigationStore.remainingTime, (newValue) => {
   console.log('remainingTime cambió a:', newValue)
   // Forzar la reactividad del tiempo restante
   if (newValue) {
@@ -440,13 +446,13 @@ watch(() => latestSensorData.value, (newData) => {
 }, { deep: true })
 
 // Watcher para asegurar que el estado se mantenga sincronizado
-watch(hasActiveMode, (newValue) => {
-  console.log('hasActiveMode cambió a:', newValue, 'activeMode:', activeMode.value)
+watch(irrigationStore.hasActiveMode, (newValue) => {
+  console.log('hasActiveMode cambió a:', newValue, 'activeMode:', irrigationStore.activeMode)
 })
 
 // Watcher para monitorear cambios en el estado de riego
-watch(isWatering, (newValue) => {
-  console.log('isWatering cambió a:', newValue, 'activeMode:', activeMode.value)
+watch(irrigationStore.isWatering, (newValue) => {
+  console.log('isWatering cambió a:', newValue, 'activeMode:', irrigationStore.activeMode)
   // Forzar actualización de la UI
   nextTick(() => {
     // Trigger reactivity
@@ -454,8 +460,8 @@ watch(isWatering, (newValue) => {
 })
 
 // Watcher para monitorear cambios en el modo activo
-watch(activeMode, (newValue) => {
-  console.log('activeMode cambió a:', newValue, 'isWatering:', isWatering.value)
+watch(irrigationStore.activeMode, (newValue) => {
+  console.log('activeMode cambió a:', newValue, 'isWatering:', irrigationStore.isWatering)
   // Forzar actualización de la UI
   nextTick(() => {
     // Trigger reactivity
@@ -463,12 +469,29 @@ watch(activeMode, (newValue) => {
 })
 
 // Watcher para monitorear cambios en el estado de pausa
-watch(isPaused, (newValue) => {
-  console.log('isPaused cambió a:', newValue, 'isWatering:', isWatering.value)
+watch(irrigationStore.isPaused, (newValue) => {
+  console.log('isPaused cambió a:', newValue, 'isWatering:', irrigationStore.isWatering)
   // Forzar actualización de la UI
   nextTick(() => {
     // Trigger reactivity
   })
+})
+
+// Watcher para actualizar última fecha de riego cuando cambie el estado
+watch(irrigationStore.isWatering, async (newValue, oldValue) => {
+  // Si el riego se completó (pasó de true a false), actualizar última fecha
+  if (oldValue === true && newValue === false) {
+    console.log('💧 Riego completado, actualizando última fecha...')
+    await loadLastIrrigationDate()
+  }
+})
+
+// Watcher para actualizar última fecha cuando se complete un riego
+watch(irrigationStore.lastIrrigation, async (newValue) => {
+  if (newValue) {
+    console.log('💧 Último riego actualizado en store, actualizando datos...')
+    await loadLastIrrigationDate()
+  }
 })
 
 // Observar cambios en el array de cultivos para actualizar automáticamente
@@ -510,15 +533,57 @@ watch(() => realDataPoints?.value, (newData) => {
   console.log('💧 Humedad actual:', currentHumidity.value)
 }, { deep: true })
 
+// Computed para formatear la fecha del último riego
+const lastIrrigationFormatted = computed(() => {
+  if (!lastIrrigationData.value?.last_irrigation_at) return 'Nunca'
+  
+  try {
+    const date = new Date(lastIrrigationData.value.last_irrigation_at)
+    const now = new Date()
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60))
+    const diffInDays = Math.floor(diffInHours / 24)
+    
+    // Formatear según el tiempo transcurrido
+    if (diffInDays > 0) {
+      if (diffInDays === 1) {
+        return `Ayer ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+      } else if (diffInDays < 7) {
+        return `Hace ${diffInDays} días`
+      } else {
+        return date.toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric' 
+        }) + ' ' + date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+      }
+    } else if (diffInHours > 0) {
+      return `Hace ${diffInHours} hora${diffInHours > 1 ? 's' : ''}`
+    } else {
+      const diffInMinutes = Math.floor((now - date) / (1000 * 60))
+      if (diffInMinutes > 0) {
+        return `Hace ${diffInMinutes} minuto${diffInMinutes > 1 ? 's' : ''}`
+      } else {
+        return 'Ahora mismo'
+      }
+    }
+  } catch (error) {
+    console.error('Error formateando fecha de último riego:', error)
+    return 'Fecha no disponible'
+  }
+})
+
 // Limpiar intervalos al desmontar el componente
 onUnmounted(() => {
-  clearAllIntervals()
+  // irrigationStore.clearAllIntervals() // No se necesita llamar aquí, el composable lo maneja
 })
 
 // Cargar datos al montar el componente
 onMounted(async () => {
   try {
     console.log('🔄 Cargando datos en modo/index.vue...')
+    
+    // Cargar configuración activa de riego
+    await irrigationStore.loadActiveConfiguration()
     
     if (userStore.isDemoMode) {
       // Modo demo: no necesitamos cargar datos reales
@@ -568,12 +633,23 @@ onMounted(async () => {
         console.log('🚀 Cargando datos de sensores...')
         await loadLatestSensorData()
         
+        // Cargar última fecha de riego
+        console.log('🚀 Cargando última fecha de riego...')
+        await loadLastIrrigationDate()
+        
         // Configurar actualización automática cada 10 segundos
         setInterval(async () => {
           if (!userStore.isDemoMode) {
             await loadLatestSensorData()
           }
         }, 10000)
+        
+        // Configurar actualización automática de última fecha de riego cada 30 segundos
+        setInterval(async () => {
+          if (!userStore.isDemoMode) {
+            await loadLastIrrigationDate()
+          }
+        }, 30000)
       }
     }
     

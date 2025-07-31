@@ -57,6 +57,13 @@ export default {
             headers: getAuthHeaders()
         })
     },
+    deactivateIrrigationConfig(id) {
+        return $fetch(`/irrigation/${id}/deactivate`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
     updateLastIrrigation(id, data) {
         return $fetch(`/irrigation/${id}/update-last-irrigation`, {
             method: 'PUT',
@@ -79,6 +86,14 @@ export default {
     createManualConfig(data) {
         return $fetch('/irrigation/manual', {
             method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    updateManualConfig(id, data) {
+        return $fetch(`/irrigation/manual/${id}`, {
+            method: 'PUT',
             body: data,
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
@@ -108,6 +123,68 @@ export default {
         return $fetch(`/irrigation/programmed/${id}/next-execution`, {
             method: 'PUT',
             body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+
+    // Rutas para activaciones de bomba
+    createPumpActivation(data) {
+        return $fetch('/irrigation/pump-activation', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    getActivePumpActivation(irrigationConfigId) {
+        return $fetch(`/irrigation/pump-activation/config/${irrigationConfigId}/active`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    updatePumpActivationStatus(id, data) {
+        return $fetch(`/irrigation/pump-activation/${id}/status`, {
+            method: 'PUT',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    pausePumpActivation(id) {
+        return $fetch(`/irrigation/pump-activation/${id}/pause`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    resumePumpActivation(id) {
+        return $fetch(`/irrigation/pump-activation/${id}/resume`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    completePumpActivation(id) {
+        return $fetch(`/irrigation/pump-activation/${id}/complete`, {
+            method: 'PUT',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    getPumpActivationsByUser(userId, limit = 10) {
+        return $fetch(`/irrigation/pump-activation/user/${userId}/history?limit=${limit}`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+
+    // Obtener última fecha de riego del usuario
+    getLastIrrigationDate(userId) {
+        return $fetch(`/irrigation/user/${userId}/last-irrigation`, {
+            method: 'GET',
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
         })

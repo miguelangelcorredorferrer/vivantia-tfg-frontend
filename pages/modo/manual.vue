@@ -5,7 +5,9 @@ definePageMeta({
 })
 
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import { useIrrigationModes } from '~/composables/useIrrigationModes'
+import { useIrrigationStore } from '~/stores/irrigation'
+import { useUserStore } from '~/stores/user'
+import { useCropStore } from '~/stores/crop'
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -16,18 +18,10 @@ import {
   WarningIcon
 } from '~/assets/icons'
 
-// Sistema de modos de riego
-const {
-  isManualActive,
-  isWatering,
-  remainingTime,
-  isPaused,
-  activateManualMode,
-  cancelActiveMode,
-  pauseIrrigation,
-  resumeIrrigation,
-  clearAllIntervals
-} = useIrrigationModes()
+// Store de irrigation
+const irrigationStore = useIrrigationStore()
+const userStore = useUserStore()
+const cropStore = useCropStore()
 
 // Estados reactivos
 const duration = ref({
@@ -103,44 +97,103 @@ const confirmConfiguration = () => {
   showConfirmModal.value = true
 }
 
-const startManualWatering = () => {
+const startManualWatering = async () => {
   showConfirmModal.value = false
   
   // Configuración para el riego manual
   const config = {
-    duration: {
-      minutes: duration.value.minutes || 0,
-      seconds: duration.value.seconds || 0
-    },
-    options: options.value,
-    startTime: new Date()
+    duration_minutes: duration.value.minutes + (duration.value.seconds / 60),
+    begin_notification: options.value.notifyStart,
+    final_notification: options.value.notifyEnd
   }
   
   console.log('Configuración enviada:', config)
   
-  // Activar el modo manual usando el composable
-  activateManualMode(config)
+  // Verificar si existe configuración previa
+  const existingConfig = await irrigationStore.findManualConfigByUserAndCrop(
+    userStore.user.id, 
+    cropStore.currentCrop.id
+  )
   
-  showSuccess('Riego manual iniciado exitosamente')
+  let message = 'Riego manual iniciado exitosamente'
+  if (existingConfig) {
+    message = 'Configuración actualizada y riego manual iniciado exitosamente'
+  }
+  
+  // Activar el modo manual usando el store
+  const success = await irrigationStore.startManualIrrigation(config)
+  
+  if (success) {
+    showSuccess(message)
+  }
 }
 
 const confirmCancel = () => {
-  if (isWatering.value) {
+  if (irrigationStore.isWatering) {
     showCancelModal.value = true
   } else {
     cancelManualWatering()
   }
 }
 
-const cancelManualWatering = () => {
-  cancelActiveMode()
-  showSuccess('Riego manual cancelado')
+const confirmCancelModal = async () => {
+  // Cerrar el modal inmediatamente
   showCancelModal.value = false
+  
+  // Ejecutar la cancelación
+  const success = await irrigationStore.cancelActiveMode()
+  if (success) {
+    showSuccess('Riego manual cancelado')
+  }
+}
+
+const cancelManualWatering = async () => {
+  const success = await irrigationStore.cancelActiveMode()
+  if (success) {
+    showSuccess('Riego manual cancelado')
+  }
+}
+
+const pauseIrrigation = async () => {
+  const success = await irrigationStore.pauseIrrigation()
+  if (success) {
+    showSuccess('Riego pausado')
+  }
+}
+
+const resumeIrrigation = async () => {
+  const success = await irrigationStore.resumeIrrigation()
+  if (success) {
+    showSuccess('Riego reanudado')
+  }
 }
 
 const goBack = () => {
   router.push('/modo')
 }
+
+// Cargar configuración activa al montar
+onMounted(async () => {
+  await irrigationStore.loadActiveConfiguration()
+})
+
+// Watchers para asegurar reactividad
+watch(() => irrigationStore.hasActiveMode, (newValue) => {
+  console.log('🔄 hasActiveMode cambió a:', newValue)
+})
+
+watch(() => irrigationStore.isManualActive, (newValue) => {
+  console.log('🔄 isManualActive cambió a:', newValue)
+})
+
+watch(() => irrigationStore.isWatering, (newValue) => {
+  console.log('🔄 isWatering cambió a:', newValue)
+})
+
+// Limpiar al desmontar el componente
+onUnmounted(() => {
+  irrigationStore.cleanup()
+})
 
 // Meta del documento
 useHead({
@@ -148,22 +201,6 @@ useHead({
   meta: [
     { name: 'description', content: 'Configuración del modo manual de riego' }
   ]
-})
-
-// Watcher para asegurar que el tiempo restante se actualice
-watch(remainingTime, (newValue) => {
-  // Forzar la reactividad del tiempo restante
-  if (newValue) {
-    // Trigger reactivity
-    nextTick(() => {
-      // El tiempo se actualizará automáticamente
-    })
-  }
-})
-
-// Limpiar intervalos al desmontar el componente
-onUnmounted(() => {
-  clearAllIntervals()
 })
 </script>
 
@@ -194,17 +231,17 @@ onUnmounted(() => {
       </div>
 
       <!-- Widget de cancelar operación cuando está activo -->
-      <div v-if="isManualActive && (isWatering || isPaused)" class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors mb-6">
-        <h2 class="text-xl font-bold text-white mb-6">Riego Manual {{ isPaused ? 'Pausado' : 'Activo' }}</h2>
+      <div v-if="irrigationStore.isManualActive && (irrigationStore.isWatering || irrigationStore.isPaused)" class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors mb-6">
+        <h2 class="text-xl font-bold text-white mb-6">Riego Manual {{ irrigationStore.isPaused ? 'Pausado' : 'Activo' }}</h2>
         
         <div class="text-center space-y-6">
           <!-- Estado visual -->
           <div class="flex justify-center">
             <div :class="[
               'w-24 h-24 rounded-full flex items-center justify-center shadow-lg',
-              isPaused ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
+              irrigationStore.isPaused ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
             ]">
-              <PauseIcon v-if="isPaused" />
+              <PauseIcon v-if="irrigationStore.isPaused" />
               <CheckIcon v-else />
             </div>
           </div>
@@ -215,11 +252,11 @@ onUnmounted(() => {
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p class="text-gray-400">Estado:</p>
-                <p class="font-bold text-white">{{ isPaused ? 'Pausado' : 'Bomba Activa' }}</p>
+                <p class="font-bold text-white">{{ irrigationStore.isPaused ? 'Pausado' : 'Bomba Activa' }}</p>
               </div>
               <div>
                 <p class="text-gray-400">Tiempo Restante:</p>
-                <p class="font-bold text-white">{{ remainingTime || 'Calculando...' }}</p>
+                <p class="font-bold text-white">{{ irrigationStore.remainingTime || 'Calculando...' }}</p>
               </div>
             </div>
           </div>
@@ -228,7 +265,7 @@ onUnmounted(() => {
           <div class="space-y-3">
             <!-- Botón de parada de emergencia -->
             <button
-              v-if="!isPaused"
+              v-if="!irrigationStore.isPaused"
               @click="pauseIrrigation"
               class="w-full px-6 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold text-lg rounded-lg hover:from-yellow-600 hover:to-yellow-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
             >
@@ -237,7 +274,7 @@ onUnmounted(() => {
             
             <!-- Botón de reanudar -->
             <button
-              v-if="isPaused"
+              v-if="irrigationStore.isPaused"
               @click="resumeIrrigation"
               class="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-lg rounded-lg hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
             >
@@ -256,8 +293,17 @@ onUnmounted(() => {
       </div>
 
       <!-- Formulario de configuración -->
-      <div class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors">
+      <div v-if="!irrigationStore.hasActiveMode" class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors">
         <h2 class="text-xl font-bold text-white mb-6">Configurar Riego Manual</h2>
+        
+        <!-- Información sobre reutilización -->
+        <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 mb-6">
+          <h3 class="font-semibold text-blue-400 mb-2">💡 Información Importante</h3>
+          <p class="text-sm text-blue-300">
+            Si ya has configurado un riego manual para este cultivo, la configuración se actualizará con los nuevos valores. 
+            Esto te permite hacer múltiples riegos con diferentes duraciones sin crear configuraciones duplicadas.
+          </p>
+        </div>
         
         <form @submit.prevent="confirmConfiguration" class="space-y-6">
           <!-- Duración del riego -->
@@ -273,7 +319,8 @@ onUnmounted(() => {
                   type="number" 
                   min="0" 
                   max="59"
-                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  :disabled="irrigationStore.isLoading"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
                   placeholder="0"
                 >
               </div>
@@ -284,7 +331,8 @@ onUnmounted(() => {
                   type="number" 
                   min="0" 
                   max="59"
-                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  :disabled="irrigationStore.isLoading"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
                   placeholder="0"
                 >
               </div>
@@ -304,8 +352,9 @@ onUnmounted(() => {
                 v-for="option in quickOptions"
                 :key="option.label"
                 type="button"
+                :disabled="irrigationStore.isLoading"
                 @click="setQuickOption(option)"
-                class="p-3 text-sm font-medium text-blue-300 bg-blue-900/30 border border-blue-500/30 rounded-lg hover:bg-blue-900/50 transition-colors"
+                class="p-3 text-sm font-medium text-blue-300 bg-blue-900/30 border border-blue-500/30 rounded-lg hover:bg-blue-900/50 transition-colors disabled:opacity-50"
               >
                 {{ option.label }}
               </button>
@@ -320,7 +369,8 @@ onUnmounted(() => {
                 <input 
                   v-model="options.notifyStart" 
                   type="checkbox" 
-                  class="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                  :disabled="irrigationStore.isLoading"
+                  class="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                 >
                 <span class="ml-2 text-sm text-gray-300">Notificar al iniciar el riego</span>
               </label>
@@ -328,7 +378,8 @@ onUnmounted(() => {
                 <input 
                   v-model="options.notifyEnd" 
                   type="checkbox" 
-                  class="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                  :disabled="irrigationStore.isLoading"
+                  class="rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                 >
                 <span class="ml-2 text-sm text-gray-300">Notificar al finalizar el riego</span>
               </label>
@@ -350,20 +401,45 @@ onUnmounted(() => {
           <div class="flex space-x-4">
             <button
               type="submit"
-              :disabled="!isValidDuration()"
+              :disabled="!isValidDuration() || irrigationStore.isLoading"
               class="flex-1 px-6 py-4 bg-gradient-to-r from-[#4A5DB8] to-[#2A3B7A] text-white font-bold text-lg rounded-lg hover:from-[#5A6DC8] hover:to-[#3A4B8A] disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 shadow-lg"
             >
-              🚀 Iniciar Riego Manual
+              {{ irrigationStore.isLoading ? '🔄 Iniciando...' : '🚀 Iniciar Riego Manual' }}
             </button>
             <button
               type="button"
               @click="goBack"
-              class="px-6 py-3 bg-gray-600 text-gray-200 font-medium rounded-lg hover:bg-gray-500 transition-colors"
+              :disabled="irrigationStore.isLoading"
+              class="px-6 py-3 bg-gray-600 text-gray-200 font-medium rounded-lg hover:bg-gray-500 transition-colors disabled:opacity-50"
             >
               Cancelar
             </button>
           </div>
         </form>
+      </div>
+
+      <!-- Mensaje cuando hay un modo activo -->
+      <div v-else class="bg-orange-900/60 border border-orange-500/30 rounded-xl shadow-lg p-6">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <WarningIcon />
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Modo {{ irrigationStore.activeMode }} Activo</h3>
+          <p class="text-orange-300 mb-4">
+            Ya tienes un modo de riego activo. Debes cancelar la configuración actual antes de poder configurar el modo manual.
+          </p>
+          <div class="bg-orange-800/40 border border-orange-500/40 rounded-lg p-3 mb-4">
+            <p class="text-sm text-orange-200">
+              <strong>Último riego:</strong> {{ irrigationStore.lastIrrigation }}
+            </p>
+          </div>
+          <button
+            @click="goBack"
+            class="px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            Volver a Modos de Riego
+          </button>
+        </div>
       </div>
     </div>
 
@@ -413,7 +489,7 @@ onUnmounted(() => {
           </p>
           <div class="flex space-x-4">
             <button 
-              @click="cancelManualWatering"
+              @click="confirmCancelModal"
               class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               Sí, Cancelar Riego
