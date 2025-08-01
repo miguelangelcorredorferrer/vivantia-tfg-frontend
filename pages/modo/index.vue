@@ -53,18 +53,49 @@
       </div>
 
       <!-- Segunda fila - Información de riego -->
-      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
-          <p class="text-sm text-gray-400">Último Riego</p>
-          <p class="font-semibold text-white">{{ lastIrrigationFormatted || 'Nunca' }}</p>
+      <div class="mt-6">
+        <!-- Widgets normales para todos los modos -->
+        <div v-if="irrigationStore.activeMode !== 'programmed'" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+            <p class="text-sm text-gray-400">Último Riego</p>
+            <p class="font-semibold text-white">{{ lastIrrigationFormatted || 'Nunca' }}</p>
+          </div>
+          <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+            <p class="text-sm text-gray-400">Tiempo Restante</p>
+            <p class="font-semibold text-white">{{ irrigationStore.remainingTime || '-' }}</p>
+          </div>
+          <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+            <p class="text-sm text-gray-400">Próximo Riego</p>
+            <p class="font-semibold text-white">{{ nextWatering || '-' }}</p>
+          </div>
         </div>
-        <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
-          <p class="text-sm text-gray-400">Tiempo Restante</p>
-          <p class="font-semibold text-white">{{ irrigationStore.remainingTime || remainingTime || '-' }}</p>
-        </div>
-        <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
-          <p class="text-sm text-gray-400">Próximo Riego</p>
-          <p class="font-semibold text-white">{{ nextWatering || '-' }}</p>
+
+        <!-- Widgets específicos para modo programado -->
+        <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-gray-600/60 border border-gray-600/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+            <p class="text-sm text-gray-400">Último Riego</p>
+            <p class="font-semibold text-white">{{ lastIrrigationFormatted || 'Nunca' }}</p>
+          </div>
+          
+          <!-- Widget de tiempo restante (activo o hasta activación) -->
+          <div class="bg-gray-600/60 border border-green-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+            <p class="text-sm text-green-400">
+              {{ irrigationStore.isWatering ? 'Tiempo Restante' : 'Hasta Activación' }}
+            </p>
+            <p class="font-semibold text-white">{{ irrigationStore.remainingTime || '-' }}</p>
+          </div>
+          
+          <!-- Widget de próxima ejecución -->
+          <div class="bg-gray-600/60 border border-blue-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+            <p class="text-sm text-blue-400">Próxima Ejecución</p>
+            <p class="font-semibold text-white text-xs">{{ irrigationStore.nextExecutionFormatted || '-' }}</p>
+          </div>
+          
+          <!-- Widget de tiempo hasta próxima ejecución -->
+          <div class="bg-gray-600/60 border border-purple-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+            <p class="text-sm text-purple-400">Tiempo Hasta Próximo</p>
+            <p class="font-semibold text-white">{{ irrigationStore.timeUntilNextExecution || '-' }}</p>
+          </div>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 CREATE TYPE user_role AS ENUM ('admin', 'usuario', 'visitante');
 CREATE TYPE irrigation_mode AS ENUM ('manual', 'automatic', 'programmed');
 CREATE TYPE frequency_type AS ENUM ('once', 'daily', 'custom');
-CREATE TYPE pump_status AS ENUM ('active', 'completed', 'cancelled', 'paused', 'error', 'inactive');
+CREATE TYPE pump_status AS ENUM ('active', 'completed', 'cancelled', 'paused', 'error', 'inactive', 'programmed');
 CREATE TYPE alert_severity AS ENUM ('info', 'success', 'warning', 'error');
 CREATE TYPE alert_category AS ENUM (
   'user',           -- Acciones del usuario (registro, login, cambios)
@@ -33,8 +33,6 @@ ALTER TABLE crops DROP CONSTRAINT crops_user_id_key;
 ALTER TABLE devices ADD COLUMN ttn_region VARCHAR(10);
 ALTER TABLE devices ADD COLUMN ttn_app_id VARCHAR(100);
 ALTER TABLE devices ADD COLUMN ttn_access_key VARCHAR(255);
-ALTER TABLE manual_configs ADD COLUMN begin_notification BOOLEAN DEFAULT FALSE;
-ALTER TABLE manual_configs ADD COLUMN final_notification BOOLEAN DEFAULT FALSE;
 
 
 CREATE TABLE users (
@@ -89,60 +87,35 @@ CREATE TABLE sensor_readings (
 CREATE TABLE irrigation_configs (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  crop_id INTEGER REFERENCES crops(id) ON DELETE CASCADE, -- RELACIÓN CON CULTIVO
+  crop_id INTEGER REFERENCES crops(id) ON DELETE CASCADE,
   mode_type irrigation_mode NOT NULL,
   is_active BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW(),
-  last_irrigation_at TIMESTAMP, -- Campo del ultimo riego efectuado
+  last_irrigation_at TIMESTAMP,
+  duration_minutes INTEGER NOT NULL, -- Campo común a todos los modos
   UNIQUE(user_id, crop_id, mode_type) -- Un usuario solo puede tener 1 config por cultivo y modo
 );
 
-CREATE TABLE programmed_configs (
-  id SERIAL PRIMARY KEY,
-  irrigation_config_id INTEGER REFERENCES irrigation_configs(id) ON DELETE CASCADE,
-  
-  -- Configuración de fecha y hora
-  start_date DATE NOT NULL, -- Fecha de inicio del programa
-  start_time TIME NOT NULL, -- Hora de inicio (ej: 08:00)
-  end_date DATE, -- Fecha de fin (NULL para programas indefinidos)
-  
-  -- Configuración de duración
-  duration_minutes INTEGER NOT NULL, -- Duración de cada riego en minutos
-  duration_seconds INTEGER DEFAULT 0, -- Segundos adicionales
-  
-  -- Configuración de frecuencia
-  frequency_type frequency_type NOT NULL, -- Tipo de frecuencia
-  custom_days INTEGER[], -- Array de días de la semana [1,2,3,4,5,6,7] (1=lunes, 7=domingo)
-  
-  -- Configuración de notificaciones (IMPORTANTE: Se guardan las preferencias)
-  notify_before_start BOOLEAN DEFAULT TRUE, -- Notificar 5 minutos antes
-  notify_before_minutes INTEGER DEFAULT 5, -- Minutos antes de notificar
-  notify_at_start BOOLEAN DEFAULT TRUE, -- Notificar al iniciar el riego
-  notify_at_end BOOLEAN DEFAULT TRUE, -- Notificar al finalizar el riego
-  
-  -- Metadatos
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  last_execution TIMESTAMP, -- Última vez que se ejecutó
-  next_execution TIMESTAMP -- Próxima ejecución programada
+-- Crear tabla específica para configuración programada
+CREATE TABLE programmed_settings (
+  config_id INTEGER PRIMARY KEY REFERENCES irrigation_configs(id) ON DELETE CASCADE,
+  start_datetime TIMESTAMP NOT NULL,
+  frequency_type frequency_type NOT NULL,
+  custom_days INTEGER[], -- Array de días de la semana [1,2,3,4,5,6,7]
+  notify_before_minutes INTEGER DEFAULT 5,
+  notify_at_start BOOLEAN DEFAULT TRUE,
+  notify_at_end BOOLEAN DEFAULT TRUE,
+  last_execution TIMESTAMP,
+  next_execution TIMESTAMP
 );
 
-CREATE TABLE automatic_configs (
-  id SERIAL PRIMARY KEY,
-  irrigation_config_id INTEGER REFERENCES irrigation_configs(id) ON DELETE CASCADE,
-  humidity_min_threshold DECIMAL(5,2) NOT NULL, -- Puede usar los valores del cultivo o personalizados
+-- Crear tabla específica para configuración automática
+CREATE TABLE automatic_settings (
+  config_id INTEGER PRIMARY KEY REFERENCES irrigation_configs(id) ON DELETE CASCADE,
+  humidity_min_threshold DECIMAL(5,2) NOT NULL,
   humidity_max_threshold DECIMAL(5,2) NOT NULL,
   temperature_max_threshold DECIMAL(5,2) NOT NULL,
-  duration_minutes INTEGER NOT NULL,
-  use_crop_thresholds BOOLEAN DEFAULT TRUE, -- Si usa los umbrales del cultivo o personalizados
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE manual_configs (
-  id SERIAL PRIMARY KEY,
-  irrigation_config_id INTEGER REFERENCES irrigation_configs(id) ON DELETE CASCADE,
-  duration_minutes INTEGER NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
+  use_crop_thresholds BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE pump_activations (

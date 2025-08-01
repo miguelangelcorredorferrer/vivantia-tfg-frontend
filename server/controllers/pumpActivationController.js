@@ -122,7 +122,7 @@ const getActivePumpActivation = async (req, res) => {
 
     const query = `
       SELECT * FROM pump_activations 
-      WHERE irrigation_config_id = $1 AND status IN ('active', 'paused')
+      WHERE irrigation_config_id = $1 AND status IN ('active', 'paused', 'programmed')
       ORDER BY started_at DESC 
       LIMIT 1
     `;
@@ -356,6 +356,43 @@ const getPumpActivationsByUser = async (req, res) => {
   }
 };
 
+// Obtener la activación más reciente por irrigation_config_id
+const getLatestPumpActivationByConfig = async (req, res) => {
+  try {
+    const { irrigation_config_id } = req.params;
+
+    if (!irrigation_config_id) {
+      return handleBadRequestError('irrigation_config_id es obligatorio', res);
+    }
+
+    const query = `
+      SELECT * FROM pump_activations 
+      WHERE irrigation_config_id = $1 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+
+    const result = await pool.query(query, [irrigation_config_id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'No se encontraron activaciones para esta configuración'
+      });
+    }
+
+    const activation = new PumpActivation(result.rows[0]);
+
+    res.status(200).json({
+      success: true,
+      data: activation
+    });
+  } catch (error) {
+    return handleInternalServerError('Error al obtener activación más reciente', res, error);
+  }
+};
+
 export {
   PumpActivation,
   createPumpActivation,
@@ -364,5 +401,6 @@ export {
   pausePumpActivation,
   resumePumpActivation,
   completePumpActivation,
-  getPumpActivationsByUser
+  getPumpActivationsByUser,
+  getLatestPumpActivationByConfig
 };

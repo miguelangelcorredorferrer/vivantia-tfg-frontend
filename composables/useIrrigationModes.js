@@ -127,7 +127,7 @@ export const useIrrigationModes = () => {
       isWatering.value = true
       startTime.value = new Date()
       
-      const totalDuration = (modeConfig.value.duration.minutes || 0) * 60 + (modeConfig.value.duration.seconds || 0)
+      const totalDuration = (modeConfig.value.duration.minutes || 0) * 60
       console.log('Iniciando riego programado con duración:', totalDuration, 'segundos')
       setRemainingTime(totalDuration)
       
@@ -487,7 +487,7 @@ export const useIrrigationModes = () => {
         if (isWatering.value && startTime.value && activeMode.value === 'manual' && !isPaused.value) {
           const config = modeConfig.value
           if (config && config.duration) {
-            const totalDuration = (config.duration.minutes || 0) * 60 + (config.duration.seconds || 0)
+            const totalDuration = (config.duration.minutes || 0) * 60
             const elapsed = Math.floor((new Date() - startTime.value) / 1000)
             const remaining = totalDuration - elapsed
             
@@ -514,7 +514,7 @@ export const useIrrigationModes = () => {
           // Si el riego programado está activo, restaurar el tiempo restante del riego
           const config = modeConfig.value
           if (config && config.duration) {
-            const totalDuration = (config.duration.minutes || 0) * 60 + (config.duration.seconds || 0)
+            const totalDuration = (config.duration.minutes || 0) * 60
             const elapsed = Math.floor((new Date() - startTime.value) / 1000)
             const remaining = totalDuration - elapsed
             
@@ -562,8 +562,7 @@ export const useIrrigationModes = () => {
       case 'manual':
         const duration = modeConfig.value.duration
         const totalMinutes = (duration?.minutes || 0)
-        const totalSeconds = (duration?.seconds || 0)
-        return `Duración: ${totalMinutes}min ${totalSeconds}seg`
+        return `Duración: ${totalMinutes}min`
       
       case 'programado':
         const scheduledDateTime = modeConfig.value.scheduledDateTime

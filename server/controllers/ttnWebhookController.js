@@ -9,12 +9,20 @@ const handleTTNUplink = async (req, res) => {
     
     const payload = req.body.uplink_message?.decoded_payload;
     const endDeviceIds = req.body.end_device_ids;
+    const fPort = req.body.uplink_message?.f_port;
     
     console.log('📱 End Device IDs:', JSON.stringify(endDeviceIds, null, 2));
+    console.log('🔌 F_Port:', fPort);
     
     if (!payload) {
       console.error('❌ Payload inválido');
       return res.status(400).send('Datos incompletos');
+    }
+    
+    // Validar que el uplink viene del puerto 2
+    if (fPort !== 2) {
+      console.log(`⏭️ Uplink ignorado - F_Port ${fPort} no es 2`);
+      return res.status(200).send('Uplink ignorado - puerto no válido');
     }
     
     // Validar dispositivo TTN

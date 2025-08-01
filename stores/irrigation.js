@@ -9,11 +9,13 @@ export const useIrrigationStore = defineStore('irrigation', () => {
   // Estado
   const activeMode = ref(null) // 'manual', 'automatic', 'programmed'
   const irrigationConfig = ref(null)
-  const specificConfig = ref(null) // manual_config, automatic_config, programmed_config
+  const specificConfig = ref(null) // irrigation_config (manual), automatic_settings, programmed_settings
   const activePumpActivation = ref(null)
   const lastCompletedConfig = ref(null) // Última configuración completada para mostrar último riego
   const isLoading = ref(false)
   const error = ref(null)
+  
+
 
   // Intervalos para actualizaciones en tiempo real
   let statusInterval = null
@@ -22,7 +24,15 @@ export const useIrrigationStore = defineStore('irrigation', () => {
   // Stores auxiliares
   const userStore = useUserStore()
   const cropStore = useCropStore()
-  const toast = useToastNotifications()
+  
+  // Toast notifications (inicializado en métodos)
+  let toastNotifications = null
+  const initToast = () => {
+    if (!toastNotifications) {
+      toastNotifications = useToastNotifications()
+    }
+    return toastNotifications
+  }
 
   // Computeds
   const hasActiveMode = computed(() => activeMode.value !== null)
@@ -40,6 +50,31 @@ export const useIrrigationStore = defineStore('irrigation', () => {
   
   const isCompleted = computed(() => {
     return activePumpActivation.value?.status === 'completed'
+  })
+
+  const isProgrammedWaiting = computed(() => {
+    return activePumpActivation.value?.status === 'programmed'
+  })
+
+  // Tiempo restante hasta próxima activación (para daily y custom)
+  const timeUntilNextExecution = ref(null)
+  
+  const nextExecutionFormatted = computed(() => {
+    if (!specificConfig.value?.next_execution) return null
+    
+    try {
+      const nextDate = new Date(specificConfig.value.next_execution)
+      return nextDate.toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (err) {
+      console.error('Error formateando next_execution:', err)
+      return null
+    }
   })
 
   // Tiempo restante calculado en tiempo real
@@ -172,6 +207,8 @@ export const useIrrigationStore = defineStore('irrigation', () => {
   // Cargar configuración activa del usuario
   const loadActiveConfiguration = async () => {
     try {
+
+      
       isLoading.value = true
       error.value = null
 
@@ -185,18 +222,76 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       // Obtener configuraciones activas
       const response = await IrrigationAPI.getActiveIrrigationConfigsByUser(userStore.user.id)
       
+      let foundActiveConfig = false
+      
       if (response.success && response.data.length > 0) {
         const config = response.data[0] // Solo puede haber una activa
         irrigationConfig.value = config
         activeMode.value = config.mode_type
+        foundActiveConfig = true
 
         // Cargar configuración específica
         await loadSpecificConfiguration(config.id)
         
         // Cargar activación activa de bomba si existe
         await loadActivePumpActivation(config.id)
-      } else {
-        // No hay configuración activa
+      }
+      
+      // Si no hay configuración activa, buscar configuraciones con activaciones programadas pendientes
+      if (!foundActiveConfig) {
+        console.log('🔍 No hay configuración activa, buscando configuraciones con activaciones programadas pendientes...')
+        
+        try {
+          // Obtener todas las configuraciones del usuario
+          const allConfigsResponse = await IrrigationAPI.getIrrigationConfigsByUser(userStore.user.id)
+          
+          if (allConfigsResponse.success && allConfigsResponse.data.length > 0) {
+            console.log(`🔍 Encontradas ${allConfigsResponse.data.length} configuraciones para revisar`)
+            
+            // Para cada configuración, obtener la activación más reciente
+            for (const config of allConfigsResponse.data) {
+              try {
+                const latestActivationResponse = await IrrigationAPI.getLatestPumpActivationByConfig(config.id)
+                
+                if (latestActivationResponse.success && latestActivationResponse.data) {
+                  const latestActivation = latestActivationResponse.data
+                  
+                  console.log(`🔍 Config ${config.id} - Última activación:`, latestActivation.status)
+                  
+                  // Si la activación más reciente está programada, esta configuración está activa
+                  if (latestActivation.status === 'programmed') {
+                    console.log('✅ Encontrada configuración con activación programada pendiente:', {
+                      configId: config.id,
+                      modeType: config.mode_type,
+                      activationStatus: latestActivation.status
+                    })
+                    
+                    // Cargar esta configuración como activa
+                    irrigationConfig.value = config
+                    activeMode.value = config.mode_type
+                    activePumpActivation.value = latestActivation
+                    foundActiveConfig = true
+                    
+                    // Cargar configuración específica
+                    await loadSpecificConfiguration(config.id)
+                    
+                    console.log('✅ Estado restaurado para configuración programada')
+                    break // Solo necesitamos una configuración activa
+                  }
+                }
+              } catch (activationError) {
+                console.error(`Error obteniendo activación para config ${config.id}:`, activationError)
+                // Continuar con la siguiente configuración
+              }
+            }
+          }
+        } catch (programmedError) {
+          console.error('Error buscando configuraciones programadas:', programmedError)
+        }
+      }
+      
+      if (!foundActiveConfig) {
+        // No hay configuración activa ni programada
         resetState()
       }
     } catch (err) {
@@ -213,6 +308,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       const response = await IrrigationAPI.getSpecificConfig(irrigationConfigId)
       if (response.success) {
         specificConfig.value = response.data
+        
+        // Para modo programado, solo iniciar countdown para next_execution si existe
+        // NO reiniciar countdown para start_datetime aquí para evitar activaciones inmediatas
+        if (activeMode.value === 'programmed' && specificConfig.value?.next_execution) {
+          startNextExecutionCountdown()
+        }
       }
     } catch (err) {
       console.error('Error loading specific configuration:', err)
@@ -260,7 +361,6 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       const existingConfigsResponse = await IrrigationAPI.getIrrigationConfigsByUserAndType(userId, 'manual')
       
       let irrigationConfigId = null
-      let manualConfigId = null
 
       if (existingConfigsResponse.success && existingConfigsResponse.data.length > 0) {
         // Buscar configuración que coincida con el cultivo actual
@@ -269,25 +369,19 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         if (existingConfig) {
           console.log('✅ Configuración manual existente encontrada:', existingConfig.id)
           irrigationConfigId = existingConfig.id
-          
-          // Obtener configuración manual específica
-          const specificConfigResponse = await IrrigationAPI.getSpecificConfig(existingConfig.id)
-          if (specificConfigResponse.success && specificConfigResponse.data) {
-            manualConfigId = specificConfigResponse.data.id
-            console.log('✅ Configuración manual específica encontrada:', manualConfigId)
-          }
+          // Ya no necesitamos obtener configuración manual específica 
+          // porque está integrada en irrigation_configs
+          console.log('✅ Usando configuración existente (integrada)')
         }
       }
 
       // 2. Si existe configuración, actualizarla; si no, crear nueva
-      if (irrigationConfigId && manualConfigId) {
+      if (irrigationConfigId) {
         console.log('🔄 Actualizando configuración manual existente')
         
-        // Actualizar configuración manual
-        const updateResponse = await IrrigationAPI.updateManualConfig(manualConfigId, {
-          duration_minutes: config.duration_minutes,
-          begin_notification: config.begin_notification,
-          final_notification: config.final_notification
+        // Actualizar configuración manual (ahora directamente en irrigation_configs)
+        const updateResponse = await IrrigationAPI.updateManualConfig(irrigationConfigId, {
+          duration_minutes: config.duration_minutes
         })
         
         if (!updateResponse.success) {
@@ -298,11 +392,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       } else {
         console.log('🔄 Creando nueva configuración manual')
         
-        // Crear nueva configuración de riego
+        // Crear nueva configuración de riego (incluye duration_minutes)
         const irrigationResponse = await IrrigationAPI.createIrrigationConfig({
           user_id: userId,
           crop_id: cropId,
           mode_type: 'manual',
+          duration_minutes: config.duration_minutes,
           is_active: true
         })
         
@@ -311,22 +406,7 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         }
         
         irrigationConfigId = irrigationResponse.data.id
-        console.log('✅ Nueva configuración de riego creada:', irrigationConfigId)
-        
-        // Crear configuración manual específica
-        const manualResponse = await IrrigationAPI.createManualConfig({
-          irrigation_config_id: irrigationConfigId,
-          duration_minutes: config.duration_minutes,
-          begin_notification: config.begin_notification,
-          final_notification: config.final_notification
-        })
-        
-        if (!manualResponse.success) {
-          throw new Error('Error creando configuración manual')
-        }
-        
-        manualConfigId = manualResponse.data.id
-        console.log('✅ Nueva configuración manual creada:', manualConfigId)
+        console.log('✅ Nueva configuración de riego manual creada:', irrigationConfigId)
       }
 
       // 3. Activar la configuración (desactivar otras si existen)
@@ -360,15 +440,340 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       startStatusMonitoring()
 
       console.log('✅ Riego manual iniciado exitosamente')
-      toast.success('Riego iniciado', 'El riego manual se ha iniciado correctamente')
+      initToast().toast.success('Riego iniciado: El riego manual se ha iniciado correctamente')
       return true
     } catch (err) {
       error.value = err.message
       console.error('❌ Error en startManualIrrigation:', err)
-      toast.error('Error', err.message)
+      initToast().toast.error('Error: ' + err.message)
       return false
     } finally {
       isLoading.value = false
+    }
+  }
+
+  // Iniciar riego programado
+  const startProgrammedIrrigation = async (config) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      console.log('🚀 Iniciando configuración de riego programado:', config)
+
+      // Validar datos necesarios
+      if (!config.user_id || !config.crop_id) {
+        throw new Error('Usuario y cultivo son obligatorios')
+      }
+
+      // Crear configuración programada
+      const response = await IrrigationAPI.createProgrammedConfig(config)
+      
+      if (response.success) {
+        console.log('✅ Configuración programada creada:', response.data)
+        
+        // Actualizar estado local DIRECTAMENTE - NO llamar loadActiveConfiguration
+        irrigationConfig.value = response.data.irrigationConfig
+        specificConfig.value = response.data.programmedConfig
+        activePumpActivation.value = response.data.pumpActivation
+        activeMode.value = 'programmed'
+
+        // Calcular tiempo hasta la activación y configurar countdown
+        const scheduledTime = new Date(config.start_datetime)
+        const now = new Date()
+        const timeUntilActivation = scheduledTime - now
+
+        console.log('🔍 DEBUG: Comparación de fechas', {
+          scheduledTime: scheduledTime.toISOString(),
+          scheduledTimeLocal: scheduledTime.toLocaleString(),
+          now: now.toISOString(), 
+          nowLocal: now.toLocaleString(),
+          timeUntilActivation,
+          timeUntilActivationMinutes: Math.round(timeUntilActivation / 1000 / 60),
+          config: config
+        })
+
+        if (timeUntilActivation > 0) {
+          console.log(`⏰ Riego programado para: ${scheduledTime.toLocaleString()}`)
+          console.log(`⏳ Tiempo hasta activación: ${Math.round(timeUntilActivation / 1000 / 60)} minutos`)
+          
+          // Iniciar countdown hasta la activación
+          startProgrammedCountdown(timeUntilActivation)
+        } else {
+          console.log('⚠️ La fecha programada ya pasó', {
+            scheduledTime: scheduledTime.toLocaleString(),
+            now: now.toLocaleString(),
+            difference: timeUntilActivation
+          })
+        }
+
+        console.log('✅ Estado local actualizado - NO llamando loadActiveConfiguration para evitar conflictos')
+        
+        initToast().toast.success('Riego programado: Configuración guardada exitosamente')
+        return true
+      } else {
+        throw new Error(response.message || 'Error al crear configuración programada')
+      }
+    } catch (err) {
+      error.value = err.message
+      console.error('❌ Error iniciando riego programado:', err)
+      initToast().toast.error('Error: ' + err.message)
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Countdown para riego programado
+  const startProgrammedCountdown = (millisecondsUntilActivation) => {
+    // Limpiar countdown anterior si existe
+    if (countdownInterval) {
+      clearInterval(countdownInterval)
+      countdownInterval = null
+    }
+
+    const updateCountdown = () => {
+      if (!specificConfig.value?.start_datetime) {
+        clearInterval(countdownInterval)
+        countdownInterval = null
+        return
+      }
+
+      const now = new Date()
+      const scheduledDateTime = new Date(specificConfig.value.start_datetime)
+      const timeLeft = scheduledDateTime - now
+
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval)
+        countdownInterval = null
+        
+        // ¡Activar el riego! - SOLO si aún está en estado 'programmed'
+        if (activePumpActivation.value?.status === 'programmed') {
+          console.log('🔥 ¡Tiempo de activación alcanzado! Iniciando riego...')
+          activateScheduledIrrigation()
+        } else {
+          console.log('⚠️ Tiempo alcanzado pero el estado ya no es "programmed", saltando activación')
+        }
+      }
+    }
+
+    // Actualizar cada segundo para mayor precisión
+    countdownInterval = setInterval(updateCountdown, 1000)
+  }
+
+  // Iniciar countdown para próxima ejecución (daily/custom)
+  const startNextExecutionCountdown = () => {
+    if (!specificConfig.value?.next_execution) {
+      timeUntilNextExecution.value = null
+      return
+    }
+
+    const updateNextCountdown = () => {
+      if (!specificConfig.value?.next_execution) {
+        timeUntilNextExecution.value = null
+        return
+      }
+
+      const now = new Date()
+      const nextDate = new Date(specificConfig.value.next_execution)
+      const timeLeft = nextDate - now
+
+      if (timeLeft <= 0) {
+        timeUntilNextExecution.value = 'Programado para activarse pronto'
+      } else {
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
+
+        if (days > 0) {
+          timeUntilNextExecution.value = `${days}d ${hours}h ${minutes}m`
+        } else if (hours > 0) {
+          timeUntilNextExecution.value = `${hours}h ${minutes}m`
+        } else {
+          timeUntilNextExecution.value = `${minutes}m`
+        }
+      }
+    }
+
+    // Actualizar inmediatamente
+    updateNextCountdown()
+    
+    // Actualizar cada minuto
+    setInterval(updateNextCountdown, 60000)
+  }
+
+  // Activar riego programado cuando llega la hora - SIMPLIFICADO como manual
+  const activateScheduledIrrigation = async () => {
+    try {
+      console.log('🔥 ACTIVANDO RIEGO PROGRAMADO - MÉTODO SIMPLIFICADO')
+      
+      // PROTECCIÓN: No activar si ya está activo o si ya no es 'programmed'
+      if (activePumpActivation.value?.status !== 'programmed') {
+        console.log('⚠️ Riego ya no está en estado "programmed", saltando activación')
+        return
+      }
+      
+      if (irrigationConfig.value?.is_active === true) {
+        console.log('⚠️ Configuración ya está activa, saltando activación')
+        return
+      }
+      
+      if (!irrigationConfig.value?.id || !activePumpActivation.value?.id) {
+        console.error('❌ Faltan datos necesarios:', {
+          irrigationConfigId: irrigationConfig.value?.id,
+          pumpActivationId: activePumpActivation.value?.id
+        })
+        throw new Error('Faltan configuraciones necesarias')
+      }
+
+      // PASO 1: Activar configuración de riego (is_active = true) - IGUAL QUE MANUAL
+      console.log('1️⃣ Activando configuración de riego...')
+      await IrrigationAPI.activateIrrigationConfig(irrigationConfig.value.id)
+      irrigationConfig.value.is_active = true
+      console.log('✅ is_active = true establecido')
+
+      // PASO 2: Cambiar pump_status a 'active' - IGUAL QUE MANUAL
+      console.log('2️⃣ Activando bomba (status = active)...')
+      const pumpResponse = await IrrigationAPI.updatePumpActivationStatus(
+        activePumpActivation.value.id, 
+        { status: 'active' }
+      )
+      
+      if (pumpResponse.success) {
+        activePumpActivation.value = pumpResponse.data
+        console.log('✅ pump_status = active establecido')
+        
+        // PASO 3: Iniciar monitoreo para auto-completar cuando termine duration_minutes
+        startStatusMonitoring()
+        console.log('✅ Monitoreo iniciado')
+        
+        // PASO 4: Mostrar notificación
+        initToast().toast.success('Riego iniciado: El riego programado se ha iniciado')
+        console.log('✅ Notificación mostrada')
+        
+        console.log('🎉 RIEGO PROGRAMADO ACTIVADO EXITOSAMENTE')
+        
+        // NOTA: updateLastExecution se llamará cuando el riego se COMPLETE, no al iniciar
+      } else {
+        throw new Error('Error activando bomba')
+      }
+      
+    } catch (err) {
+      console.error('❌ ERROR ACTIVANDO RIEGO PROGRAMADO:', err)
+      initToast().toast.error(`Error: ${err.message}`)
+    }
+  }
+
+  // Actualizar traza de ejecución (last_execution) y programar siguiente si es necesario
+  const updateLastExecution = async () => {
+    try {
+      console.log('📝 Actualizando traza de ejecución...')
+      
+      if (!specificConfig.value?.id) {
+        console.log('❌ No hay specificConfig para actualizar traza')
+        return
+      }
+
+      const now = new Date()
+      
+      // Datos para actualizar: marcar cuando se ejecutó y cuándo será la próxima
+      const updateData = {
+        last_execution: now.toISOString()
+      }
+
+      // Calcular next_execution solo para trazabilidad (daily, custom days)
+      const nextExecution = calculateNextExecution()
+      if (nextExecution) {
+        updateData.next_execution = nextExecution.toISOString()
+        console.log(`📅 Próxima ejecución calculada: ${nextExecution.toLocaleString()}`)
+        
+        // Si hay próxima ejecución, programar countdown
+        const timeUntilNext = nextExecution - now
+        if (timeUntilNext > 0) {
+          console.log('⏰ Programando próximo riego...')
+          startProgrammedCountdown(timeUntilNext)
+          
+          // También iniciar countdown para mostrar en index.vue
+          startNextExecutionCountdown()
+        }
+      } else {
+        // No hay más ejecuciones (frequency = 'once' o custom_days agotados)
+        updateData.next_execution = null
+        console.log('🔚 No hay más ejecuciones programadas')
+      }
+
+      // Actualizar en BD
+      await IrrigationAPI.updateProgrammedExecution(specificConfig.value.id, updateData)
+      console.log('✅ Traza actualizada en BD')
+      
+    } catch (err) {
+      console.error('❌ Error actualizando traza:', err)
+    }
+  }
+
+  // Calcular próxima ejecución basada en frequency_type
+  const calculateNextExecution = () => {
+    if (!specificConfig.value) return null
+
+    const { frequency_type, custom_days, start_datetime } = specificConfig.value
+    const now = new Date()
+    const originalDate = new Date(start_datetime)
+
+    switch (frequency_type) {
+      case 'once':
+        // Solo una vez, no hay próxima ejecución
+        return null
+
+      case 'daily':
+        // Diariamente: añadir 24 horas a la fecha original
+        const nextDaily = new Date(originalDate)
+        nextDaily.setDate(nextDaily.getDate() + 1)
+        return nextDaily
+
+      case 'custom':
+        if (!custom_days || custom_days.length === 0) return null
+        
+        // Remover el día actual del array
+        const currentDay = now.getDay() === 0 ? 7 : now.getDay() // Convertir domingo (0) a 7
+        const remainingDays = custom_days.filter(day => day !== currentDay)
+        
+        if (remainingDays.length === 0) {
+          // No quedan más días, terminar
+          return null
+        }
+
+        // Encontrar el próximo día en el array
+        const nextDay = Math.min(...remainingDays)
+        const daysUntilNext = nextDay > currentDay ? 
+          nextDay - currentDay : 
+          7 - currentDay + nextDay
+
+        const nextCustom = new Date(originalDate)
+        nextCustom.setDate(nextCustom.getDate() + daysUntilNext)
+        
+        // Actualizar el array custom_days en la configuración
+        updateCustomDaysArray(remainingDays)
+        
+        return nextCustom
+
+      default:
+        return null
+    }
+  }
+
+  // Actualizar el array custom_days en la base de datos
+  const updateCustomDaysArray = async (newCustomDays) => {
+    try {
+      if (!specificConfig.value?.id) return
+
+      // Actualizar local
+      specificConfig.value.custom_days = newCustomDays
+      
+      // Actualizar en base de datos (necesitaremos agregar esta función al API)
+      // Por ahora solo actualizamos local
+      console.log('📅 Días restantes:', newCustomDays)
+      
+    } catch (err) {
+      console.error('❌ Error actualizando custom_days:', err)
     }
   }
 
@@ -383,12 +788,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       if (response.success) {
         activePumpActivation.value = response.data
         stopStatusMonitoring()
-        toast.info('Riego pausado', 'El riego se ha pausado correctamente')
+        initToast().toast.info('Riego pausado: El riego se ha pausado correctamente')
         return true
       }
     } catch (err) {
       error.value = err.message
-      toast.error('Error', err.message)
+      initToast().toast.error('Error: ' + err.message)
       return false
     }
   }
@@ -404,12 +809,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       if (response.success) {
         activePumpActivation.value = response.data
         startStatusMonitoring()
-        toast.success('Riego reanudado', 'El riego se ha reanudado correctamente')
+        initToast().toast.success('Riego reanudado: El riego se ha reanudado correctamente')
         return true
       }
     } catch (err) {
       error.value = err.message
-      toast.error('Error', err.message)
+      initToast().toast.error('Error: ' + err.message)
       return false
     }
   }
@@ -439,8 +844,9 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         await IrrigationAPI.updateLastIrrigation(irrigationConfig.value.id)
       }
 
-      // Para modo manual, desactivar la configuración cuando termina
+      // Lógica específica por modo
       if (activeMode.value === 'manual' && irrigationConfig.value?.id) {
+        // Para modo manual, desactivar la configuración cuando termina
         console.log('🔄 Desactivando configuración manual (riego completado)')
         const deactivateResponse = await IrrigationAPI.deactivateIrrigationConfig(irrigationConfig.value.id)
         
@@ -449,6 +855,19 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         } else {
           console.log('✅ Configuración manual desactivada')
         }
+      } else if (activeMode.value === 'programmed') {
+        // Para modo programado, calcular próxima ejecución y programar siguiente riego
+        console.log('🔄 Procesando finalización de riego programado...')
+        
+        // Desactivar temporalmente la configuración 
+        if (irrigationConfig.value?.id) {
+          await IrrigationAPI.deactivateIrrigationConfig(irrigationConfig.value.id)
+          console.log('✅ Configuración programada desactivada temporalmente')
+        }
+        
+        // Calcular y programar próxima ejecución
+        await updateLastExecution()
+        console.log('✅ Próxima ejecución programada')
       }
 
       // Limpiar estado local
@@ -459,12 +878,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       await loadActiveConfiguration()
 
       console.log('✅ Riego completado exitosamente')
-      toast.success('Riego completado', 'El riego se ha completado correctamente')
+              initToast().toast.success('Riego completado: El riego se ha completado correctamente')
       return true
     } catch (err) {
       error.value = err.message
       console.error('❌ Error en completeIrrigation:', err)
-      toast.error('Error', err.message)
+      initToast().toast.error('Error: ' + err.message)
       return false
     }
   }
@@ -473,52 +892,127 @@ export const useIrrigationStore = defineStore('irrigation', () => {
   const cancelActiveMode = async () => {
     try {
       isLoading.value = true
-      console.log('🔄 Iniciando cancelación de modo activo...')
+      console.log('🔄 Iniciando cancelación de modo activo...', activeMode.value)
 
-      // 1. Cancelar activación de bomba si existe
-      if (activePumpActivation.value?.id && 
-          (activePumpActivation.value.status === 'active' || activePumpActivation.value.status === 'paused')) {
+      // Si es modo programado, usar la función específica
+      if (activeMode.value === 'programmed') {
+        console.log('🔄 Cancelando modo programado...')
         
-        console.log('🔄 Cancelando activación de bomba:', activePumpActivation.value.id)
-        const pumpResponse = await IrrigationAPI.updatePumpActivationStatus(activePumpActivation.value.id, {
-          status: 'cancelled'
-        })
-        
-        if (!pumpResponse.success) {
-          throw new Error('Error cancelando activación de bomba')
+        // Detener countdown si existe
+        if (countdownInterval) {
+          clearInterval(countdownInterval)
+          countdownInterval = null
+          console.log('✅ Countdown detenido')
         }
         
-        console.log('✅ Activación de bomba cancelada')
-      }
+        // Determinar si es cancelación de configuración o solo de riego activo
+        const isActiveIrrigation = activePumpActivation.value?.status === 'active' || activePumpActivation.value?.status === 'paused'
+        
+        if (isActiveIrrigation) {
+          console.log('🔄 Cancelando SOLO riego activo (mantener configuración)')
+          // Cancelar solo el riego activo, mantener configuración para futuros riegos
+          const response = await IrrigationAPI.cancelProgrammedIrrigation(irrigationConfig.value.id)
+          if (!response.success) {
+            throw new Error('Error al cancelar riego programado')
+          }
+          console.log('✅ Riego programado cancelado (configuración mantenida)')
+          initToast().toast.info('Riego cancelado: El riego activo ha sido cancelado. La configuración se mantiene para futuros riegos.')
+        } else {
+          console.log('🔄 Cancelando configuración programada (SIN eliminar tupla)')
+          // Solo desactivar la configuración, NO eliminar la tupla programmed_configs
+          // Esto preserva la configuración para daily, custom, y once
+          
+          // 1. Cancelar pump_activations si están en estado 'programmed'
+          if (activePumpActivation.value?.id && activePumpActivation.value.status === 'programmed') {
+            console.log('🔄 Cancelando pump_activation en estado programmed')
+            const pumpResponse = await IrrigationAPI.updatePumpActivationStatus(activePumpActivation.value.id, {
+              status: 'cancelled'
+            })
+            if (!pumpResponse.success) {
+              throw new Error('Error cancelando pump activation')
+            }
+            console.log('✅ Pump activation cancelada')
+          }
+          
+          // 2. Desactivar configuración de riego (is_active = false)
+          if (irrigationConfig.value?.id) {
+            console.log('🔄 Desactivando configuración de riego')
+            const response = await IrrigationAPI.deactivateIrrigationConfig(irrigationConfig.value.id)
+            if (!response.success) {
+              throw new Error('Error al desactivar configuración programada')
+            }
+            console.log('✅ Configuración programada desactivada (tupla conservada)')
+          }
+          
+          // NOTA: NO eliminamos programmed_configs para preservar:
+          // - daily: configuración para futuros riegos
+          // - custom: días pendientes  
+          // - once: registro histórico
+          
+          initToast().toast.info('Configuración cancelada: La configuración se ha desactivado pero se mantiene para futuras activaciones')
+        }
+      } else {
+        // Para otros modos (manual, automático)
+        
+        // 1. Cancelar activación de bomba si existe
+        if (activePumpActivation.value?.id && 
+            (activePumpActivation.value.status === 'active' || activePumpActivation.value.status === 'paused')) {
+          
+          console.log('🔄 Cancelando activación de bomba:', activePumpActivation.value.id)
+          const pumpResponse = await IrrigationAPI.updatePumpActivationStatus(activePumpActivation.value.id, {
+            status: 'cancelled'
+          })
+          
+          if (!pumpResponse.success) {
+            throw new Error('Error cancelando activación de bomba')
+          }
+          
+          console.log('✅ Activación de bomba cancelada')
+          
+          // IMPORTANTE: Actualizar last_irrigation_at cuando se cancela un riego activo
+          if (irrigationConfig.value?.id) {
+            console.log('🔄 Actualizando last_irrigation_at (riego cancelado)')
+            try {
+              await IrrigationAPI.updateLastIrrigation(irrigationConfig.value.id)
+              console.log('✅ last_irrigation_at actualizado')
+            } catch (err) {
+              console.error('❌ Error actualizando last_irrigation_at:', err)
+            }
+          }
+        }
 
-      // 2. Desactivar configuración de riego (no eliminar, solo desactivar)
-      if (irrigationConfig.value?.id) {
-        console.log('🔄 Desactivando configuración de riego:', irrigationConfig.value.id)
-        
-        // Usar la función específica para desactivar
-        const configResponse = await IrrigationAPI.deactivateIrrigationConfig(irrigationConfig.value.id)
-        
-        if (!configResponse.success) {
-          throw new Error('Error desactivando configuración de riego')
+        // 2. Desactivar configuración de riego (no eliminar, solo desactivar)
+        if (irrigationConfig.value?.id) {
+          console.log('🔄 Desactivando configuración de riego:', irrigationConfig.value.id)
+          
+          // Usar la función específica para desactivar
+          const configResponse = await IrrigationAPI.deactivateIrrigationConfig(irrigationConfig.value.id)
+          
+          if (!configResponse.success) {
+            throw new Error('Error desactivando configuración de riego')
+          }
+          
+          console.log('✅ Configuración de riego desactivada')
         }
         
-        console.log('✅ Configuración de riego desactivada')
+        initToast().toast.info('Configuración cancelada: Se ha cancelado la configuración de riego')
       }
 
       // 3. Limpiar estado local
       resetState()
       stopStatusMonitoring()
+      
+
 
       // 4. Recargar configuración activa para verificar que no hay ninguna activa
       await loadActiveConfiguration()
 
       console.log('✅ Modo activo cancelado exitosamente')
-      toast.info('Configuración cancelada', 'Se ha cancelado la configuración de riego')
       return true
     } catch (err) {
       error.value = err.message
       console.error('❌ Error en cancelActiveMode:', err)
-      toast.error('Error', err.message)
+      initToast().toast.error('Error: ' + err.message)
       return false
     } finally {
       isLoading.value = false
@@ -574,7 +1068,33 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         return `Duración: ${totalMinutes}min ${totalSeconds}seg`
       
       case 'programmed':
-        // Para modo programado, mostrar información de programación
+        if (specificConfig.value.start_datetime) {
+          const scheduledDate = new Date(specificConfig.value.start_datetime)
+          const now = new Date()
+          
+          if (isWatering.value) {
+            // Si está regando, mostrar duración
+            return `Duración: ${specificConfig.value.duration_minutes}min`
+          } else {
+            // Si está programado pero no activo, mostrar tiempo hasta activación
+            const timeUntilActivation = scheduledDate - now
+            if (timeUntilActivation > 0) {
+              const days = Math.floor(timeUntilActivation / (1000 * 60 * 60 * 24))
+              const hours = Math.floor((timeUntilActivation % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+              const minutes = Math.floor((timeUntilActivation % (1000 * 60 * 60)) / (1000 * 60))
+              
+              if (days > 0) {
+                return `Activa en ${days}d ${hours}h ${minutes}m`
+              } else if (hours > 0) {
+                return `Activa en ${hours}h ${minutes}m`
+              } else {
+                return `Activa en ${minutes}m`
+              }
+            } else {
+              return 'Activándose...'
+            }
+          }
+        }
         return 'Programado para ejecutarse automáticamente'
       
       case 'automatic':
@@ -620,16 +1140,20 @@ export const useIrrigationStore = defineStore('irrigation', () => {
     isWatering,
     isPaused,
     isCompleted,
+    isProgrammedWaiting,
     remainingTime,
     lastIrrigation,
     canAccessMode,
     canAccessManualMode,
     canAccessAutomaticMode,
     canAccessProgrammedMode,
+    timeUntilNextExecution,
+    nextExecutionFormatted,
 
     // Actions
     loadActiveConfiguration,
     startManualIrrigation,
+    startProgrammedIrrigation,
     pauseIrrigation,
     resumeIrrigation,
     completeIrrigation,

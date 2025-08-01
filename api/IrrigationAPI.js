@@ -41,6 +41,13 @@ export default {
             headers: getAuthHeaders()
         })
     },
+    getIrrigationConfigsByUser(userId) {
+        return $fetch(`/irrigation/user/${userId}/all`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
     getIrrigationConfigsByUserAndType(userId, modeType) {
         return $fetch(`/irrigation/user/${userId}/type/${modeType}`, {
             method: 'GET',
@@ -82,15 +89,7 @@ export default {
         })
     },
     
-    // Rutas para configuraciones manuales
-    createManualConfig(data) {
-        return $fetch('/irrigation/manual', {
-            method: 'POST',
-            body: data,
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
+    // Rutas para configuraciones manuales (ahora integradas en irrigation_configs)
     updateManualConfig(id, data) {
         return $fetch(`/irrigation/manual/${id}`, {
             method: 'PUT',
@@ -119,8 +118,30 @@ export default {
             headers: getAuthHeaders()
         })
     },
+    cancelProgrammedConfig(irrigationConfigId) {
+        return $fetch(`/irrigation/programmed/${irrigationConfigId}/cancel`, {
+            method: 'DELETE',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    cancelProgrammedIrrigation(irrigationConfigId) {
+        return $fetch(`/irrigation/programmed/${irrigationConfigId}/cancel-irrigation`, {
+            method: 'DELETE',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
     updateNextExecution(id, data) {
         return $fetch(`/irrigation/programmed/${id}/next-execution`, {
+            method: 'PUT',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    updateProgrammedExecution(id, data) {
+        return $fetch(`/irrigation/programmed/${id}/execution`, {
             method: 'PUT',
             body: data,
             baseURL: getApiUrl(),
@@ -139,6 +160,13 @@ export default {
     },
     getActivePumpActivation(irrigationConfigId) {
         return $fetch(`/irrigation/pump-activation/config/${irrigationConfigId}/active`, {
+            method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    getLatestPumpActivationByConfig(irrigationConfigId) {
+        return $fetch(`/irrigation/pump-activation/config/${irrigationConfigId}/latest`, {
             method: 'GET',
             baseURL: getApiUrl(),
             headers: getAuthHeaders()

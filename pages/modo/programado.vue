@@ -1,11 +1,77 @@
 <template>
   <div class="space-y-8">
     <div class="max-w-2xl mx-auto">
+      <!-- Widget de control cuando el riego programado está activo (regando) -->
+      <div v-if="irrigationStore.isProgrammedWatering" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+        <h2 class="text-xl font-bold text-white mb-6">Riego Programado Activo</h2>
+        
+        <div class="text-center space-y-6">
+          <!-- Estado visual -->
+          <div class="flex justify-center">
+            <div class="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+              <WateringIcon />
+            </div>
+          </div>
+          
+          <!-- Información del riego activo -->
+          <div class="bg-blue-900/30 border border-blue-700/50 rounded-lg p-4">
+            <h3 class="font-semibold text-blue-300 mb-3">Estado del Riego</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-gray-400">Estado:</p>
+                <p class="font-bold text-white">
+                  {{ irrigationStore.isPaused ? 'Pausado' : 'Regando' }}
+                </p>
+              </div>
+              <div>
+                <p class="text-gray-400">Tiempo Restante:</p>
+                <p class="font-bold text-blue-400">{{ irrigationStore.remainingTime || 'Calculando...' }}</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Duración Total:</p>
+                <p class="font-bold text-white">{{ getDurationFromConfig() }}</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Modo:</p>
+                <p class="font-bold text-white">Programado</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botones de control -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Pausar/Reanudar -->
+            <button
+              v-if="!irrigationStore.isPaused"
+              @click="pauseProgrammedWatering"
+              class="px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold rounded-lg hover:from-yellow-600 hover:to-yellow-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              ⏸️ Pausar Riego
+            </button>
+            <button
+              v-else
+              @click="resumeProgrammedWatering"
+              class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              ▶️ Reanudar Riego
+            </button>
+            
+            <!-- Cancelar -->
+            <button
+              @click="showCancelActiveModal = true"
+              class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              🛑 Cancelar Riego
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Widget de estado programado cuando está activo (solo cuando está configurado pero no regando ni pausado) -->
-      <div v-if="isProgrammedActive && !isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+      <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isProgrammedWaiting" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
         <div class="text-xs text-gray-500 mb-2">
-          Debug: isProgrammedActive={{ isProgrammedActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
+          Debug: activeMode={{ irrigationStore.activeMode }}, isProgrammedActive={{ irrigationStore.isProgrammedActive }}, isProgrammedWaiting={{ irrigationStore.isProgrammedWaiting }}, pump_status={{ irrigationStore.activePumpActivation?.status }}, hasActiveMode={{ irrigationStore.hasActiveMode }}, timestamp={{ Date.now() }}
         </div>
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Configurado</h2>
         
@@ -35,7 +101,7 @@
               </div>
               <div>
                 <p class="text-gray-400">Tiempo Restante:</p>
-                <p class="font-bold text-green-400">{{ remainingTime || 'Calculando...' }}</p>
+                <p class="font-bold text-green-400">{{ irrigationStore.remainingTime || 'Calculando...' }}</p>
               </div>
             </div>
           </div>
@@ -51,10 +117,10 @@
       </div>
 
       <!-- Widget de riego activo cuando está regando -->
-      <div v-if="isProgrammedActive && isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+      <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
         <div class="text-xs text-gray-500 mb-2">
-          Debug: isProgrammedActive={{ isProgrammedActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
+          Debug: isProgrammedActive={{ irrigationStore.isProgrammedActive }}, isWatering={{ irrigationStore.isWatering }}, isPaused={{ irrigationStore.isPaused }}
         </div>
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Activo</h2>
         
@@ -76,7 +142,7 @@
               </div>
               <div>
                 <p class="text-gray-400">Tiempo Restante:</p>
-                <p class="font-bold text-white">{{ remainingTime || 'Calculando...' }}</p>
+                <p class="font-bold text-white">{{ irrigationStore.remainingTime || 'Calculando...' }}</p>
               </div>
             </div>
           </div>
@@ -103,10 +169,10 @@
       </div>
 
       <!-- Widget de riego pausado -->
-      <div v-if="isProgrammedActive && isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+      <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
         <div class="text-xs text-gray-500 mb-2">
-          Debug: isProgrammedActive={{ isProgrammedActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
+          Debug: isProgrammedActive={{ irrigationStore.isProgrammedActive }}, isWatering={{ irrigationStore.isWatering }}, isPaused={{ irrigationStore.isPaused }}
         </div>
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Pausado</h2>
         
@@ -128,7 +194,7 @@
               </div>
               <div>
                 <p class="text-gray-400">Tiempo Restante:</p>
-                <p class="font-bold text-white">{{ remainingTime || 'Calculando...' }}</p>
+                <p class="font-bold text-white">{{ irrigationStore.remainingTime || 'Calculando...' }}</p>
               </div>
             </div>
           </div>
@@ -178,7 +244,7 @@
       </div>
 
       <!-- Formulario de configuración -->
-      <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
+      <div v-if="!irrigationStore.isProgrammedWaiting && !irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
         <h2 class="text-xl font-bold text-white mb-6">Configurar Riego Programado</h2>
         
         <form @submit.prevent="confirmConfiguration" class="space-y-6">
@@ -283,29 +349,16 @@
             <label class="block text-sm font-medium text-gray-300 mb-2">
               Duración del Riego
             </label>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-400 mb-1">Minutos</label>
-                <input 
-                  v-model.number="duration.minutes"
-                  type="number" 
-                  min="1" 
-                  max="59"
-                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
-                  placeholder="5"
-                >
-              </div>
-              <div>
-                <label class="block text-xs text-gray-400 mb-1">Segundos</label>
-                <input 
-                  v-model.number="duration.seconds"
-                  type="number" 
-                  min="0" 
-                  max="59"
-                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
-                  placeholder="0"
-                >
-              </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Minutos</label>
+              <input 
+                v-model.number="duration.minutes"
+                type="number" 
+                min="1" 
+                max="1440"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
+                placeholder="5"
+              >
             </div>
           </div>
 
@@ -463,9 +516,13 @@
                 <input 
                   v-model="options.notifyBeforeStart" 
                   type="checkbox" 
-                  class="rounded border-gray-600 text-green-600 focus:ring-green-500 bg-gray-700"
+                  :disabled="!canNotifyBefore"
+                  class="rounded border-gray-600 text-green-600 focus:ring-green-500 bg-gray-700 disabled:opacity-50"
                 >
-                <span class="ml-2 text-sm text-gray-300">Notificar 5 minutos antes</span>
+                <span class="ml-2 text-sm text-gray-300">
+                  Notificar 5 minutos antes
+                  <span v-if="!canNotifyBefore" class="text-gray-500 text-xs ml-1">(requiere programación con al menos 10 min de anticipación)</span>
+                </span>
               </label>
               <label class="flex items-center">
                 <input 
@@ -516,6 +573,51 @@
             </button>
           </div>
         </form>
+      </div>
+
+      <!-- Mensaje cuando hay un modo activo -->
+      <div v-else class="bg-orange-900/60 border border-orange-500/30 rounded-xl shadow-lg p-6">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <WarningIcon />
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Modo {{ irrigationStore.activeMode }} Activo</h3>
+          <p class="text-orange-300 mb-4">
+            Ya tienes un modo de riego activo. Debes cancelar la configuración actual antes de poder configurar el modo programado.
+          </p>
+          <div class="bg-orange-800/40 border border-orange-500/40 rounded-lg p-3 mb-4">
+            <p class="text-sm text-orange-200">
+              <strong>Último riego:</strong> {{ irrigationStore.lastIrrigation }}
+            </p>
+          </div>
+          <button
+            @click="goBack"
+            class="px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            Volver a Modos de Riego
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando otros modos están activos -->
+    <div v-if="irrigationStore.hasActiveMode && !irrigationStore.isProgrammedActive" class="max-w-2xl mx-auto">
+      <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
+        <div class="text-center space-y-4">
+          <div class="text-4xl">⚠️</div>
+          <h3 class="text-xl font-bold text-white">Otro Modo de Riego Activo</h3>
+          <p class="text-gray-300">
+            Actualmente tienes el modo <strong class="text-blue-400">{{ irrigationStore.getModeDescription(irrigationStore.activeMode) }}</strong> activo.
+            <br><br>
+            Para configurar el modo programado, primero debes cancelar el modo activo desde su página correspondiente.
+          </p>
+          <button 
+            @click="navigateToActiveMode"
+            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          >
+            Ir al Modo Activo
+          </button>
+        </div>
       </div>
     </div>
 
@@ -581,16 +683,52 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de cancelación de riego activo -->
+    <div v-if="showCancelActiveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeCancelActiveModal">
+      <div class="bg-gray-800 border border-gray-600/30 p-6 rounded-xl max-w-md w-full mx-4" @click.stop>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-red-900/60 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <WarningIcon />
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Cancelar Riego Activo</h3>
+          <p class="text-gray-300 mb-6">
+            ¿Estás seguro de que quieres cancelar el riego que está en curso?
+            <br><br>
+            <strong class="text-yellow-400">El riego se detendrá inmediatamente.</strong>
+            <br>
+            <span class="text-blue-400">Si tienes configuración daily o días múltiples, se reprogramará automáticamente.</span>
+          </p>
+          <div class="flex space-x-4">
+            <button 
+              @click="cancelActiveProgrammedWatering"
+              class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Sí, Cancelar Riego
+            </button>
+            <button 
+              @click="closeCancelActiveModal"
+              class="flex-1 px-4 py-2 bg-gray-600 text-gray-200 rounded-lg hover:bg-gray-500 transition-colors"
+            >
+              No, Continuar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 // Configurar middleware
 definePageMeta({
-  middleware: ['auth', 'visitor-block']
+  middleware: ['auth', 'visitor-block', 'crop-required']
 })
+
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import { useIrrigationModes } from '~/composables/useIrrigationModes'
+import { useIrrigationStore } from '~/stores/irrigation'
+import { useUserStore } from '~/stores/user'
+import { useCropStore } from '~/stores/crop'
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -604,20 +742,10 @@ import {
   WarningIcon
 } from '~/assets/icons'
 
-// Sistema de modos de riego
-const {
-  isProgrammedActive,
-  isWatering,
-  remainingTime,
-  isPaused,
-  modeConfig,
-  activeMode,
-  activateProgrammedMode,
-  cancelActiveMode,
-  pauseIrrigation,
-  resumeIrrigation,
-  clearAllIntervals
-} = useIrrigationModes()
+// Store de irrigation
+const irrigationStore = useIrrigationStore()
+const userStore = useUserStore()
+const cropStore = useCropStore()
 
 // Estados reactivos
 const scheduledDate = ref(new Date())
@@ -627,8 +755,7 @@ const scheduledTime = ref({
 })
 
 const duration = ref({
-  minutes: 5,
-  seconds: 0
+  minutes: 5
 })
 
 const frequency = ref('once')
@@ -642,6 +769,7 @@ const options = ref({
 
 const showConfirmModal = ref(false)
 const showCancelModal = ref(false)
+const showCancelActiveModal = ref(false)
 
 // Calendario
 const currentDate = ref(new Date())
@@ -748,25 +876,16 @@ const formatScheduledDate = () => {
 
 const formatDuration = () => {
   const totalMinutes = duration.value.minutes || 0
-  const totalSeconds = duration.value.seconds || 0
   
-  if (totalMinutes === 0 && totalSeconds === 0) {
+  if (totalMinutes === 0) {
     return 'No configurado'
   }
   
-  let result = ''
-  if (totalMinutes > 0) {
-    result += `${totalMinutes} min`
-  }
-  if (totalSeconds > 0) {
-    result += `${result ? ' ' : ''}${totalSeconds} seg`
-  }
-  
-  return result
+  return `${totalMinutes} min`
 }
 
 const calculateVolume = () => {
-  const totalMinutes = (duration.value.minutes || 0) + (duration.value.seconds || 0) / 60
+  const totalMinutes = (duration.value.minutes || 0)
   const flowRate = 2.5 // L/min
   return (totalMinutes * flowRate).toFixed(1)
 }
@@ -782,25 +901,35 @@ const getTimeUntilScheduled = () => {
     return 'La fecha/hora ya ha pasado'
   }
   
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
   
-  if (diffDays > 0) {
-    return `Faltan ${diffDays} días, ${diffHours}h ${diffMinutes}min`
-  } else if (diffHours > 0) {
-    return `Faltan ${diffHours}h ${diffMinutes}min`
-  } else {
+  if (diffMinutes < 60) {
     return `Faltan ${diffMinutes} minutos`
+  } else {
+    const diffHours = Math.floor(diffMinutes / 60)
+    return `Faltan ${diffHours}h ${diffMinutes % 60}min`
   }
 }
+
+// Computed para verificar si se puede notificar 5 minutos antes
+const canNotifyBefore = computed(() => {
+  const now = new Date()
+  const scheduled = new Date(selectedDate.value)
+  scheduled.setHours(scheduledTime.value.hour, scheduledTime.value.minute, 0, 0)
+  
+  const diffMs = scheduled - now
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+  
+  // Requiere al menos 10 minutos de anticipación para notificar 5 minutos antes
+  return diffMinutes >= 10
+})
 
 const isValidConfiguration = () => {
   const now = new Date()
   const scheduled = new Date(selectedDate.value)
   scheduled.setHours(scheduledTime.value.hour, scheduledTime.value.minute, 0, 0)
   
-  const hasValidDuration = (duration.value.minutes > 0 || duration.value.seconds > 0)
+  const hasValidDuration = (duration.value.minutes > 0)
   const hasValidDateTime = scheduled > now
   
   // Validación específica para frecuencia personalizada
@@ -867,7 +996,7 @@ const getFrequencyText = () => {
 
 const confirmConfiguration = () => {
   if (!isValidConfiguration()) {
-    if (duration.value.minutes === 0 && duration.value.seconds === 0) {
+    if (duration.value.minutes === 0) {
       showError('Por favor, configura una duración válida para el riego')
     } else if (frequency.value === 'custom' && selectedDays.value.length === 0) {
       showError('Por favor, selecciona al menos un día de la semana para el riego personalizado')
@@ -880,76 +1009,119 @@ const confirmConfiguration = () => {
   showConfirmModal.value = true
 }
 
-const saveScheduledWatering = () => {
+const saveScheduledWatering = async () => {
   console.log('saveScheduledWatering llamado')
   
-  // Crear la fecha programada completa
-  const scheduledDateTime = new Date(selectedDate.value)
-  scheduledDateTime.setHours(scheduledTime.value.hour, scheduledTime.value.minute, 0, 0)
-  
-  // Configuración del modo programado
-  const config = {
-    scheduledDateTime: scheduledDateTime.toISOString(),
-    duration: {
-      minutes: duration.value.minutes || 0,
-      seconds: duration.value.seconds || 0
-    },
-    frequency: frequency.value,
-    options: options.value
+  // Validar que el usuario esté autenticado
+  if (!userStore.user || !userStore.user.id) {
+    console.error('❌ Usuario no autenticado:', userStore.user)
+    showError('Error: Usuario no autenticado. Por favor, inicia sesión nuevamente.')
+    return
   }
   
-  console.log('Guardando configuración programada:', config)
+  // Validar que haya un cultivo seleccionado
+  if (!cropStore.currentCrop || !cropStore.currentCrop.id) {
+    console.error('❌ No hay cultivo seleccionado:', cropStore.currentCrop)
+    showError('Error: No hay cultivo seleccionado. Por favor, selecciona un cultivo.')
+    return
+  }
   
   // Cerrar el modal de confirmación INMEDIATAMENTE
   showConfirmModal.value = false
   
-  // Pequeño delay para asegurar que el modal se cierre
-  setTimeout(() => {
-    // Activar el modo programado usando el composable
-    activateProgrammedMode(config)
-    
+  // Crear la fecha programada completa
+  if (!selectedDate.value) {
+    console.error('❌ selectedDate.value es undefined o null')
+    showError('Error: Fecha no seleccionada')
+    return
+  }
+  
+  const scheduledDateTime = new Date(selectedDate.value)
+  
+  // Validar que scheduledTime.value tenga los valores necesarios
+  if (scheduledTime.value.hour === undefined || scheduledTime.value.minute === undefined) {
+    console.error('❌ scheduledTime.value no tiene hour o minute definidos:', scheduledTime.value)
+    showError('Error: Hora no configurada correctamente')
+    return
+  }
+  
+  scheduledDateTime.setHours(scheduledTime.value.hour, scheduledTime.value.minute, 0, 0)
+  
+  // Formatear la fecha manteniendo la zona horaria local
+  const localDateTime = new Date(scheduledDateTime.getTime() - (scheduledDateTime.getTimezoneOffset() * 60000)).toISOString()
+  
+  console.log('🔍 Datos de configuración:', {
+    user: userStore.user,
+    crop: cropStore.currentCrop,
+    scheduledDateTime: localDateTime,
+    originalDate: scheduledDateTime,
+    timezoneOffset: scheduledDateTime.getTimezoneOffset()
+  })
+  
+  // Configuración para el riego programado
+  const config = {
+    user_id: userStore.user.id,
+    crop_id: cropStore.currentCrop.id,
+    start_datetime: localDateTime,
+    end_date: null, // Puede ser null para programas indefinidos
+    duration_minutes: duration.value.minutes || 0,
+    frequency_type: frequency.value,
+    custom_days: frequency.value === 'custom' ? selectedDays.value : [],
+    notify_before_minutes: options.value.notifyBeforeStart ? 5 : 0,
+    notify_at_start: options.value.notifyStart,
+    notify_at_end: options.value.notifyEnd
+  }
+  
+  console.log('Configuración enviada:', config)
+  
+  // Activar el modo programado usando el store
+  const success = await irrigationStore.startProgrammedIrrigation(config)
+  
+  if (success) {
     showSuccess('Riego programado configurado exitosamente')
     
-    // Forzar la reactividad después de activar el modo
-    nextTick(() => {
-      console.log('Configuración guardada - verificando estado:', {
-        isProgrammedActive: isProgrammedActive.value,
-        isWatering: isWatering.value,
-        modeConfig: modeConfig.value
-      })
-      
-      // Forzar una actualización adicional si es necesario
-      if (!isProgrammedActive.value) {
-        console.log('Forzando actualización del estado...')
-        // Trigger reactivity
-        isProgrammedActive.value = isProgrammedActive.value
-      }
-    })
-  }, 100)
+    // Redirigir a la página principal después de un breve delay
+    setTimeout(() => {
+      router.push('/modo')
+    }, 1500)
+  }
+}
+
+const pauseIrrigation = async () => {
+  const success = await irrigationStore.pauseIrrigation()
+  if (success) {
+    showSuccess('Riego pausado')
+  }
+}
+
+const resumeIrrigation = async () => {
+  const success = await irrigationStore.resumeIrrigation()
+  if (success) {
+    showSuccess('Riego reanudado')
+  }
 }
 
 const goBack = () => {
   router.push('/modo')
 }
 
-const cancelProgrammedMode = () => {
+const cancelProgrammedMode = async () => {
   console.log('cancelProgrammedMode llamado')
   try {
-    // Cancelar el modo activo
-    cancelActiveMode()
-    
-    // Mostrar mensaje de éxito
-    showSuccess('Configuración programada cancelada')
-    
-    // Cerrar el modal
+    // Cerrar el modal inmediatamente
     showCancelModal.value = false
     
-    console.log('Configuración cancelada exitosamente')
+    // Cancelar el modo activo usando el store
+    const success = await irrigationStore.cancelActiveMode()
     
-    // Redirigir a la página principal después de un breve delay
-    setTimeout(() => {
-      router.push('/modo')
-    }, 500)
+    if (success) {
+      showSuccess('Configuración programada cancelada')
+      
+      // Redirigir a la página principal después de un breve delay
+      setTimeout(() => {
+        router.push('/modo')
+      }, 1500)
+    }
     
   } catch (error) {
     console.error('Error al cancelar configuración:', error)
@@ -979,13 +1151,56 @@ const closeConfirmModal = () => {
   }
 }
 
+// Funciones de control para riego programado activo
+const pauseProgrammedWatering = async () => {
+  try {
+    await irrigationStore.pauseIrrigation()
+    showSuccess('Riego pausado correctamente')
+  } catch (error) {
+    console.error('Error pausando riego programado:', error)
+    showError('Error al pausar el riego')
+  }
+}
+
+const resumeProgrammedWatering = async () => {
+  try {
+    await irrigationStore.resumeIrrigation()
+    showSuccess('Riego reanudado correctamente')
+  } catch (error) {
+    console.error('Error reanudando riego programado:', error)
+    showError('Error al reanudar el riego')
+  }
+}
+
+const cancelActiveProgrammedWatering = async () => {
+  try {
+    showCancelActiveModal.value = false
+    await irrigationStore.cancelActiveMode()
+    showSuccess('Riego programado cancelado correctamente')
+    
+    // Nota: Si hay más días programados (daily o custom), se reprogramará automáticamente
+    if (irrigationStore.specificConfig?.frequency_type === 'daily' || 
+        (irrigationStore.specificConfig?.frequency_type === 'custom' && 
+         irrigationStore.specificConfig?.custom_days?.length > 1)) {
+      showInfo('El riego se reprogramará automáticamente para el próximo día configurado')
+    }
+  } catch (error) {
+    console.error('Error cancelando riego programado activo:', error)
+    showError('Error al cancelar el riego')
+  }
+}
+
+const closeCancelActiveModal = () => {
+  showCancelActiveModal.value = false
+}
+
 // Funciones para obtener información desde la configuración guardada
 const getScheduledDateFromConfig = () => {
-  if (!modeConfig.value || !modeConfig.value.scheduledDateTime) {
+  if (!irrigationStore.specificConfig?.start_datetime) {
     return 'No configurado'
   }
   
-  const date = new Date(modeConfig.value.scheduledDateTime)
+  const date = new Date(irrigationStore.specificConfig.start_datetime)
   return date.toLocaleDateString('es-ES', {
     day: '2-digit',
     month: '2-digit',
@@ -994,11 +1209,11 @@ const getScheduledDateFromConfig = () => {
 }
 
 const getScheduledTimeFromConfig = () => {
-  if (!modeConfig.value || !modeConfig.value.scheduledDateTime) {
+  if (!irrigationStore.specificConfig?.start_datetime) {
     return 'No configurado'
   }
   
-  const date = new Date(modeConfig.value.scheduledDateTime)
+  const date = new Date(irrigationStore.specificConfig.start_datetime)
   return date.toLocaleTimeString('es-ES', {
     hour: '2-digit',
     minute: '2-digit'
@@ -1006,94 +1221,84 @@ const getScheduledTimeFromConfig = () => {
 }
 
 const getDurationFromConfig = () => {
-  if (!modeConfig.value || !modeConfig.value.duration) {
+  if (!irrigationStore.specificConfig?.duration_minutes) {
     return 'No configurado'
   }
   
-  const minutes = modeConfig.value.duration.minutes || 0
-  const seconds = modeConfig.value.duration.seconds || 0
+  const minutes = irrigationStore.specificConfig.duration_minutes || 0
   
-  if (minutes === 0 && seconds === 0) {
+  if (minutes === 0) {
     return 'No configurado'
   }
   
-  let result = ''
-  if (minutes > 0) {
-    result += `${minutes} min`
-  }
-  if (seconds > 0) {
-    result += `${result ? ' ' : ''}${seconds} seg`
-  }
-  
-  return result
+  return `${minutes} min`
 }
 
-// Watcher para asegurar que el tiempo restante se actualice
-watch(remainingTime, (newValue) => {
-  // Forzar la reactividad del tiempo restante
-  if (newValue) {
-    // Trigger reactivity
-    nextTick(() => {
-      // El tiempo se actualizará automáticamente
+
+
+// Cargar configuración activa al montar
+// Función para navegar al modo activo
+const navigateToActiveMode = () => {
+  const mode = irrigationStore.activeMode
+  if (mode === 'manual') {
+    router.push('/modo/manual')
+  } else if (mode === 'automatic') {
+    router.push('/modo/automatico')
+  } else {
+    router.push('/modo')
+  }
+}
+
+onMounted(async () => {
+  console.log('🚀 onMounted - Cargando configuración...')
+  
+  try {
+    // El middleware crop-required ya se encarga de validar usuario y cultivo
+    console.log('📊 Estado de stores en onMounted:', {
+      user: userStore.user,
+      currentCrop: cropStore.currentCrop,
+      isAuthenticated: userStore.isAuthenticated,
+      cropSelected: cropStore.currentCrop?.selected
     })
+    
+    // Cargar configuración activa de riego
+    await irrigationStore.loadActiveConfiguration()
+    console.log('✅ Configuración activa cargada')
+  } catch (error) {
+    console.error('❌ Error en onMounted:', error)
+    showError('Error al cargar la configuración: ' + error.message)
   }
 })
 
-// Watcher para asegurar que el estado se mantenga sincronizado
-watch(isProgrammedActive, (newValue) => {
-  console.log('isProgrammedActive cambió a:', newValue, 'activeMode:', activeMode.value)
+// Watchers para asegurar reactividad
+watch(() => irrigationStore.hasActiveMode, (newValue) => {
+  console.log('🔄 hasActiveMode cambió a:', newValue)
 })
 
-// Watcher para monitorear el estado de riego
-watch(isWatering, (newValue) => {
-  console.log('isWatering cambió a:', newValue, 'isPaused:', isPaused.value)
+watch(() => irrigationStore.isProgrammedActive, (newValue) => {
+  console.log('🔄 isProgrammedActive cambió a:', newValue)
 })
 
-watch(isPaused, (newValue) => {
-  console.log('isPaused cambió a:', newValue, 'isWatering:', isWatering.value)
+watch(() => irrigationStore.isProgrammedWaiting, (newValue) => {
+  console.log('🔄 isProgrammedWaiting cambió a:', newValue)
 })
 
-// Watcher para monitorear cambios en modeConfig
-watch(modeConfig, (newValue) => {
-  console.log('modeConfig cambió a:', newValue)
-  if (newValue && Object.keys(newValue).length > 0) {
-    console.log('Configuración detectada - forzando reactividad')
-    nextTick(() => {
-      // Forzar actualización
-      isProgrammedActive.value = isProgrammedActive.value
-    })
-  }
-}, { deep: true })
-
-// Watcher para monitorear el estado del modal
-watch(showCancelModal, (newValue) => {
-  console.log('showCancelModal cambió a:', newValue)
+watch(() => irrigationStore.activeMode, (newValue) => {
+  console.log('🔄 activeMode cambió a:', newValue)
 })
 
-// Watcher para monitorear el modal de confirmación
-watch(showConfirmModal, (newValue) => {
-  console.log('showConfirmModal cambió a:', newValue)
-  // Forzar la reactividad
-  if (!newValue) {
-    nextTick(() => {
-      console.log('Modal de confirmación cerrado - reactividad forzada')
-    })
-  }
+watch(() => irrigationStore.activePumpActivation, (newValue) => {
+  console.log('🔄 activePumpActivation cambió a:', newValue)
 })
 
-// Watcher para monitorear cuando se activa el modo programado
-watch(isProgrammedActive, (newValue, oldValue) => {
-  console.log('isProgrammedActive cambió de', oldValue, 'a:', newValue, 'activeMode:', activeMode.value)
-  if (newValue) {
-    console.log('Modo programado activado - mostrando widget de configuración')
-    // Forzar la reactividad
-    nextTick(() => {
-      console.log('Reactividad forzada después de activar modo programado')
-      // Forzar una actualización adicional
-      isProgrammedActive.value = isProgrammedActive.value
-    })
-  }
-}, { immediate: true })
+watch(() => irrigationStore.isWatering, (newValue) => {
+  console.log('🔄 isWatering cambió a:', newValue)
+})
+
+// Limpiar al desmontar el componente
+onUnmounted(() => {
+  irrigationStore.cleanup()
+})
 
 // Meta del documento
 useHead({
@@ -1101,10 +1306,5 @@ useHead({
   meta: [
     { name: 'description', content: 'Configuración del modo programado de riego' }
   ]
-})
-
-// Limpiar intervalos al desmontar el componente
-onUnmounted(() => {
-  clearAllIntervals()
 })
 </script> 

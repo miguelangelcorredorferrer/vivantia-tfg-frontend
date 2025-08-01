@@ -1,7 +1,71 @@
 Voy a darte contexto de que trata este proyecto para que optimices lo máximo posibles las respuestas de las consultas sin desviarte.
 
-Con este proyecto estoy tratando de implementar una solución IoT utilizando The Things Network (TTN) en su versión sandbox gratuita
+Con este proyecto estoy tratando de implementar una solución IoT utilizando The Things Network (TTN) en su versión sandbox gratuita. Utilizando el protocolo de comunicación LoRaWan
 He configurado un dispositivo IoT (Arduino WAN) que debe gestionar la comunicación bidireccional entre sensores físicos y una aplicación web (el proyecto que estamos tratando).
-El objetivo del sistema IoT en sí tiene por objetivo implementar un sistema IoT para la automatización de riegos de cultivos. Por ello el objetivo de la aplicación es crear un SPA que permita a los usuarios registrados gestionar el riego de sus cultivos. En función de los valores de humedad y temperatura. Además desde la aplicación se podrá tener un control sobre la bomba por lo que la aplicación web también va a enviar información a la red IoT con el objetivo de que el dispostivo IoT controle el actuador de la bomba.
+El sistema IoT en sí tiene por objetivo la automatización de riegos de cultivos. Por ello se ha creado un SPA que permita a los usuarios registrados gestionar el riego de sus cultivos. En función de los valores de humedad y temperatura. Además desde la aplicación se podrá tener un control sobre la bomba por lo que la aplicación web también va a enviar información a la red IoT con el objetivo de que el dispostivo IoT controle el actuador de la bomba.
 
 Esta aplicación web se va a encargar de gestionar los dispostivos registrados por el usuario, añadir y seleccionar cultivos a regar (1 cultivo por usuario, es decir se selecciona un cultivo y ya no se pueden seleccionar más) etc...
+
+El proyecto esta debidido en 3 partes, una es edge computing, fog computing y cloud computing. Edge computing se refiere directamente al procesamiento que se desarrolla en el microcontrolador al que están conectado los sensores en este caso el microcontrolador con el sensor dht11 y capacitive soil moisture v1.2. Fog computing actúa como una capa intermedia entre cloud y edge. Permite procesar y filtrar datos. En relación a nuestro proyecto el actor principal en la capa de Fog computing sería el gateway, que se encarga de filtrar los datos proveniente del microcontrolador hacia el servidor de red de TTN. Por último tenemos cloud computing cuyos actores principales sería el servidor de red de ttn y la base de datos de nuestra aplicación.
+
+Otro factor importante es la manera en la que se va  dar la comunicación entre el dispositivo microcontrolador y la red TTN, la comunicación se dará en 2 direcciones: uplink y downlink. Vamos a enfocarnos en describir el uplink.
+
+1. Se captan datos de los sensores y se procesan en el microcontrolador
+2. El microcontrolador envía los datos de temperatura y humedad al servidor de red a través del gateway que actúa como puente entre microcontrolador y servidor de red TTN
+3. Desde el servidor de mi aplicación hago una consulta al endpoint HTTP que he definido en el webhook de TTN. El webhook va a enviar los datos recibidos por TTN al endpoint HTTP ya configurado por mí previamente. Cuando un dispositivo LoRaWAN transmite un mensaje (por ejemplo, temperatura, humedad, estado de la bomba...), TTN lo recibe y reenvía automáticamente ese mensaje a tu servidor web o API (por ejemplo, tu index.ts en Node.js).
+4. Después de hacer la consulta la api devuelve una respuesta json con los datos de humedad y temperatura y también las credenciales del dispositivo que las esta enviando, para luego almacenarlo en la base de datos. De esta manera los datos enviandos por el microcontrolador de los sensores quedarán registrados en la base de datos y disponibles en la aplicación web.
+
+Ahora vamos a describir como funciona el downlink
+
+
+1. Petición de acción desde la interfaz web
+El usuario interactúa con la aplicación web (por ejemplo, presionando un botón "ON" o "OFF" en el dashboard).
+🔁 Esta acción desencadena una llamada HTTP (POST) al backend que estás ejecutando con Express.
+
+2. El backend llama a la API de TTN para encolar un downlink
+El servidor Node.js toma esta solicitud y prepara un paquete JSON con:
+
+frm_payload: el comando codificado en base64 (por ejemplo, AQ== para 0x01)
+
+f_port: el puerto lógico (normalmente 1)
+
+priority: la prioridad del downlink (NORMAL o HIGH)
+
+confirmed: si se espera confirmación del nodo
+
+📤 Esta estructura se envía mediante POST a la URL:
+
+https://<region>.cloud.thethings.network/api/v3/as/applications/<app_id>/devices/<dev_eui>/down/push
+🟢 Si la petición tiene éxito, TTN añade el paquete a una cola de downlinks específica del dispositivo.
+
+3. TTN espera el próximo uplink para entregar el downlink
+Aquí ocurre lo interesante:
+
+Los dispositivos LoRaWAN clase A, como el Arduino MKR WAN 1310, solo pueden recibir downlinks justo después de enviar un uplink.
+
+Entonces TTN guarda el downlink en cola hasta que el nodo envíe un uplink (por ejemplo, datos de sensores o un paquete vacío).
+
+4. El nodo envía un uplink (sensor, dummy, heartbeat, etc.)
+Cuando el nodo transmite un uplink (automático o provocado), se abren dos ventanas de recepción:
+
+RX1 (~1 segundo después del uplink)
+
+RX2 (~2 segundos después, con parámetros predefinidos)
+
+Es durante esas ventanas cuando TTN entrega el downlink que estaba encolado.
+
+5. El microcontrolador recibe el downlink y actúa
+Dentro del código del microcontrolador:
+
+Se detecta que hay un downlink (modem.available())
+
+Se lee el byte recibido (por ejemplo, 0x01 para "ON")
+
+El sistema actúa en consecuencia: encender la bomba, cambiar un LED, etc.
+
+Opcionalmente, el micro puede responder con un uplink de confirmación.
+
+
+
+El objetivo de este proyecto es automatizar el riego con el fin de ahorrar la máxima cantidad de agua posible y mantener un control exhaustivo del riego. De ahí que existan 3 modos de operación manual, programado y automático
+

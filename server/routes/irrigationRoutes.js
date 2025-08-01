@@ -4,6 +4,7 @@ import {
   createIrrigationConfig,
   getIrrigationConfigById,
   getActiveIrrigationConfigsByUser,
+  getIrrigationConfigsByUser,
   getIrrigationConfigsByUserAndType,
   activateIrrigationConfig,
   deactivateIrrigationConfig,
@@ -12,13 +13,15 @@ import {
   getSpecificConfig,
   deleteIrrigationConfig,
   // Funciones de manual config
-  createManualConfig,
   updateManualConfig,
   // Funciones de automatic config
   createAutomaticConfig,
   // Funciones de programmed config
   createProgrammedConfig,
-  updateNextExecution
+  cancelProgrammedConfig,
+  cancelProgrammedIrrigation,
+  updateNextExecution,
+  updateProgrammedExecution
 } from '../controllers/irrigationConfigController.js';
 
 import {
@@ -29,7 +32,8 @@ import {
   pausePumpActivation,
   resumePumpActivation,
   completePumpActivation,
-  getPumpActivationsByUser
+  getPumpActivationsByUser,
+  getLatestPumpActivationByConfig
 } from '../controllers/pumpActivationController.js';
 
 const router = express.Router();
@@ -41,6 +45,7 @@ router.delete('/:id', deleteIrrigationConfig);
 
 // Rutas por usuario
 router.get('/user/:user_id/active', getActiveIrrigationConfigsByUser);
+router.get('/user/:user_id/all', getIrrigationConfigsByUser);
 router.get('/user/:user_id/type/:mode_type', getIrrigationConfigsByUserAndType);
 router.get('/user/:user_id/last-irrigation', getLastIrrigationDate);
 
@@ -53,7 +58,6 @@ router.put('/:id/update-last-irrigation', updateLastIrrigation);
 router.get('/:id/specific-config', getSpecificConfig);
 
 // Rutas para configuraciones manuales
-router.post('/manual', createManualConfig);
 router.put('/manual/:id', updateManualConfig);
 
 // Rutas para configuraciones automáticas
@@ -61,11 +65,15 @@ router.post('/automatic', createAutomaticConfig);
 
 // Rutas para configuraciones programadas
 router.post('/programmed', createProgrammedConfig);
+router.delete('/programmed/:irrigation_config_id/cancel', cancelProgrammedConfig);
+router.delete('/programmed/:irrigation_config_id/cancel-irrigation', cancelProgrammedIrrigation);
 router.put('/programmed/:id/next-execution', updateNextExecution);
+router.put('/programmed/:id/execution', updateProgrammedExecution);
 
 // Rutas para activaciones de bomba
 router.post('/pump-activation', createPumpActivation);
 router.get('/pump-activation/config/:irrigation_config_id/active', getActivePumpActivation);
+router.get('/pump-activation/config/:irrigation_config_id/latest', getLatestPumpActivationByConfig);
 router.put('/pump-activation/:id/status', updatePumpActivationStatus);
 router.put('/pump-activation/:id/pause', pausePumpActivation);
 router.put('/pump-activation/:id/resume', resumePumpActivation);
