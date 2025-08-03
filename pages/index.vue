@@ -36,10 +36,6 @@ const userStore = useUserStore()
   </div>
 </template>
 
-<style scoped>
-.bg-dark-card {
-  background-color: #3a3a3a;
-}
-</style>
+
 
 

@@ -69,3 +69,4 @@ Opcionalmente, el micro puede responder con un uplink de confirmación.
 
 El objetivo de este proyecto es automatizar el riego con el fin de ahorrar la máxima cantidad de agua posible y mantener un control exhaustivo del riego. De ahí que existan 3 modos de operación manual, programado y automático
 
+Ten en cuenta que la programación del microcontrolador está hecha, pero no es visible en este proyecto. La programación del microcontrolador para la emisión de datos de lo sensores y la recepción de información de los downlink se ha hecho en el editor de texto Visual Studio Code con el plugin de platform.io

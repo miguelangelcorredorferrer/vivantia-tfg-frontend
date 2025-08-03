@@ -667,35 +667,4 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-/* Estilos personalizados */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-
-/* Animaciones para el drag and drop */
-.border-dashed {
-  border-style: dashed;
-}
-
-/* Estilos para el preview de imagen */
-img {
-  transition: opacity 0.3s ease;
-}
-
-/* Animación del spinner */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-</style> 
+ 

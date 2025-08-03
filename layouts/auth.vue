@@ -130,39 +130,4 @@ const authRoutes = [
   </div>
 </template>
 
-<style scoped>
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 1s ease-out;
-}
-
-.feature-widget {
-  position: relative;
-  overflow: hidden;
-}
-
-.feature-widget::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-  transition: left 0.5s;
-}
-
-.feature-widget:hover::before {
-  left: 100%;
-}
-</style> 
+ 

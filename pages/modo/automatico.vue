@@ -809,22 +809,4 @@ useHead({
 })
 </script>
 
-<style scoped>
-.slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #8B5CF6;
-  cursor: pointer;
-}
-
-.slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #8B5CF6;
-  cursor: pointer;
-  border: none;
-}
-</style> 
+ 

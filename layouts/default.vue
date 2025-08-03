@@ -70,20 +70,5 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style scoped>
-.bg-dark-primary {
-  background-color: #1a1a1a;
-}
 
-.bg-dark-secondary {
-  background-color: #2d2d2d;
-}
-
-/* Asegurar que el layout funcione correctamente */
-@media (min-width: 1024px) {
-  .lg\:ml-72 {
-    margin-left: 18rem;
-  }
-}
-</style>
 

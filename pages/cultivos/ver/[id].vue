@@ -345,31 +345,4 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-/* Estilos personalizados */
-.gradient-border {
-  background: linear-gradient(45deg, #10b981, #059669);
-  padding: 1px;
-  border-radius: 0.75rem;
-}
-
-.gradient-border > div {
-  background: #1f2937;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-}
-
-/* Animaciones */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
-  }
-}
-
-.pulse-glow {
-  animation: pulse-glow 2s infinite;
-}
-</style> 
+ 

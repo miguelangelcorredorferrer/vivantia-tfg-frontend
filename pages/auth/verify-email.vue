@@ -75,6 +75,3 @@ const goToLogin = () => {
   </div>
 </template>
 
-<style scoped>
-/* Estilos adicionales si son necesarios */
-</style> 

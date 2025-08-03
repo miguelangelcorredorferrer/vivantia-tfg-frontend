@@ -1,3 +1,273 @@
 @tailwind base;
 @tailwind components;
-@tailwind utilities; 
+@tailwind utilities;
+
+/* Dashboard Styles */
+.dashboard-container {
+  padding: 0.5rem;
+}
+
+.info-card {
+  padding: 1.5rem;
+  transition: transform 0.2s ease-in-out;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+}
+
+.threshold-config {
+  background: linear-gradient(135deg, rgba(74, 93, 184, 0.1) 0%, rgba(42, 59, 122, 0.1) 100%);
+  border: 1px solid rgba(74, 93, 184, 0.2);
+}
+
+.threshold-item {
+  padding: 1.5rem;
+  background: rgba(17, 24, 39, 0.5);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+.threshold-item:hover {
+  background: rgba(17, 24, 39, 0.7);
+  border-color: rgba(74, 93, 184, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.enhanced-sensor-card {
+  background: rgba(17, 24, 39, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.enhanced-sensor-card:hover {
+  background: rgba(17, 24, 39, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.sensor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.sensor-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sensor-display {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.main-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.trend-up {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.trend-down {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.trend-neutral {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.trend-arrow {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.trend-percent {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.system-panel {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border: 1px solid rgba(74, 93, 184, 0.2);
+}
+
+/* Layout Styles */
+.bg-dark-primary {
+  background-color: #1a1a1a;
+}
+
+.bg-dark-secondary {
+  background-color: #2d2d2d;
+}
+
+/* Auth Layout Styles */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+.feature-widget {
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-widget::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: left 0.5s;
+}
+
+.feature-widget:hover::before {
+  left: 100%;
+}
+
+/* Page Styles */
+.bg-dark-card {
+  background-color: #3a3a3a;
+}
+
+/* Slider Styles */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #8B5CF6;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #8B5CF6;
+  cursor: pointer;
+  border: none;
+}
+
+/* Crop Styles */
+.gradient-border {
+  background: linear-gradient(45deg, #10b981, #059669);
+  padding: 1px;
+  border-radius: 0.75rem;
+}
+
+.gradient-border > div {
+  background: #1f2937;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+/* Animaciones para cultivos */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Form Styles */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Drag and Drop Styles */
+.border-dashed {
+  border-style: dashed;
+}
+
+/* Image Preview Styles */
+img {
+  transition: opacity 0.3s ease;
+}
+
+/* Spinner Animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive Layout */
+@media (min-width: 1024px) {
+  .lg\:ml-72 {
+    margin-left: 18rem;
+  }
+} 

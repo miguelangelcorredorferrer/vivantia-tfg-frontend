@@ -1,0 +1,5 @@
+export { default as UserInfo } from './UserInfo.vue'
+export { default as NameEditor } from './NameEditor.vue'
+export { default as PasswordEditor } from './PasswordEditor.vue'
+export { default as AccountActions } from './AccountActions.vue'
+export { default as DeleteAccountModal } from './DeleteAccountModal.vue' 

@@ -39,21 +39,6 @@ class Device {
     };
   }
 
-  // Obtener información TTN
-  getTTNInfo() {
-    return {
-      region: this.ttn_region,
-      app_id: this.ttn_app_id,
-      access_key: this.ttn_access_key,
-      dev_eui: this.dev_eui
-    };
-  }
-
-  // Verificar si tiene configuración TTN completa
-  hasTTNConfig() {
-    return !!(this.ttn_region && this.ttn_app_id && this.ttn_access_key);
-  }
-
   // Obtener URL de la API TTN
   getTTNApiUrl() {
     if (!this.hasTTNConfig()) return null;
