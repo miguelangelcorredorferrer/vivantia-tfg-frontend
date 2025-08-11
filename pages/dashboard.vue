@@ -4,11 +4,15 @@ import { useCropStore } from '~/stores/crop'
 import { useDeviceStore } from '~/stores/device'
 import { useUserStore } from '~/stores/user'
 import { thermometerIcon, humidityIcon } from '~/assets/icons'
-import { getIcon } from '~/assets/icons'
-import BaseCard from '~/components/Cards/BaseCard.vue'
 import WorkingTemperatureChart from '~/components/Charts/WorkingTemperatureChart.vue'
 import WorkingHumidityChart from '~/components/Charts/WorkingHumidityChart.vue'
-import { demoData, getSimulatedReading } from '~/utils/demoData'
+import { demoData } from '~/utils/demoData'
+import {
+  DemoBanner,
+  SensorCard,
+  InfoCard,
+  SystemInfoPanel
+} from '~/components/Dashboard'
 
 // Configurar middleware de autenticación y redirección para admins
 definePageMeta({
@@ -316,37 +320,20 @@ onUnmounted(() => {
   stopDemoSimulation()
 })
 
-
+// Función para manejar la salida del modo demo
+const handleExitDemo = () => {
+  userStore.exitDemoMode()
+  navigateTo('/auth/login')
+}
 </script>
 
 <template>
   <div class="dashboard-container space-y-8">
     <!-- Banner informativo para modo demo -->
-    <div v-if="userStore.isDemoMode" class="bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border border-orange-500/30 rounded-xl p-4 shadow-lg">
-      <div class="flex items-center space-x-3">
-        <div class="flex-shrink-0">
-          <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-          </svg>
-        </div>
-        <div class="flex-1">
-          <h3 class="text-lg font-medium text-orange-300">🎭 Modo Vista Previa</h3>
-          <p class="text-sm text-orange-200">
-            Estás viendo una demostración con datos simulados. 
-            <span class="font-medium">Las funcionalidades están limitadas.</span> 
-            Para acceder a todas las características, 
-            <button @click="userStore.exitDemoMode(); navigateTo('/auth/login')" class="underline hover:text-white transition-colors">
-              inicia sesión aquí
-            </button>.
-          </p>
-        </div>
-        <div class="flex items-center space-x-2">
-          <div class="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
-          <span class="text-sm text-orange-300 font-medium">DEMO</span>
-        </div>
-      </div>
-    </div>
+    <DemoBanner 
+      :is-demo-mode="userStore.isDemoMode"
+      @exit-demo="handleExitDemo"
+    />
     
     <!-- Título de la página -->
     <div class="flex items-center justify-between">
@@ -359,318 +346,87 @@ onUnmounted(() => {
     <!-- Gráficas principales mejoradas -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
       <!-- Información de temperatura -->
-      <div class="enhanced-sensor-card">
-        <div class="sensor-header">
-          <div class="flex items-center space-x-3">
-            <div class="sensor-icon bg-gradient-to-br from-red-500 to-red-600">
-              <component :is="thermometerIcon" />
-            </div>
-            <div>
-              <h3 class="text-xl font-bold text-white">Temperatura Ambiental</h3>
-              <p class="text-gray-400">Sensor DHT11 - Actualización cada 2 minutos</p>
-            </div>
-          </div>
-          <div class="sensor-display">
-            <div class="main-value text-red-400">{{ formattedTemperature }}</div>
-            <div class="trend-badge" :class="temperatureTrend.direction === 'up' ? 'trend-up' : temperatureTrend.direction === 'down' ? 'trend-down' : 'trend-neutral'">
-              <span class="trend-arrow">{{ temperatureTrend.direction === 'up' ? '↗' : temperatureTrend.direction === 'down' ? '↘' : '→' }}</span>
-              <span class="trend-percent">{{ temperatureTrend.value }}°C</span>
-            </div>
-          </div>
-        </div>
-        <WorkingTemperatureChart 
-          :data="temperatureData" 
-          :temperature-max="currentCrop?.temperature_max || 28"
-        />
-      </div>
+      <SensorCard 
+        title="Temperatura Ambiental"
+        description="Sensor DHT11 - Actualización cada 2 minutos"
+        :icon="thermometerIcon"
+        icon-bg-class="bg-gradient-to-br from-red-500 to-red-600"
+        value-color-class="text-red-400"
+        :formatted-value="formattedTemperature"
+        :trend="temperatureTrend"
+        :chart-component="WorkingTemperatureChart"
+        :chart-data="temperatureData"
+        :chart-props="{ temperatureMax: currentCrop?.temperature_max || 28 }"
+      />
 
       <!-- Información de humedad -->
-      <div class="enhanced-sensor-card">
-        <div class="sensor-header">
-          <div class="flex items-center space-x-3">
-            <div class="sensor-icon bg-gradient-to-br from-blue-500 to-blue-600">
-              <component :is="humidityIcon" />
-            </div>
-            <div>
-              <h3 class="text-xl font-bold text-white">Humedad del Suelo</h3>
-              <p class="text-gray-400">Sensor Capacitive Soil Moisture - Actualización cada 2 minutos</p>
-            </div>
-          </div>
-          <div class="sensor-display">
-            <div class="main-value text-blue-400">{{ formattedHumidity }}</div>
-            <div class="trend-badge" :class="humidityTrend.direction === 'up' ? 'trend-up' : humidityTrend.direction === 'down' ? 'trend-down' : 'trend-neutral'">
-              <span class="trend-arrow">{{ humidityTrend.direction === 'up' ? '↗' : humidityTrend.direction === 'down' ? '↘' : '→' }}</span>
-              <span class="trend-percent">{{ humidityTrend.value }}%</span>
-            </div>
-          </div>
-        </div>
-        <WorkingHumidityChart 
-          :data="humidityData" 
-          :humidity-min="currentCrop?.humidity_min || 40"
-          :humidity-max="currentCrop?.humidity_max || 80"
-        />
-      </div>
+      <SensorCard 
+        title="Humedad del Suelo"
+        description="Sensor Capacitive Soil Moisture - Actualización cada 2 minutos"
+        :icon="humidityIcon"
+        icon-bg-class="bg-gradient-to-br from-blue-500 to-blue-600"
+        value-color-class="text-blue-400"
+        :formatted-value="formattedHumidity"
+        :trend="humidityTrend"
+        :chart-component="WorkingHumidityChart"
+        :chart-data="humidityData"
+        :chart-props="{ 
+          humidityMin: currentCrop?.humidity_min || 40,
+          humidityMax: currentCrop?.humidity_max || 80 
+        }"
+      />
     </div>
     
-
     <!-- Panel de información adicional -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
       <!-- Última actualización -->
-      <BaseCard class="info-card">
-        <div class="flex items-center space-x-3">
-          <div class="flex items-center justify-center w-10 h-10 bg-blue-500/20 rounded-lg">
-            <Icon name="heroicons:clock" class="w-5 h-5 text-blue-400" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-400">Última actualización</p>
-            <ClientOnly>
-              <p class="text-white font-semibold">
-                {{ new Date().toLocaleTimeString('es-ES') }}
-              </p>
-              <template #fallback>
-                <p class="text-white font-semibold">--:--:--</p>
-              </template>
-            </ClientOnly>
-          </div>
-        </div>
-      </BaseCard>
+      <InfoCard 
+        icon-name="heroicons:clock"
+        icon-bg-class="bg-blue-500/20"
+        icon-color-class="text-blue-400"
+        label="Última actualización"
+        :value="new Date().toLocaleTimeString('es-ES')"
+        value-color-class="text-white"
+      />
 
       <!-- Estado de conexión -->
-      <BaseCard class="info-card">
-        <div class="flex items-center space-x-3">
-          <div class="flex items-center justify-center w-10 h-10 bg-green-500/20 rounded-lg">
-            <Icon name="heroicons:signal" class="w-5 h-5 text-green-400" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-400">Estado TTN</p>
-            <p class="text-green-400 font-semibold">Conectado</p>
-          </div>
-        </div>
-      </BaseCard>
+      <InfoCard 
+        icon-name="heroicons:signal"
+        icon-bg-class="bg-green-500/20"
+        icon-color-class="text-green-400"
+        label="Estado TTN"
+        value="Conectado"
+        value-color-class="text-green-400"
+      />
 
       <!-- Configuración del cultivo -->
-      <BaseCard class="info-card">
-        <div class="flex items-center space-x-3">
-          <div class="flex items-center justify-center w-10 h-10 bg-purple-500/20 rounded-lg">
-            <Icon name="heroicons:cog-6-tooth" class="w-5 h-5 text-purple-400" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-400">Cultivo actual</p>
-            <p class="text-white font-semibold">{{ currentCrop?.name || '-' }}</p>
-          </div>
-        </div>
-      </BaseCard>
+      <InfoCard 
+        icon-name="heroicons:cog-6-tooth"
+        icon-bg-class="bg-purple-500/20"
+        icon-color-class="text-purple-400"
+        label="Cultivo actual"
+        :value="currentCrop?.name || '-'"
+        value-color-class="text-white"
+      />
 
       <!-- Estado de la bomba -->
-      <BaseCard class="info-card">
-        <div class="flex items-center space-x-3">
-          <div class="flex items-center justify-center w-10 h-10 bg-blue-500/20 rounded-lg">
-            <Icon name="heroicons:beaker" class="w-5 h-5 text-blue-400" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-400">Bomba de riego</p>
-            <p class="text-blue-400 font-semibold">Activa</p>
-          </div>
-        </div>
-      </BaseCard>
+      <InfoCard 
+        icon-name="heroicons:beaker"
+        icon-bg-class="bg-blue-500/20"
+        icon-color-class="text-blue-400"
+        label="Bomba de riego"
+        value="Activa"
+        value-color-class="text-blue-400"
+      />
     </div>
 
-    
-
     <!-- Panel de Información del Sistema -->
-    <div class="bg-gray-800/50 border border-blue-500/30 rounded-xl p-6 shadow-lg">
-      <!-- Header -->
-      <div class="mb-6 border-b border-gray-600/50 pb-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-          <h3 class="text-2xl font-bold text-white">Información del Sistema</h3>
-        </div>
-        <p class="text-gray-400 mt-2">Detalles del cultivo activo y dispositivo IoT en funcionamiento</p>
-      </div>
-      
-      <!-- Content -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <!-- INFORMACIÓN DEL CULTIVO -->
-          <div class="space-y-4">
-            <div class="flex items-center space-x-3 mb-4">
-              <component :is="getIcon('plant')" class="w-6 h-6 text-green-400" />
-              <h4 class="text-lg font-bold text-white">Cultivo Seleccionado</h4>
-            </div>
-            
-            <div v-if="hasSelectedCrop" class="space-y-3">
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                 <span class="text-gray-300 font-medium">Nombre:</span>
-                 <span class="text-white font-bold text-lg">{{ currentCrop.name }}</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                 <span class="text-gray-300 font-medium">Categoría:</span>
-                 <span class="text-green-400 font-bold text-lg">{{ currentCrop.category }}</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                 <span class="text-gray-300 font-medium">Humedad Mínima:</span>
-                 <span class="text-blue-400 font-bold text-lg">{{ currentCrop.humidity_min }}%</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                 <span class="text-gray-300 font-medium">Humedad Máxima:</span>
-                 <span class="text-blue-400 font-bold text-lg">{{ currentCrop.humidity_max }}%</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                 <span class="text-gray-300 font-medium">Temperatura Máxima:</span>
-                 <span class="text-red-400 font-bold text-lg">{{ currentCrop.temperature_max }}°C</span>
-               </div>
-              
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                 <div class="flex items-center space-x-2">
-                   <Icon name="heroicons:beaker" class="w-5 h-5 text-blue-400" />
-                   <span class="text-gray-300 font-medium">Estado de la Bomba:</span>
-                 </div>
-                 <div class="flex items-center space-x-2">
-                   <div class="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-                   <span class="text-blue-400 font-bold text-lg">ACTIVA</span>
-                 </div>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                 <span class="text-gray-300 font-medium">Días de Crecimiento:</span>
-                 <span class="text-white font-bold text-lg">{{ currentCrop.growth_days }} días</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                 <span class="text-gray-300 font-medium">Temporada:</span>
-                 <span class="text-purple-400 font-bold text-lg">{{ currentCrop.session }}</span>
-               </div>
-            </div>
-            
-            <!-- Estado cuando no hay cultivo seleccionado -->
-            <div v-else class="space-y-3">
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                 <span class="text-gray-300 font-medium">Nombre:</span>
-                 <span class="text-red-400 font-bold text-lg">No se ha seleccionado</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                 <span class="text-gray-300 font-medium">Categoría:</span>
-                 <span class="text-red-400 font-bold text-lg">No se ha seleccionado</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                 <span class="text-gray-300 font-medium">Humedad Mínima:</span>
-                 <span class="text-red-400 font-bold text-lg">No disponible</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                 <span class="text-gray-300 font-medium">Humedad Máxima:</span>
-                 <span class="text-red-400 font-bold text-lg">No disponible</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                 <span class="text-gray-300 font-medium">Temperatura Máxima:</span>
-                 <span class="text-red-400 font-bold text-lg">No disponible</span>
-               </div>
-              
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                 <div class="flex items-center space-x-2">
-                   <Icon name="heroicons:beaker" class="w-5 h-5 text-red-400" />
-                   <span class="text-gray-300 font-medium">Estado de la Bomba:</span>
-                 </div>
-                 <div class="flex items-center space-x-2">
-                   <div class="w-3 h-3 bg-red-400 rounded-full"></div>
-                   <span class="text-red-400 font-bold text-lg">NO SELECCIONADO</span>
-                 </div>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                 <span class="text-gray-300 font-medium">Días de Crecimiento:</span>
-                 <span class="text-red-400 font-bold text-lg">No disponible</span>
-               </div>
-               
-               <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                 <span class="text-gray-300 font-medium">Temporada:</span>
-                 <span class="text-red-400 font-bold text-lg">No disponible</span>
-               </div>
-            </div>
-          </div>
-
-          <!-- INFORMACIÓN DEL DISPOSITIVO -->
-          <div class="space-y-4">
-            <div class="flex items-center space-x-3 mb-4">
-              <Icon name="heroicons:cpu-chip" class="w-6 h-6 text-blue-400" />
-              <h4 class="text-lg font-bold text-white">Dispositivo Registrado</h4>
-            </div>
-            
-            <div v-if="hasActiveDevice" class="space-y-3">
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                <span class="text-gray-300 font-medium">Nombre:</span>
-                <span class="text-white font-bold text-lg">{{ currentDevice?.deviceName }}</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                <span class="text-gray-300 font-medium">ID del Dispositivo:</span>
-                <span class="text-gray-300 font-mono font-bold text-lg">{{ currentDevice?.enddeviceId }}</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                <div class="flex items-center space-x-2">
-                  <Icon name="heroicons:wifi" class="w-5 h-5 text-green-400" />
-                  <span class="text-gray-300 font-medium">Estado:</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 rounded-full animate-pulse bg-green-400"></div>
-                  <span class="font-bold text-lg text-green-400">CONECTADO</span>
-                </div>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                <span class="text-gray-300 font-medium">Frecuencia de Datos:</span>
-                <span class="text-white font-bold text-lg">Cada 3 segundos</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-                <span class="text-gray-300 font-medium">Última Comunicación:</span>
-                <span class="text-green-400 font-bold text-lg">Ahora mismo</span>
-              </div>
-            </div>
-            
-            <!-- Estado cuando no hay dispositivos activos -->
-            <div v-else class="space-y-3">
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                <span class="text-gray-300 font-medium">Nombre:</span>
-                <span class="text-red-400 font-bold text-lg">No se ha registrado</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                <span class="text-gray-300 font-medium">ID del Dispositivo:</span>
-                <span class="text-red-400 font-bold text-lg">No se ha registrado</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                <div class="flex items-center space-x-2">
-                  <Icon name="heroicons:wifi" class="w-5 h-5 text-red-400" />
-                  <span class="text-gray-300 font-medium">Estado:</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 rounded-full bg-red-400"></div>
-                  <span class="font-bold text-lg text-red-400">NO REGISTRADO</span>
-                </div>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                <span class="text-gray-300 font-medium">Frecuencia de Datos:</span>
-                <span class="text-red-400 font-bold text-lg">No disponible</span>
-              </div>
-              
-              <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-                <span class="text-gray-300 font-medium">Última Comunicación:</span>
-                <span class="text-red-400 font-bold text-lg">No disponible</span>
-              </div>
-            </div>
-          </div>
-         </div>
-      </div>
+    <SystemInfoPanel 
+      :current-crop="currentCrop"
+      :has-selected-crop="hasSelectedCrop"
+      :current-device="currentDevice"
+      :has-active-device="hasActiveDevice"
+    />
   </div>
 </template>
 

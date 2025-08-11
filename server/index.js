@@ -9,6 +9,7 @@ import cropRoutes from './routes/cropRoutes.js'
 import deviceRoutes from './routes/deviceRoutes.js'
 import irrigationRoutes from './routes/irrigationRoutes.js'
 import sensorReadingRoutes from './routes/sensorReadingRoutes.js'
+import ttnDownlinkRoutes from './routes/ttnDownlinkRoutes.js'
 import ttnUplinkRoutes from './routes/ttnUplinkRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 
@@ -64,6 +65,7 @@ app.use('/api/devices', deviceRoutes)
 app.use('/api/irrigation', irrigationRoutes)
 app.use('/api/sensor-readings', sensorReadingRoutes)
 app.use('/api/ttn', ttnUplinkRoutes)  // Router de TTN
+app.use('/api', ttnDownlinkRoutes)    // Downlinks simples: /api/ttn/led/on|off
 app.use('/api/users', userRoutes)
 
 //Definir el puerto

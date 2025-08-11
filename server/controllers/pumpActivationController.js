@@ -1,5 +1,6 @@
 import { pool } from '../config/db.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
+import { sendDownlinkForConfig } from './ttnDownlinkController.js';
 
 // Modelo para PumpActivation
 class PumpActivation {
@@ -97,6 +98,14 @@ const createPumpActivation = async (req, res) => {
     await client.query('COMMIT');
 
     const activation = new PumpActivation(result.rows[0]);
+
+    // Enviar ON al iniciar riego (usa el dispositivo activo del usuario dueño de la config)
+    try {
+      const r = await sendDownlinkForConfig(irrigation_config_id, 'ON');
+      console.log('[DOWNLINK][ON] OK:', r);
+    } catch (e) {
+      console.error('[DOWNLINK][ON] Error:', e?.message || e);
+    }
 
     res.status(201).json({
       success: true,
@@ -198,6 +207,16 @@ const updatePumpActivationStatus = async (req, res) => {
 
     const activation = new PumpActivation(result.rows[0]);
 
+    // Enviar OFF si se cancela/completa, no enviar nada para otros estados
+    if (status === 'completed' || status === 'cancelled') {
+      try {
+        const r = await sendDownlinkForConfig(currentActivation.irrigation_config_id, 'OFF');
+        console.log('[DOWNLINK][OFF] OK:', r);
+      } catch (e) {
+        console.error('[DOWNLINK][OFF] Error:', e?.message || e);
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: 'Estado de activación actualizado exitosamente',
@@ -234,6 +253,14 @@ const pausePumpActivation = async (req, res) => {
 
     const activation = new PumpActivation(result.rows[0]);
 
+    // Enviar OFF al pausar
+    try {
+      const r = await sendDownlinkForConfig(activation.irrigation_config_id, 'OFF');
+      console.log('[DOWNLINK][OFF][pause] OK:', r);
+    } catch (e) {
+      console.error('[DOWNLINK][OFF][pause] Error:', e?.message || e);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Activación pausada exitosamente',
@@ -266,6 +293,14 @@ const resumePumpActivation = async (req, res) => {
     }
 
     const activation = new PumpActivation(result.rows[0]);
+
+    // Enviar ON al reanudar
+    try {
+      const r = await sendDownlinkForConfig(activation.irrigation_config_id, 'ON');
+      console.log('[DOWNLINK][ON][resume] OK:', r);
+    } catch (e) {
+      console.error('[DOWNLINK][ON][resume] Error:', e?.message || e);
+    }
 
     res.status(200).json({
       success: true,
@@ -313,6 +348,14 @@ const completePumpActivation = async (req, res) => {
     await client.query('COMMIT');
 
     const activation = new PumpActivation(result.rows[0]);
+
+    // Enviar OFF al completar
+    try {
+      const r = await sendDownlinkForConfig(activation.irrigation_config_id, 'OFF');
+      console.log('[DOWNLINK][OFF][complete] OK:', r);
+    } catch (e) {
+      console.error('[DOWNLINK][OFF][complete] Error:', e?.message || e);
+    }
 
     res.status(200).json({
       success: true,

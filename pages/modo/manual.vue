@@ -228,6 +228,14 @@ useHead({
             <li>• Ideal para riegos puntuales o de emergencia</li>
           </ul>
         </div>
+        
+        <!-- Advertencia de tiempo de respuesta -->
+        <div class="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-4 mt-4">
+          <h3 class="font-semibold text-yellow-400 mb-2">⚠️ Advertencia Importante</h3>
+          <p class="text-sm text-yellow-300">
+            <strong>Tiempo de respuesta del sistema:</strong> La bomba puede tardar entre 2-15 segundos en activarse al iniciar el riego y entre 2-15 segundos en detenerse al cancelar o pausar. Este tiempo es normal debido a la comunicación LoRaWAN con el dispositivo IoT.
+          </p>
+        </div>
       </div>
 
       <!-- Widget de cancelar operación cuando está activo -->

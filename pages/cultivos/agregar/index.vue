@@ -1,12 +1,10 @@
 <template>
   <div class="space-y-8">
     <!-- Título de la página -->
-    <h1 class="text-3xl font-bold text-white">
-      Agregar Cultivo
-    </h1>
-    <p class="text-gray-400 text-lg">
-      Configura un nuevo cultivo para el sistema de riego automatizado
-    </p>
+    <CropPageTitle 
+      title="Agregar Cultivo"
+      description="Configura un nuevo cultivo para el sistema de riego automatizado"
+    />
 
     <!-- Formulario de creación -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -296,51 +294,10 @@
 
       <!-- Panel lateral con información -->
       <div class="lg:col-span-1">
-        <BaseCard title="Información de Ayuda">
-          <div class="space-y-4">
-            <!-- Consejos -->
-            <div>
-              <h4 class="text-sm font-medium text-white mb-3">Consejos para el Formulario</h4>
-              <div class="space-y-3">
-                <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
-                  <p class="text-xs text-blue-300">
-                    <strong>Humedad:</strong> La humedad mínima debe ser menor que la máxima. Valores típicos entre 40-90%.
-                  </p>
-                </div>
-                <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
-                  <p class="text-xs text-green-300">
-                    <strong>Temperatura:</strong> Indica la temperatura máxima que puede tolerar el cultivo.
-                  </p>
-                </div>
-                <div class="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3">
-                  <p class="text-xs text-purple-300">
-                    <strong>Imagen:</strong> Usa una foto clara y representativa del cultivo para mejor identificación.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Categorías disponibles -->
-            <div class="border-t border-gray-600 pt-4">
-              <h4 class="text-sm font-medium text-white mb-3">Categorías Disponibles</h4>
-              <div class="space-y-1">
-                <div v-for="category in availableCategories" :key="category" class="text-xs text-gray-400">
-                  • {{ category }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Temporadas -->
-            <div class="border-t border-gray-600 pt-4">
-              <h4 class="text-sm font-medium text-white mb-3">Temporadas</h4>
-              <div class="space-y-1">
-                <div v-for="season in availableSeasons" :key="season" class="text-xs text-gray-400">
-                  • {{ season }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </BaseCard>
+        <CropInfoSidebar 
+          :available-categories="availableCategories"
+          :available-seasons="availableSeasons"
+        />
       </div>
     </div>
   </div>
@@ -357,6 +314,8 @@ import { useCropStore } from '~/stores/crop'
 import { useUserStore } from '~/stores/user'
 import { getIcon } from '~/assets/icons'
 import BaseCard from '~/components/Cards/BaseCard.vue'
+import CropPageTitle from '~/components/Crops/Layout/CropPageTitle.vue'
+import CropInfoSidebar from '~/components/Crops/Layout/CropInfoSidebar.vue'
 
 const router = useRouter()
 const { toast } = useToastNotifications()
