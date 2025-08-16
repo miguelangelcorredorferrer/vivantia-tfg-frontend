@@ -1,6 +1,13 @@
 import { pool } from '../config/db.js';
 import { IrrigationConfig, AutomaticConfig, ProgrammedConfig } from '../models/IrrigationConfig.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
+import { 
+  createProgrammedSavedAlert, 
+  createProgrammedReminderAlert, 
+  createProgrammedScheduleAlert, 
+  createProgrammedCancelledAlert, 
+  createAutomaticSavedAlert 
+} from './alertController.js';
 
 // Crear nueva configuración de riego
 const createIrrigationConfig = async (req, res) => {
@@ -217,6 +224,25 @@ const createAutomaticConfig = async (req, res) => {
     
     const result = await pool.query(query, values);
     const config = new AutomaticConfig(result.rows[0]);
+
+    // Crear alerta de configuración automática guardada
+    try {
+      // Obtener información del usuario y cultivo
+      const userCropQuery = `
+        SELECT ic.user_id, c.name as crop_name
+        FROM irrigation_configs ic
+        LEFT JOIN crops c ON ic.crop_id = c.id
+        WHERE ic.id = $1
+      `;
+      const userCropResult = await pool.query(userCropQuery, [config_id]);
+      const userData = userCropResult.rows[0];
+      
+      if (userData) {
+        await createAutomaticSavedAlert(userData.user_id, userData.crop_name || 'Cultivo');
+      }
+    } catch (alertError) {
+      console.warn('Error al crear alerta de configuración automática:', alertError.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -591,6 +617,18 @@ const createProgrammedConfig = async (req, res) => {
 
     await client.query('COMMIT');
 
+    // Crear alerta de configuración programada guardada
+    try {
+      // Obtener nombre del cultivo
+      const cropQuery = 'SELECT name FROM crops WHERE id = $1';
+      const cropResult = await client.query(cropQuery, [crop_id]);
+      const cropName = cropResult.rows[0]?.name || 'Cultivo';
+      
+      await createProgrammedSavedAlert(user_id, cropName, frequency_type);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de configuración programada:', alertError.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Configuración programada creada exitosamente',
@@ -654,6 +692,25 @@ const cancelProgrammedConfig = async (req, res) => {
     const configResult = await client.query(deactivateConfigQuery, [irrigation_config_id]);
 
     await client.query('COMMIT');
+
+    // Crear alerta de configuración programada cancelada
+    try {
+      // Obtener información del usuario y cultivo
+      const userCropQuery = `
+        SELECT ic.user_id, c.name as crop_name
+        FROM irrigation_configs ic
+        LEFT JOIN crops c ON ic.crop_id = c.id
+        WHERE ic.id = $1
+      `;
+      const userCropResult = await client.query(userCropQuery, [irrigation_config_id]);
+      const userData = userCropResult.rows[0];
+      
+      if (userData) {
+        await createProgrammedCancelledAlert(userData.user_id, userData.crop_name || 'Cultivo');
+      }
+    } catch (alertError) {
+      console.warn('Error al crear alerta de configuración cancelada:', alertError.message);
+    }
 
     res.status(200).json({
       success: true,

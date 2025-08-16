@@ -1,6 +1,7 @@
 import { pool } from '../config/db.js';
 import Device from '../models/Device.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
+import { createDeviceAddedAlert } from './alertController.js';
 
 // Crear un nuevo dispositivo
 const createDevice = async (req, res) => {
@@ -84,6 +85,13 @@ const createDevice = async (req, res) => {
     
     const result = await pool.query(query, values);
     const device = new Device(result.rows[0]);
+
+    // Crear alerta de dispositivo agregado
+    try {
+      await createDeviceAddedAlert(finalUserId, device.device_name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de dispositivo agregado:', alertError.message);
+    }
 
     return handleSuccessResponse(res, device, 'Dispositivo creado exitosamente', 201);
   } catch (error) {

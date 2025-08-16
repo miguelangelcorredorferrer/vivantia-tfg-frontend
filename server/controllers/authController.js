@@ -9,6 +9,7 @@ import {
   uniqueId
 } from '../utils/index.js';
 import { sendEmailVerification, sendEmailPasswordReset } from '../emails/authEmailService.js';
+import { createUserRegisteredAlert, createUserLoggedInAlert, createPasswordChangedAlert } from './alertController.js';
 
 const register = async (req, res) => {
     try {
@@ -51,6 +52,13 @@ const register = async (req, res) => {
           email: newUser.email, 
           token: newUser.token 
         });
+
+        // Crear alerta de registro exitoso
+        try {
+          await createUserRegisteredAlert(newUser.id, newUser.name);
+        } catch (alertError) {
+          console.warn('Error al crear alerta de registro:', alertError.message);
+        }
 
         return res.status(201).json({
             msg: 'El usuario se creó correctamente, revisa tu email'
@@ -130,6 +138,13 @@ const login = async (req, res) => {
         const isValidPassword = await user.checkPassword(password);
         if(isValidPassword) {
             const token = generateJWT(user.id);
+            
+            // Crear alerta de login exitoso
+            try {
+              await createUserLoggedInAlert(user.id, user.name);
+            } catch (alertError) {
+              console.warn('Error al crear alerta de login:', alertError.message);
+            }
             
             return res.status(200).json({
                 token,
@@ -280,12 +295,19 @@ const changePassword = async (req, res) => {
         const query = 'UPDATE users SET password = $1 WHERE id = $2 RETURNING id, email, name, role, verified, created_at';
         const result = await pool.query(query, [newPassword, id]);
 
-        const updatedUser = new User(result.rows[0]);
+                 const updatedUser = new User(result.rows[0]);
 
-        return res.status(200).json({
-            msg: 'Contraseña cambiada exitosamente',
-            user: updatedUser.getPublicData()
-        });
+         // Crear alerta de cambio de contraseña
+         try {
+           await createPasswordChangedAlert(updatedUser.id);
+         } catch (alertError) {
+           console.warn('Error al crear alerta de cambio de contraseña:', alertError.message);
+         }
+
+         return res.status(200).json({
+             msg: 'Contraseña cambiada exitosamente',
+             user: updatedUser.getPublicData()
+         });
     } catch (error) {
         return handleInternalServerError('Error al cambiar contraseña', res, error);
     }

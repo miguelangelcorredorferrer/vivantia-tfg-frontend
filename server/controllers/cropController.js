@@ -1,6 +1,13 @@
 import { pool } from '../config/db.js';
 import Crop from '../models/Crop.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
+import { 
+  createCropAddedAlert, 
+  createCropEditedAlert, 
+  createCropDeletedAlert, 
+  createCropSelectedAlert, 
+  createCropDeselectedAlert 
+} from './alertController.js';
 
 // Crear un nuevo cultivo
 const createCrop = async (req, res) => {
@@ -43,6 +50,13 @@ const createCrop = async (req, res) => {
     
     const result = await pool.query(query, cleanValues);
     const crop = new Crop(result.rows[0]);
+
+    // Crear alerta de cultivo agregado
+    try {
+      await createCropAddedAlert(finalUserId, crop.name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de cultivo agregado:', alertError.message);
+    }
 
     return handleSuccessResponse(res, crop, 'Cultivo creado exitosamente', 201);
   } catch (error) {
@@ -294,6 +308,13 @@ const updateCrop = async (req, res) => {
     
     const updatedCrop = new Crop(result.rows[0]);
 
+    // Crear alerta de cultivo editado
+    try {
+      await createCropEditedAlert(updatedCrop.user_id, updatedCrop.name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de cultivo editado:', alertError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Cultivo actualizado exitosamente',
@@ -350,6 +371,13 @@ const selectCrop = async (req, res) => {
     
     const selectedCrop = new Crop(result.rows[0]);
 
+    // Crear alerta de cultivo seleccionado
+    try {
+      await createCropSelectedAlert(authenticatedUser.id, selectedCrop.name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de cultivo seleccionado:', alertError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Cultivo seleccionado exitosamente',
@@ -402,6 +430,13 @@ const deselectCrop = async (req, res) => {
     
     const deselectedCrop = new Crop(result.rows[0]);
 
+    // Crear alerta de cultivo deseleccionado
+    try {
+      await createCropDeselectedAlert(authenticatedUser.id, deselectedCrop.name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de cultivo deseleccionado:', alertError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Cultivo deseleccionado exitosamente',
@@ -447,6 +482,13 @@ const deleteCrop = async (req, res) => {
         success: false,
         message: 'Cultivo no encontrado'
       });
+    }
+
+    // Crear alerta de cultivo eliminado
+    try {
+      await createCropDeletedAlert(existingCrop.user_id, existingCrop.name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de cultivo eliminado:', alertError.message);
     }
 
     res.status(200).json({

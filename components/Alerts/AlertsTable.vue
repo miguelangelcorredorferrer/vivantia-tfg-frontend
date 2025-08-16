@@ -27,6 +27,7 @@
             <th scope="col" class="px-6 py-4 font-medium text-center">Severidad</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Estado</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Fecha</th>
+            <th scope="col" class="px-6 py-4 font-medium text-center">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-600">
@@ -41,8 +42,8 @@
                 <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center mr-4 relative"
                      :class="getSeverityColor(alert.severity)">
                   <component :is="getAlertIcon(alert.alert_type)" class="w-5 h-5 text-white" />
-                  <!-- Punto parpadeante para alertas no leídas -->
-                  <div v-if="!alert.is_read" 
+                  <!-- Punto parpadeante para alertas no resueltas -->
+                  <div v-if="!alert.is_resolved" 
                        class="absolute -top-1 -left-1 w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
                 </div>
                 <div class="flex-1">
@@ -100,7 +101,7 @@
                   ></div>
                   <span>{{ getStatusLabel(alert) }}</span>
                 </div>
-                <span v-if="!alert.is_read" class="text-xs text-orange-400 font-medium">
+                <span v-if="!alert.is_resolved" class="text-xs text-orange-400 font-medium">
                   Nueva
                 </span>
               </div>
@@ -112,6 +113,22 @@
                 <div class="text-sm font-medium">{{ formatDate(alert.created_at) }}</div>
                 <div class="text-xs text-gray-500">{{ formatTime(alert.created_at) }}</div>
               </div>
+            </td>
+
+            <!-- Acciones -->
+            <td class="px-6 py-4 text-center">
+              <button
+                v-if="!alert.is_resolved"
+                @click="markAsResolved(alert)"
+                class="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+                title="Marcar como resuelta"
+              >
+                <CheckIcon class="w-3 h-3 mr-1" />
+                Resolver
+              </button>
+              <span v-else class="text-xs text-gray-500">
+                Resuelta
+              </span>
             </td>
           </tr>
         </tbody>
@@ -129,7 +146,8 @@ import {
   ThermometerIcon,
   DeviceIcon,
   PlantIcon,
-  WateringIcon
+  WateringIcon,
+  CheckIcon
 } from '~/assets/icons'
 import BaseCard from '../Cards/BaseCard.vue'
 
@@ -140,13 +158,13 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits([])
+const emit = defineEmits(['alert-resolved'])
 
 const { toast } = useToastNotifications()
 
 // Computed
 const unreadCount = computed(() => {
-  return props.alerts.filter(alert => !alert.is_read).length
+  return props.alerts.filter(alert => !alert.is_resolved).length
 })
 
 // Métodos
@@ -246,7 +264,7 @@ const getAlertIcon = (category) => {
 }
 
 const getStatusColor = (alert) => {
-  if (alert.is_read) {
+  if (alert.is_resolved) {
     return 'bg-gray-700 text-gray-300 border border-gray-600'
   } else {
     return 'bg-orange-900/30 text-orange-400 border border-orange-500/30'
@@ -254,7 +272,7 @@ const getStatusColor = (alert) => {
 }
 
 const getStatusDotColor = (alert) => {
-  if (alert.is_read) {
+  if (alert.is_resolved) {
     return 'bg-gray-400'
   } else {
     return 'bg-orange-400'
@@ -262,7 +280,7 @@ const getStatusDotColor = (alert) => {
 }
 
 const getStatusLabel = (alert) => {
-  if (alert.is_read) {
+  if (alert.is_resolved) {
     return 'Resuelta'
   } else {
     return 'Nueva'
@@ -301,7 +319,16 @@ const formatTime = (dateString) => {
   })
 }
 
-// Event handlers - Removed as actions column was removed
+// Event handlers
+const markAsResolved = async (alert) => {
+  try {
+    emit('alert-resolved', alert.id)
+    toast.success('Alerta marcada como resuelta')
+  } catch (error) {
+    console.error('Error al marcar alerta como resuelta:', error)
+    toast.error('Error al marcar alerta como resuelta')
+  }
+}
 </script>
 
 <style scoped>

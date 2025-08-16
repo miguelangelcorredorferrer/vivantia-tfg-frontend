@@ -1,6 +1,7 @@
 import { pool } from '../config/db.js';
 import User from '../models/User.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
+import { createUsernameChangedAlert } from './alertController.js';
 
 // Crear un nuevo usuario
 const createUser = async (req, res) => {
@@ -160,6 +161,15 @@ const updateUser = async (req, res) => {
     }
     
     const updatedUser = new User(result.rows[0]);
+
+    // Crear alerta si se cambió el nombre
+    try {
+      if (updateData.name && updateData.name !== existingUser.name) {
+        await createUsernameChangedAlert(updatedUser.id, existingUser.name, updateData.name);
+      }
+    } catch (alertError) {
+      console.warn('Error al crear alerta de cambio de nombre:', alertError.message);
+    }
 
     res.status(200).json({
       success: true,

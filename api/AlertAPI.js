@@ -33,6 +33,16 @@ export default {
         })
     },
     
+    // Obtener alertas del usuario autenticado
+    getMyAlerts(params = {}) {
+        return $fetch('/alerts/my-alerts', {
+            method: 'GET',
+            query: params,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    
     // Rutas por usuario
     getAlertsByUserId(userId) {
         return $fetch(`/alerts/user/${userId}`, {
@@ -48,8 +58,8 @@ export default {
             headers: getAuthHeaders()
         })
     },
-    resolveAllAlertsByUserId(userId) {
-        return $fetch(`/alerts/user/${userId}/resolve-all`, {
+    resolveAllAlertsByUserId() {
+        return $fetch('/alerts/resolve-all', {
             method: 'PUT',
             baseURL: getApiUrl(),
             headers: getAuthHeaders()

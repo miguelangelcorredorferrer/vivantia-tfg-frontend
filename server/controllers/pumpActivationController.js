@@ -1,6 +1,11 @@
 import { pool } from '../config/db.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
 import { sendDownlinkForConfig } from './ttnDownlinkController.js';
+import { 
+  createManualStartedAlert, 
+  createEmergencyStopAlert, 
+  createManualCancelledAlert 
+} from './alertController.js';
 
 // Modelo para PumpActivation
 class PumpActivation {
@@ -99,12 +104,31 @@ const createPumpActivation = async (req, res) => {
 
     const activation = new PumpActivation(result.rows[0]);
 
+    // Obtener información del usuario para la alerta
+    const configQuery = `
+      SELECT ic.user_id, ic.mode_type, c.name as crop_name
+      FROM irrigation_configs ic
+      LEFT JOIN crops c ON ic.crop_id = c.id
+      WHERE ic.id = $1
+    `;
+    const configResult = await client.query(configQuery, [irrigation_config_id]);
+    const configData = configResult.rows[0];
+
     // Enviar ON al iniciar riego (usa el dispositivo activo del usuario dueño de la config)
     try {
       const r = await sendDownlinkForConfig(irrigation_config_id, 'ON');
       console.log('[DOWNLINK][ON] OK:', r);
     } catch (e) {
       console.error('[DOWNLINK][ON] Error:', e?.message || e);
+    }
+
+    // Crear alerta de riego iniciado
+    try {
+      if (configData) {
+        await createManualStartedAlert(configData.user_id, configData.crop_name || 'Cultivo', duration_minutes);
+      }
+    } catch (alertError) {
+      console.warn('Error al crear alerta de riego iniciado:', alertError.message);
     }
 
     res.status(201).json({
@@ -207,6 +231,16 @@ const updatePumpActivationStatus = async (req, res) => {
 
     const activation = new PumpActivation(result.rows[0]);
 
+    // Obtener información del usuario para la alerta
+    const configQuery = `
+      SELECT ic.user_id, ic.mode_type, c.name as crop_name
+      FROM irrigation_configs ic
+      LEFT JOIN crops c ON ic.crop_id = c.id
+      WHERE ic.id = $1
+    `;
+    const configResult = await client.query(configQuery, [currentActivation.irrigation_config_id]);
+    const configData = configResult.rows[0];
+
     // Enviar OFF si se cancela/completa, no enviar nada para otros estados
     if (status === 'completed' || status === 'cancelled') {
       try {
@@ -214,6 +248,24 @@ const updatePumpActivationStatus = async (req, res) => {
         console.log('[DOWNLINK][OFF] OK:', r);
       } catch (e) {
         console.error('[DOWNLINK][OFF] Error:', e?.message || e);
+      }
+
+      // Crear alerta según el estado
+      try {
+        if (configData) {
+          if (status === 'cancelled') {
+            if (currentActivation.status === 'active') {
+              // Era un riego activo que se canceló - parada de emergencia
+              await createEmergencyStopAlert(configData.user_id, configData.crop_name || 'Cultivo');
+            } else {
+              // Era un riego pausado que se canceló
+              await createManualCancelledAlert(configData.user_id, configData.crop_name || 'Cultivo');
+            }
+          }
+          // Para 'completed' no necesitamos alerta específica, ya se envió cuando inició
+        }
+      } catch (alertError) {
+        console.warn('Error al crear alerta de riego:', alertError.message);
       }
     }
 

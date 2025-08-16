@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { AlertsIcon } from '~/assets/icons'
 import AlertsTable from '~/components/Alerts/AlertsTable.vue'
+import AlertAPI from '~/api/AlertAPI.js'
 
 // Configurar middleware
 definePageMeta({
@@ -28,189 +29,24 @@ const filters = ref({
   period: 'all'
 })
 
-// Alertas de ejemplo
-const alerts = ref([
-  // Alertas de Usuario
-  {
-    id: 1,
-    user_id: 1,
-    alert_type: 'user',
-    alert_subtype: 'user_registered',
-    severity: 'success',
-    title: 'Registro exitoso',
-    message: 'Tu cuenta ha sido creada correctamente',
-    is_read: true,
-    is_resolved: true,
-    created_at: '2024-01-10T09:30:00Z'
-  },
-  {
-    id: 2,
-    user_id: 1,
-    alert_type: 'user',
-    alert_subtype: 'user_logged_in',
-    severity: 'info',
-    title: 'Sesión iniciada',
-    message: 'Has iniciado sesión correctamente',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T14:20:00Z'
-  },
-  {
-    id: 3,
-    user_id: 1,
-    alert_type: 'user',
-    alert_subtype: 'username_changed',
-    severity: 'info',
-    title: 'Nombre actualizado',
-    message: 'Tu nombre de usuario ha sido actualizado',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T15:45:00Z',
-    metadata: { old_username: 'usuario_antiguo', new_username: 'nuevo_usuario' }
-  },
+// Estado
+const loading = ref(false)
+const alerts = ref([])
 
-  // Alertas Ambientales
-  {
-    id: 4,
-    user_id: 1,
-    alert_type: 'environmental',
-    alert_subtype: 'temperature_max_threshold',
-    subcategory: 'temperature',
-    severity: 'warning',
-    title: 'Temperatura crítica',
-    message: 'La temperatura ha alcanzado el umbral máximo',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T16:30:00Z',
-    metadata: { temperature: 32.5, threshold: 30.0, device_id: 1 }
-  },
-  {
-    id: 5,
-    user_id: 1,
-    alert_type: 'environmental',
-    alert_subtype: 'humidity_min_threshold',
-    subcategory: 'humidity',
-    severity: 'warning',
-    title: 'Humedad baja',
-    message: 'La humedad ha alcanzado el umbral mínimo',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T17:15:00Z',
-    metadata: { humidity: 25.0, threshold: 30.0, device_id: 1 }
-  },
-
-  // Alertas de Dispositivos
-  {
-    id: 6,
-    user_id: 1,
-    alert_type: 'device',
-    alert_subtype: 'device_added',
-    severity: 'success',
-    title: 'Dispositivo agregado',
-    message: 'El dispositivo ha sido agregado exitosamente',
-    is_read: true,
-    is_resolved: true,
-    created_at: '2024-01-12T10:00:00Z',
-    metadata: { device_name: 'Sensor Principal', device_id: 1 }
-  },
-  {
-    id: 7,
-    user_id: 1,
-    alert_type: 'device',
-    alert_subtype: 'api_key_copied',
-    severity: 'success',
-    title: 'Clave API copiada',
-    message: 'La clave API ha sido copiada al portapapeles',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T18:00:00Z'
-  },
-  {
-    id: 8,
-    user_id: 1,
-    alert_type: 'device',
-    alert_subtype: 'device_offline',
-    severity: 'error',
-    title: 'Dispositivo desconectado',
-    message: 'El dispositivo ha dejado de enviar datos',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T19:30:00Z',
-    metadata: { device_name: 'Sensor Principal', last_seen: '2024-01-15T18:45:00Z' }
-  },
-
-  // Alertas de Cultivos
-  {
-    id: 9,
-    user_id: 1,
-    alert_type: 'crop',
-    alert_subtype: 'crop_selected',
-    severity: 'success',
-    title: 'Cultivo seleccionado',
-    message: 'El cultivo ha sido seleccionado para riego',
-    is_read: true,
-    is_resolved: true,
-    created_at: '2024-01-14T08:00:00Z',
-    metadata: { crop_name: 'Tomate Cherry', crop_id: 1 }
-  },
-  {
-    id: 10,
-    user_id: 1,
-    alert_type: 'crop',
-    alert_subtype: 'crop_added',
-    severity: 'success',
-    title: 'Cultivo agregado',
-    message: 'El cultivo ha sido agregado al sistema',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T20:00:00Z',
-    metadata: { crop_name: 'Lechuga', crop_id: 2 }
-  },
-
-  // Alertas de Riego
-  {
-    id: 11,
-    user_id: 1,
-    alert_type: 'irrigation',
-    alert_subtype: 'manual_started',
-    subcategory: 'moisture',
-    severity: 'info',
-    title: 'Riego manual iniciado',
-    message: 'Se ha iniciado un riego manual',
-    is_read: true,
-    is_resolved: true,
-    created_at: '2024-01-15T09:00:00Z',
-    metadata: { duration_minutes: 15, crop_name: 'Tomate Cherry' }
-  },
-  {
-    id: 12,
-    user_id: 1,
-    alert_type: 'irrigation',
-    alert_subtype: 'programmed_saved',
-    subcategory: 'moisture',
-    severity: 'success',
-    title: 'Riego programado configurado',
-    message: 'El riego programado ha sido configurado exitosamente',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T21:00:00Z',
-    metadata: { scheduled_date: '2024-01-20', scheduled_time: '08:00', frequency: 'daily' }
-  },
-  {
-    id: 13,
-    user_id: 1,
-    alert_type: 'irrigation',
-    alert_subtype: 'programmed_reminder',
-    subcategory: 'moisture',
-    severity: 'warning',
-    title: 'Riego programado en 5 minutos',
-    message: 'Tu riego programado comenzará en 5 minutos',
-    is_read: false,
-    is_resolved: false,
-    created_at: '2024-01-15T22:00:00Z',
-    metadata: { scheduled_time: '08:00', crop_name: 'Tomate Cherry' }
+// Cargar alertas
+const loadAlerts = async () => {
+  try {
+    loading.value = true
+    const response = await AlertAPI.getMyAlerts()
+    alerts.value = response.data || []
+  } catch (error) {
+    console.error('Error al cargar alertas:', error)
+    toast.error('Error al cargar las alertas')
+    alerts.value = []
+  } finally {
+    loading.value = false
   }
-])
+}
 
 // Computed properties
 const filteredAlerts = computed(() => {
@@ -235,12 +71,9 @@ const filteredAlerts = computed(() => {
   if (filters.value.status) {
     switch (filters.value.status) {
       case 'unread':
-        filtered = filtered.filter(alert => !alert.is_read)
+        filtered = filtered.filter(alert => !alert.is_resolved)
         break
       case 'read':
-        filtered = filtered.filter(alert => alert.is_read && !alert.is_resolved)
-        break
-      case 'resolved':
         filtered = filtered.filter(alert => alert.is_resolved)
         break
     }
@@ -272,7 +105,7 @@ const filteredAlerts = computed(() => {
 })
 
 const totalAlerts = computed(() => alerts.value.length)
-const unreadAlerts = computed(() => alerts.value.filter(alert => !alert.is_read).length)
+const unreadAlerts = computed(() => alerts.value.filter(alert => !alert.is_resolved).length)
 const criticalAlerts = computed(() => alerts.value.filter(alert => alert.severity === 'error' || alert.severity === 'warning').length)
 
 // Métodos
@@ -286,16 +119,29 @@ const clearFilters = () => {
   }
 }
 
-const markAllAsRead = () => {
-  alerts.value.forEach(alert => {
-    alert.is_read = true
-  })
-  toast.success('Todas las alertas han sido marcadas como resueltas')
+const markAllAsRead = async () => {
+  try {
+    await AlertAPI.resolveAllAlertsByUserId()
+    await loadAlerts()
+    toast.success('Todas las alertas han sido marcadas como resueltas')
+  } catch (error) {
+    console.error('Error al marcar alertas como resueltas:', error)
+    toast.error('Error al marcar alertas como resueltas')
+  }
+}
+
+const handleAlertResolved = async (alertId) => {
+  try {
+    await AlertAPI.resolveAlert(alertId)
+    await loadAlerts()
+  } catch (error) {
+    console.error('Error al marcar alerta como resuelta:', error)
+    toast.error('Error al marcar alerta como resuelta')
+  }
 }
 
 onMounted(() => {
-  // Cargar alertas desde la API (simulado)
-  console.log('Página de alertas cargada')
+  loadAlerts()
 })
 </script>
 
@@ -439,6 +285,7 @@ onMounted(() => {
       <!-- Tabla de Alertas -->
       <AlertsTable 
         :alerts="filteredAlerts"
+        @alert-resolved="handleAlertResolved"
       />
     </div>
   </div>

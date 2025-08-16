@@ -97,16 +97,7 @@ const userStore = useUserStore()
       </div>
     </nav>
 
-    <!-- Sección de estado en la parte inferior -->
-    <div class="absolute bottom-4 left-6 right-6">
-      <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-        <div class="flex items-center space-x-2 mb-2">
-          <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-          <span class="text-sm font-medium text-white">Sistema Online</span>
-        </div>
-        <p class="text-xs text-blue-200">Todos los dispositivos conectados</p>
-      </div>
-    </div>
+    
   </aside>
 </template>
 

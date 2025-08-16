@@ -45,7 +45,7 @@ const goToLogin = () => {
               {{ userStore.isAdmin ? 'PANEL DE ADMINISTRACIÓN' : (userStore.isDemoMode ? 'VISTA PREVIA - VIVANTIA' : 'Optimiza cada gota, maximiza cada cosecha') }}
             </h1>
             <p class="text-xs text-gray-400">
-              {{ userStore.isAdmin ? 'Centro de Control' : (userStore.isDemoMode ? 'Modo Demo' : 'Performance') }}
+              {{ userStore.isAdmin ? 'Centro de Control' : (userStore.isDemoMode ? 'Modo Demo' : 'Automatización de riego inteligente') }}
             </p>
           </div>
         </div>

@@ -50,18 +50,18 @@ CREATE TABLE users (
 CREATE TABLE crops (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  name VARCHAR(255) NOT NULL, -- 'Tomate', 'Lechuga', etc.
-  description TEXT, -- Breve descripción del cultivo
-  image VARCHAR(255), -- URL o ruta de la imagen del cultivo
-  category VARCHAR(255), -- Categoría del cultivo (e.g., 'Frutas', 'Verduras')
-  growth_days INTEGER, -- Días de crecimiento del cultivo
-  humidity_min DECIMAL(5,2), -- % mínimo de humedad
-  humidity_max DECIMAL(5,2), -- % máximo de humedad
-  temperature_max DECIMAL(5,2), -- °C máximo
+  name VARCHAR(255) NOT NULL,
+  description TEXT, 
+  image VARCHAR(255), 
+  category VARCHAR(255), 
+  growth_days INTEGER, 
+  humidity_min DECIMAL(5,2),
+  humidity_max DECIMAL(5,2), 
+  temperature_max DECIMAL(5,2), 
   session VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW(),
-  selected BOOLEAN DEFAULT FALSE, -- Indica si el cultivo está seleccionado (FALSE por defecto)
-  UNIQUE(user_id) -- Solo 1 cultivo por usuario
+  selected BOOLEAN DEFAULT FALSE, 
+  UNIQUE(user_id) 
 );
 
 CREATE TABLE devices (
@@ -79,8 +79,8 @@ CREATE TABLE devices (
 CREATE TABLE sensor_readings (
   id SERIAL PRIMARY KEY,
   device_id INTEGER REFERENCES devices(id) ON DELETE CASCADE,
-  humidity DECIMAL(5,2), -- 0.00 - 100.00%
-  temperature DECIMAL(5,2), -- -50.00 - 100.00°C
+  humidity DECIMAL(5,2), 
+  temperature DECIMAL(5,2),
   received_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -92,16 +92,16 @@ CREATE TABLE irrigation_configs (
   is_active BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW(),
   last_irrigation_at TIMESTAMP,
-  duration_minutes INTEGER NOT NULL, -- Campo común a todos los modos
-  UNIQUE(user_id, crop_id, mode_type) -- Un usuario solo puede tener 1 config por cultivo y modo
+  duration_minutes INTEGER NOT NULL, 
+  UNIQUE(user_id, crop_id, mode_type) 
 );
 
--- Crear tabla específica para configuración programada
+
 CREATE TABLE programmed_settings (
   config_id INTEGER PRIMARY KEY REFERENCES irrigation_configs(id) ON DELETE CASCADE,
   start_datetime TIMESTAMP NOT NULL,
   frequency_type frequency_type NOT NULL,
-  custom_days INTEGER[], -- Array de días de la semana [1,2,3,4,5,6,7]
+  custom_days INTEGER[], 
   notify_before_minutes INTEGER DEFAULT 5,
   notify_at_start BOOLEAN DEFAULT TRUE,
   notify_at_end BOOLEAN DEFAULT TRUE,
@@ -109,7 +109,7 @@ CREATE TABLE programmed_settings (
   next_execution TIMESTAMP
 );
 
--- Crear tabla específica para configuración automática
+
 CREATE TABLE automatic_settings (
   config_id INTEGER PRIMARY KEY REFERENCES irrigation_configs(id) ON DELETE CASCADE,
   humidity_min_threshold DECIMAL(5,2) NOT NULL,
