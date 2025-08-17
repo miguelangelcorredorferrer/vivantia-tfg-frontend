@@ -1,4 +1,4 @@
-import { createSensorReading } from './sensorReadingController.js'
+import { createSensorReading } from '../services/sensorReadingService.js'
 import DeviceValidationService from '../services/deviceValidationService.js'
 
 // Webhook TTN - Capturar datos de sensores
@@ -70,41 +70,23 @@ const handleTTNUplink = async (req, res) => {
     
     console.log('💾 Datos a guardar:', sensorData);
     
-    // Usar el controlador existente para guardar en PostgreSQL
-    const mockReq = {
-      body: sensorData
+    // Usar el servicio para guardar en PostgreSQL directamente
+    const savedReading = await createSensorReading(sensorData);
+    console.log('💾 Dato guardado en BD:', savedReading);
+    
+    // Formatear datos para emitir a clientes (si usas Socket.IO)
+    const newData = {
+      temperature: finalTemperature,
+      humidity: finalHumidity,
+      soil_moisture: Number(soil_moisture) || null,
+      timestamp: savedReading.created_at,
+      device_id: validatedDevice.id,
+      device_name: validatedDevice.device_name
     };
     
-    const mockRes = {
-      status: (code) => ({
-        json: (data) => {
-          if (code === 201) {
-            console.log('💾 Dato guardado en BD:', data);
-            
-            // Formatear datos para emitir a clientes (si usas Socket.IO)
-            const newData = {
-              temperature: finalTemperature,
-              humidity: finalHumidity,
-              soil_moisture: Number(soil_moisture) || null,
-              timestamp: new Date().toISOString(),
-              device_id: validatedDevice.id, //
-              device_name: validatedDevice.device_name //
-            };
-            
-            // TODO: Emitir evento en tiempo real (si usas Socket.IO)
-            // io.emit('sensorData', newData);
-            console.log('📤 Dato preparado para emitir a clientes:', newData);
-            
-            return data;
-          } else {
-            throw new Error(`Error ${code}: ${JSON.stringify(data)}`);
-          }
-        }
-      })
-    };
-    
-    // Llamar al controlador existente
-    await createSensorReading(mockReq, mockRes);
+    // TODO: Emitir evento en tiempo real (si usas Socket.IO)
+    // io.emit('sensorData', newData);
+    console.log('📤 Dato preparado para emitir a clientes:', newData);
     
     res.status(200).send('Datos procesados correctamente');
   } catch (error) {

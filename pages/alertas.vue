@@ -59,7 +59,7 @@ const filteredAlerts = computed(() => {
 
   // Filtro por subcategoría
   if (filters.value.subcategory) {
-    filtered = filtered.filter(alert => alert.subcategory === filters.value.subcategory)
+    filtered = filtered.filter(alert => alert.alert_subtype === filters.value.subcategory)
   }
 
   // Filtro por severidad

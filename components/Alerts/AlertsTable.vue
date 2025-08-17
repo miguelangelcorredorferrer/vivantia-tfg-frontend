@@ -66,9 +66,9 @@
 
             <!-- Subcategoría -->
             <td class="px-6 py-4">
-              <span v-if="alert.subcategory" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                    :class="getSubcategoryColor(alert.subcategory)">
-                {{ getSubcategoryLabel(alert.subcategory) }}
+              <span v-if="alert.formatted_subtype" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    :class="getSubcategoryColor(alert.alert_subtype)">
+                {{ alert.formatted_subtype }}
               </span>
             </td>
 

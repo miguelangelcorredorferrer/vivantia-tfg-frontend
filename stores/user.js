@@ -137,14 +137,25 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  const logout = () => {
-    user.value = null
-    token.value = null
-    isDemoMode.value = false
-    
-    if (process.client) {
-      localStorage.removeItem('AUTH_TOKEN')
-      localStorage.removeItem('DEMO_MODE')
+  const logout = async () => {
+    try {
+      // Solo llamar al endpoint de logout si no estamos en modo demo y hay un token
+      if (!isDemoMode.value && token.value) {
+        await AuthAPI.logout()
+      }
+    } catch (error) {
+      console.warn('Error al llamar endpoint de logout:', error)
+      // Continuar con el logout local aunque falle el endpoint
+    } finally {
+      // Limpiar estado local
+      user.value = null
+      token.value = null
+      isDemoMode.value = false
+      
+      if (process.client) {
+        localStorage.removeItem('AUTH_TOKEN')
+        localStorage.removeItem('DEMO_MODE')
+      }
     }
   }
 

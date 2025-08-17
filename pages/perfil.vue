@@ -71,8 +71,8 @@ const handleSavePassword = async (passwordData) => {
 }
 
 // Función para cerrar sesión
-const handleLogout = () => {
-  userStore.logout()
+const handleLogout = async () => {
+  await userStore.logout()
   navigateTo('/auth/login')
 }
 

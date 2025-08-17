@@ -13,12 +13,12 @@ import {
   deleteOldAlerts,
   getAlertCountByType,
   getAlertCountBySeverity,
-  createUserRegisteredAlert,
-  createDeviceOfflineAlert,
   createHumidityThresholdAlert,
   createIrrigationStartedAlert,
   getMyAlerts
 } from '../controllers/alertController.js';
+import { createUserRegisteredAlert } from '../services/authAlertService.js';
+import { createApiKeyCopiedAlert } from '../services/deviceAlertService.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -53,8 +53,21 @@ router.get('/stats/severity', getAlertCountBySeverity);
 
 // Rutas para crear alertas específicas (uso interno)
 router.post('/user-registered', createUserRegisteredAlert);
-router.post('/device-offline', createDeviceOfflineAlert);
 router.post('/humidity-threshold', createHumidityThresholdAlert);
 router.post('/irrigation-started', createIrrigationStartedAlert);
+
+// Crear alerta de clave API copiada (desde frontend)
+router.post('/device/api-key-copied', async (req, res) => {
+  try {
+    const { user } = req;
+    if (!user?.id) {
+      return res.status(401).json({ success: false, message: 'No autenticado' })
+    }
+    const alert = await createApiKeyCopiedAlert(user.id)
+    return res.status(201).json({ success: true, data: alert })
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error al crear alerta de clave API copiada', error: error.message })
+  }
+});
 
 export default router;

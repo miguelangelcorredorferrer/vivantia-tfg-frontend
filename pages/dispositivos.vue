@@ -63,14 +63,10 @@ const handleDeviceAdded = async (newDeviceData) => {
 }
 
 // Manejar el cambio de estado del switch
+// Nota: la acción de activación/desactivación ya la ejecuta el componente hijo `DevicesTable`.
+// Aquí solo registramos el evento para evitar duplicar llamadas al backend (y alertas).
 const handleToggleDevice = async ({ device, isActive }) => {
-  try {
-    await deviceStore.toggleDeviceActive(device.id, isActive)
-    console.log(`✅ Dispositivo ${device.deviceName} ${isActive ? 'activado' : 'desactivado'}`)
-  } catch (error) {
-    console.error('❌ Error cambiando estado del dispositivo:', error)
-    toast.error(error.message || 'Error al cambiar estado del dispositivo')
-  }
+  console.log(`Evento de toggle recibido para ${device.deviceName}: ${isActive ? 'activado' : 'desactivado'}`)
 }
 
 // Manejar edición de dispositivo

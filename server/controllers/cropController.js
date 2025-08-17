@@ -1,13 +1,13 @@
 import { pool } from '../config/db.js';
 import Crop from '../models/Crop.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
-import { 
+import {
   createCropAddedAlert, 
   createCropEditedAlert, 
   createCropDeletedAlert, 
   createCropSelectedAlert, 
   createCropDeselectedAlert 
-} from './alertController.js';
+} from '../services/cropAlertService.js';
 
 // Crear un nuevo cultivo
 const createCrop = async (req, res) => {

@@ -1,5 +1,5 @@
 import User from '../models/User.js';
-import { findUserByEmail, findUserById } from './userController.js';
+import { findUserByEmail, findUserById } from '../services/userService.js';
 import { 
   handleNotFoundError, 
   handleBadRequestError, 
@@ -9,7 +9,7 @@ import {
   uniqueId
 } from '../utils/index.js';
 import { sendEmailVerification, sendEmailPasswordReset } from '../emails/authEmailService.js';
-import { createUserRegisteredAlert, createUserLoggedInAlert, createPasswordChangedAlert } from './alertController.js';
+import { createUserRegisteredAlert, createUserLoggedInAlert, createUsernameChangedAlert, createPasswordChangedAlert, createSessionClosedAlert } from '../services/authAlertService.js';
 
 const register = async (req, res) => {
     try {
@@ -347,6 +347,34 @@ const admin = async (req, res) => {
     }
 };
 
+// Logout - Cerrar sesión
+const logout = async (req, res) => {
+    try {
+        const { user } = req;
+        
+        if (!user) {
+            return handleBadRequestError('No autorizado', res);
+        }
+
+        // Crear alerta de sesión cerrada
+        try {
+            await createSessionClosedAlert(user.id, user.name);
+        } catch (alertError) {
+            console.warn('Error al crear alerta de logout:', alertError.message);
+        }
+
+        // En una implementación más robusta, aquí podrías invalidar el token
+        // agregándolo a una lista negra, pero por simplicidad solo creamos la alerta
+
+        return res.status(200).json({
+            success: true,
+            message: 'Sesión cerrada exitosamente'
+        });
+    } catch (error) {
+        return handleInternalServerError('Error al cerrar sesión', res, error);
+    }
+};
+
 export {
     register,
     verifyAccount,
@@ -356,5 +384,6 @@ export {
     updatePassword,
     changePassword,
     user,
-    admin
+    admin,
+    logout
 };

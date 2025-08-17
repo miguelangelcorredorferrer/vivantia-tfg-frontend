@@ -1,7 +1,7 @@
 import { pool } from '../config/db.js';
 import Device from '../models/Device.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
-import { createDeviceAddedAlert } from './alertController.js';
+import { createDeviceAddedAlert, createDeviceOnlineAlert, createDeviceOfflineAlert, createDeviceDeletedAlert, createDeviceEditedAlert } from '../services/deviceAlertService.js';
 
 // Crear un nuevo dispositivo
 const createDevice = async (req, res) => {
@@ -351,6 +351,13 @@ const updateDevice = async (req, res) => {
     
     const updatedDevice = new Device(result.rows[0]);
 
+    // Crear alerta de dispositivo editado
+    try {
+      await createDeviceEditedAlert(existingDevice.user_id, existingDevice.device_name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de dispositivo editado:', alertError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Dispositivo actualizado exitosamente',
@@ -448,6 +455,13 @@ const activateDevice = async (req, res) => {
     
     const activatedDevice = new Device(result.rows[0]);
 
+    // Crear alerta de dispositivo activado
+    try {
+      await createDeviceOnlineAlert(existingDevice.user_id, existingDevice.device_name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de dispositivo activado:', alertError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: force 
@@ -499,6 +513,13 @@ const deactivateDevice = async (req, res) => {
     
     const deactivatedDevice = new Device(result.rows[0]);
 
+    // Crear alerta de dispositivo desactivado
+    try {
+      await createDeviceOfflineAlert(existingDevice.user_id, existingDevice.device_name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de dispositivo desactivado:', alertError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Dispositivo desactivado exitosamente',
@@ -544,6 +565,13 @@ const deleteDevice = async (req, res) => {
         success: false,
         message: 'Dispositivo no encontrado'
       });
+    }
+
+    // Crear alerta de dispositivo eliminado
+    try {
+      await createDeviceDeletedAlert(existingDevice.user_id, existingDevice.device_name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de dispositivo eliminado:', alertError.message);
     }
 
     res.status(200).json({

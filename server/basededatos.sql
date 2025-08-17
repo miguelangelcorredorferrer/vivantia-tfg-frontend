@@ -13,16 +13,16 @@ CREATE TYPE alert_category AS ENUM (
 
 CREATE TYPE alert_subtype AS ENUM (
   -- User alerts
-  'user_registered', 'user_logged_in', 'username_changed', 'password_changed',
+  'user_registered', 'user_logged_in', 'username_changed', 'password_changed', 'session_closed',
   
   -- Environmental alerts
   'temperature_max_threshold', 'humidity_min_threshold', 'humidity_max_threshold',
   
   -- Device alerts
-  'device_added', 'api_key_copied', 'device_offline', 'device_online',
+  'device_added', 'api_key_copied', 'device_offline', 'device_online', 'device_deleted', 'device_edited',
   
   -- Crop alerts
-  'crop_selected', 'crop_deselected', 'crop_edited', 'crop_deleted', 'crop_added',
+  'crop_selected', 'crop_deselected', 'crop_edited', 'crop_deleted', 'crop_added', 'crop_edited',
   
   -- Irrigation alerts
   'manual_started', 'emergency_stop', 'manual_cancelled', 'programmed_saved',
@@ -30,9 +30,7 @@ CREATE TYPE alert_subtype AS ENUM (
 );
 
 ALTER TABLE crops DROP CONSTRAINT crops_user_id_key;
-ALTER TABLE devices ADD COLUMN ttn_region VARCHAR(10);
-ALTER TABLE devices ADD COLUMN ttn_app_id VARCHAR(100);
-ALTER TABLE devices ADD COLUMN ttn_access_key VARCHAR(255);
+
 
 
 CREATE TABLE users (
@@ -64,7 +62,7 @@ CREATE TABLE crops (
   UNIQUE(user_id) 
 );
 
-CREATE TABLE devices (
+CREATE TABLE devices ( 
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   device_name VARCHAR(255) NOT NULL,
@@ -72,9 +70,13 @@ CREATE TABLE devices (
   app_eui VARCHAR(16) NOT NULL,
   dev_eui VARCHAR(16) NOT NULL,
   app_key VARCHAR(32) NOT NULL,
+  ttn_region VARCHAR(10),
+  ttn_app_id VARCHAR(100),
+  ttn_access_key VARCHAR(255),
   is_active_communication BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
 
 CREATE TABLE sensor_readings (
   id SERIAL PRIMARY KEY,

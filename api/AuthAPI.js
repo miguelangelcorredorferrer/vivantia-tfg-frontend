@@ -70,5 +70,12 @@ export default {
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
         })
+    },
+    logout() {
+        return $fetch('/auth/logout', {
+            method: 'POST',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     }
 } 

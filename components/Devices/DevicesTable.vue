@@ -426,6 +426,14 @@ const copyAppKey = async (appKey, index) => {
     // Mostrar toast de éxito
     appKeyCopied()
     
+    // Crear alerta en backend
+    try {
+      const AlertAPI = (await import('~/api/AlertAPI.js')).default
+      await AlertAPI.createApiKeyCopiedAlert()
+    } catch (e) {
+      console.warn('No se pudo crear la alerta de API key copiada:', e)
+    }
+    
     // Resetear el feedback después de 2 segundos
     setTimeout(() => {
       copiedKeys.value[index] = false
@@ -446,6 +454,14 @@ const copyAppKey = async (appKey, index) => {
       
       // Mostrar toast de éxito (fallback)
       appKeyCopied()
+      
+      // Crear alerta en backend (fallback)
+      try {
+        const AlertAPI = (await import('~/api/AlertAPI.js')).default
+        await AlertAPI.createApiKeyCopiedAlert()
+      } catch (e) {
+        console.warn('No se pudo crear la alerta de API key copiada (fallback):', e)
+      }
       
       setTimeout(() => {
         copiedKeys.value[index] = false

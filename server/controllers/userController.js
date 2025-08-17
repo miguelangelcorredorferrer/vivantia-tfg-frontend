@@ -1,7 +1,8 @@
 import { pool } from '../config/db.js';
 import User from '../models/User.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
-import { createUsernameChangedAlert } from './alertController.js';
+import { findUserByEmail, findUserById, updateUser as updateUserService, createUser as createUserService, deleteUser as deleteUserService } from '../services/userService.js';
+import { createUsernameChangedAlert } from '../services/authAlertService.js';
 
 // Crear un nuevo usuario
 const createUser = async (req, res) => {
@@ -26,38 +27,6 @@ const createUser = async (req, res) => {
     return handleSuccessResponse(res, user.toJSON(), 'Usuario creado exitosamente', 201);
   } catch (error) {
     return handleInternalServerError('Error al crear usuario', res, error);
-  }
-};
-
-// Buscar usuario por email
-const findUserByEmail = async (email) => {
-  try {
-    const query = 'SELECT * FROM users WHERE email = $1';
-    const result = await pool.query(query, [email]);
-    
-    if (result.rows.length === 0) {
-      return null;
-    }
-    
-    return new User(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al buscar usuario: ${error.message}`);
-  }
-};
-
-// Buscar usuario por ID
-const findUserById = async (id) => {
-  try {
-    const query = 'SELECT * FROM users WHERE id = $1';
-    const result = await pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
-      return null;
-    }
-    
-    return new User(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al buscar usuario: ${error.message}`);
   }
 };
 
@@ -405,13 +374,11 @@ const getCurrentUserProfile = async (req, res) => {
 
 export {
   createUser,
-  findUserByEmail,
-  findUserById,
   getUserById,
   getUserByEmail,
   getAllUsers,
   updateUser,
   deleteUser,
-  deleteOwnAccount, // Añadir la nueva función a la exportación
+  deleteOwnAccount,
   getCurrentUserProfile
 };

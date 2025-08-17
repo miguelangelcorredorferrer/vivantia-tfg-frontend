@@ -77,7 +77,7 @@ const getMyAlerts = async (req, res) => {
     `;
     const result = await pool.query(query, [user_id, parseInt(limit), parseInt(offset)]);
     
-    const alerts = result.rows.map(row => new Alert(row));
+    const alerts = result.rows.map(row => new Alert(row).toJSON());
 
     return handleSuccessResponse(res, alerts, `${alerts.length} alertas obtenidas exitosamente`);
   } catch (error) {
@@ -104,7 +104,7 @@ const getAlertsByUserId = async (req, res) => {
     `;
     const result = await pool.query(query, [user_id, parseInt(limit), parseInt(offset)]);
     
-    const alerts = result.rows.map(row => new Alert(row));
+    const alerts = result.rows.map(row => new Alert(row).toJSON());
 
     return handleSuccessResponse(res, alerts, `${alerts.length} alertas obtenidas exitosamente`);
   } catch (error) {
@@ -151,7 +151,7 @@ const getAlertsByType = async (req, res) => {
     `;
     const result = await pool.query(query, [user_id, alert_type, parseInt(limit)]);
     
-    const alerts = result.rows.map(row => new Alert(row));
+    const alerts = result.rows.map(row => new Alert(row).toJSON());
 
     return handleSuccessResponse(res, alerts, `${alerts.length} alertas obtenidas exitosamente`);
   } catch (error) {
@@ -174,7 +174,7 @@ const getAlertsBySeverity = async (req, res) => {
     `;
     const result = await pool.query(query, [user_id, severity, parseInt(limit)]);
     
-    const alerts = result.rows.map(row => new Alert(row));
+    const alerts = result.rows.map(row => new Alert(row).toJSON());
 
     return handleSuccessResponse(res, alerts, `${alerts.length} alertas obtenidas exitosamente`);
   } catch (error) {
@@ -348,216 +348,14 @@ const getAlertCountBySeverity = async (req, res) => {
 // Funciones de conveniencia para crear alertas específicas
 
 // ==================== ALERTAS DE USUARIO ====================
-
-// Crear alerta de usuario registrado
-const createUserRegisteredAlert = async (user_id, userName) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'user',
-      'user_registered',
-      'success',
-      'Usuario registrado',
-      `¡Bienvenido ${userName}! Tu cuenta ha sido creada exitosamente.`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de usuario registrado: ${error.message}`);
-  }
-};
-
-// Crear alerta de usuario logueado
-const createUserLoggedInAlert = async (user_id, userName) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'user',
-      'user_logged_in',
-      'info',
-      'Sesión iniciada',
-      `Hola ${userName}, has iniciado sesión correctamente.`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de usuario logueado: ${error.message}`);
-  }
-};
-
-// Crear alerta de cambio de nombre
-const createUsernameChangedAlert = async (user_id, oldName, newName) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'user',
-      'username_changed',
-      'info',
-      'Nombre actualizado',
-      `Tu nombre ha sido actualizado de "${oldName}" a "${newName}".`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de cambio de nombre: ${error.message}`);
-  }
-};
-
-// Crear alerta de cambio de contraseña
-const createPasswordChangedAlert = async (user_id) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'user',
-      'password_changed',
-      'info',
-      'Contraseña actualizada',
-      'Tu contraseña ha sido actualizada exitosamente.',
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de cambio de contraseña: ${error.message}`);
-  }
-};
+// NOTA: Las funciones de alertas de autenticación se han movido a authAlertService.js
 
 // ==================== ALERTAS DE DISPOSITIVOS ====================
+// NOTA: Las funciones de alertas de dispositivos se han movido a deviceAlertService.js
 
-// Crear alerta de dispositivo agregado
-const createDeviceAddedAlert = async (user_id, deviceName) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'device',
-      'device_added',
-      'success',
-      'Dispositivo agregado',
-      `El dispositivo "${deviceName}" ha sido agregado exitosamente al sistema.`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de dispositivo agregado: ${error.message}`);
-  }
-};
 
-// Crear alerta de clave API copiada
-const createApiKeyCopiedAlert = async (user_id) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'device',
-      'api_key_copied',
-      'success',
-      'Clave API copiada',
-      'La clave API ha sido copiada al portapapeles exitosamente.',
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de clave API copiada: ${error.message}`);
-  }
-};
 
-// Crear alerta de dispositivo offline
-const createDeviceOfflineAlert = async (user_id, deviceName) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'device',
-      'device_offline',
-      'warning',
-      'Dispositivo desconectado',
-      `El dispositivo "${deviceName}" se ha desconectado y no está enviando datos.`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de dispositivo offline: ${error.message}`);
-  }
-};
-
-// Crear alerta de dispositivo online
-const createDeviceOnlineAlert = async (user_id, deviceName) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'device',
-      'device_online',
-      'success',
-      'Dispositivo conectado',
-      `El dispositivo "${deviceName}" se ha conectado y está enviando datos correctamente.`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de dispositivo online: ${error.message}`);
-  }
-};
+// NOTA: Las funciones createDeviceOfflineAlert y createDeviceOnlineAlert se han movido a deviceAlertService.js
 
 // ==================== ALERTAS AMBIENTALES ====================
 
@@ -1011,16 +809,7 @@ export {
   deleteOldAlerts,
   getAlertCountByType,
   getAlertCountBySeverity,
-  // Alertas de usuario
-  createUserRegisteredAlert,
-  createUserLoggedInAlert,
-  createUsernameChangedAlert,
-  createPasswordChangedAlert,
-  // Alertas de dispositivo
-  createDeviceAddedAlert,
-  createApiKeyCopiedAlert,
-  createDeviceOfflineAlert,
-  createDeviceOnlineAlert,
+  // Alertas de dispositivo - movidas a deviceAlertService.js
   // Alertas ambientales
   createTemperatureMaxThresholdAlert,
   createHumidityMinThresholdAlert,

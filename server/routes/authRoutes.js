@@ -8,7 +8,8 @@ import {
   updatePassword,
   changePassword,
   user,
-  admin
+  admin,
+  logout
 } from '../controllers/authController.js';
 import { hashPassword, hashPasswordIfModified } from '../middleware/passwordMiddleware.js';
 import authMiddleware from '../middleware/authMiddleware.js';
@@ -31,5 +32,6 @@ router.put('/update-password/:token', hashPasswordIfModified, updatePassword);
 router.put('/change-password/:id', authMiddleware, hashPasswordIfModified, changePassword);
 router.get('/user', authMiddleware, user);
 router.get('/admin', authMiddleware, admin);
+router.post('/logout', authMiddleware, logout);
 
 export default router;

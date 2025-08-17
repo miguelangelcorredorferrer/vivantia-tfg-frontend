@@ -1,11 +1,11 @@
 import { pool } from '../config/db.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
-import { sendDownlinkForConfig } from './ttnDownlinkController.js';
+import { sendDownlinkForConfig } from '../services/ttnService.js';
 import { 
   createManualStartedAlert, 
   createEmergencyStopAlert, 
   createManualCancelledAlert 
-} from './alertController.js';
+} from '../services/irrigationAlertService.js';
 
 // Modelo para PumpActivation
 class PumpActivation {
