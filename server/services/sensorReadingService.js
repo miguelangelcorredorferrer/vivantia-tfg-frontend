@@ -9,20 +9,20 @@ import SensorReading from '../models/SensorReading.js';
 // Crear nueva lectura de sensor
 export const createSensorReading = async (sensorData) => {
   try {
-    const { device_id, humidity, temperature } = sensorData;
+    const { device_id, air_humidity, soil_humidity, temperature } = sensorData;
 
     // Validar campos obligatorios
-    if (!device_id || humidity === undefined || temperature === undefined) {
-      throw new Error('Device ID, humedad y temperatura son obligatorios');
+    if (!device_id || air_humidity === undefined || soil_humidity === undefined || temperature === undefined) {
+      throw new Error('Device ID, humedad del aire, humedad del suelo y temperatura son obligatorios');
     }
 
     const query = `
-      INSERT INTO sensor_readings (device_id, humidity, temperature)
-      VALUES ($1, $2, $3)
+      INSERT INTO sensor_readings (device_id, air_humidity, soil_humidity, temperature)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
     
-    const values = [device_id, humidity, temperature];
+    const values = [device_id, air_humidity, soil_humidity, temperature];
     
     const result = await pool.query(query, values);
     return new SensorReading(result.rows[0]);
@@ -53,7 +53,7 @@ export const getSensorReadingsByDevice = async (device_id, limit = 20, offset = 
     const query = `
       SELECT * FROM sensor_readings 
       WHERE device_id = $1 
-      ORDER BY created_at DESC 
+      ORDER BY received_at DESC 
       LIMIT $2 OFFSET $3
     `;
     
@@ -70,7 +70,7 @@ export const getLatestSensorReading = async (device_id) => {
     const query = `
       SELECT * FROM sensor_readings 
       WHERE device_id = $1 
-      ORDER BY created_at DESC 
+      ORDER BY received_at DESC 
       LIMIT 1
     `;
     

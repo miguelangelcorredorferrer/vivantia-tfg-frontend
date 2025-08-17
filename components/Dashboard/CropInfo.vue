@@ -17,13 +17,23 @@
       </div>
       
       <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-        <span class="text-gray-300 font-medium">Humedad Mínima:</span>
-        <span class="text-blue-400 font-bold text-lg">{{ currentCrop.humidity_min }}%</span>
+        <span class="text-gray-300 font-medium">Hum. Suelo Min:</span>
+        <span class="text-blue-400 font-bold text-lg">{{ currentCrop.soil_humidity_min }}%</span>
       </div>
       
       <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-        <span class="text-gray-300 font-medium">Humedad Máxima:</span>
-        <span class="text-blue-400 font-bold text-lg">{{ currentCrop.humidity_max }}%</span>
+        <span class="text-gray-300 font-medium">Hum. Suelo Max:</span>
+        <span class="text-blue-400 font-bold text-lg">{{ currentCrop.soil_humidity_max }}%</span>
+      </div>
+      
+      <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
+        <span class="text-gray-300 font-medium">Hum. Aire Min:</span>
+        <span class="text-cyan-400 font-bold text-lg">{{ currentCrop.air_humidity_min }}%</span>
+      </div>
+      
+      <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
+        <span class="text-gray-300 font-medium">Hum. Aire Max:</span>
+        <span class="text-cyan-400 font-bold text-lg">{{ currentCrop.air_humidity_max }}%</span>
       </div>
       
       <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
@@ -66,12 +76,22 @@
       </div>
       
       <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-        <span class="text-gray-300 font-medium">Humedad Mínima:</span>
+        <span class="text-gray-300 font-medium">Hum. Suelo Min:</span>
         <span class="text-red-400 font-bold text-lg">No disponible</span>
       </div>
       
       <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
-        <span class="text-gray-300 font-medium">Humedad Máxima:</span>
+        <span class="text-gray-300 font-medium">Hum. Suelo Max:</span>
+        <span class="text-red-400 font-bold text-lg">No disponible</span>
+      </div>
+      
+      <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
+        <span class="text-gray-300 font-medium">Hum. Aire Min:</span>
+        <span class="text-red-400 font-bold text-lg">No disponible</span>
+      </div>
+      
+      <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg">
+        <span class="text-gray-300 font-medium">Hum. Aire Max:</span>
         <span class="text-red-400 font-bold text-lg">No disponible</span>
       </div>
       

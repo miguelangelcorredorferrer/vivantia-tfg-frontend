@@ -100,7 +100,7 @@
       </div>
 
       <!-- Tercera fila - Sensores y caudal -->
-      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <!-- Caudal en Curso -->
         <div class="bg-gray-600/60 border border-cyan-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
@@ -120,14 +120,24 @@
           <p class="text-xs text-red-300">{{ currentTemperature ? '°C' : '' }}</p>
         </div>
 
-        <!-- Humedad Actual -->
-        <div class="bg-gray-600/60 border border-cyan-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+        <!-- Humedad del Suelo Actual -->
+        <div class="bg-gray-600/60 border border-blue-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
-            <p class="text-sm text-gray-400">Humedad Actual</p>
+            <p class="text-sm text-gray-400">Humedad Suelo</p>
             <HumidityIcon />
           </div>
-          <p class="font-semibold text-white">{{ currentHumidity || '-' }}</p>
-          <p class="text-xs text-cyan-300">{{ currentHumidity ? '%' : '' }}</p>
+          <p class="font-semibold text-white">{{ currentSoilHumidity || '-' }}</p>
+          <p class="text-xs text-blue-300">{{ currentSoilHumidity ? '%' : '' }}</p>
+        </div>
+        
+        <!-- Humedad del Aire Actual -->
+        <div class="bg-gray-600/60 border border-cyan-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm text-gray-400">Humedad Aire</p>
+            <HumidityIcon />
+          </div>
+          <p class="font-semibold text-white">{{ currentAirHumidity || '-' }}</p>
+          <p class="text-xs text-cyan-300">{{ currentAirHumidity ? '%' : '' }}</p>
         </div>
       </div>
     </div>
@@ -287,11 +297,15 @@ const userStore = useUserStore()
 // Composables
 const { toast } = useToastNotifications()
 const router = useRouter()
-const { realDataPoints, startSimulation } = useSensorData()
+const { 
+  realDataPoints, 
+  startSimulation, 
+  currentTemperature: sensorTemperature,
+  currentSoilHumidity: sensorSoilHumidity,
+  currentAirHumidity: sensorAirHumidity
+} = useSensorData()
 
-// Estados locales para datos de sensores
-const latestSensorData = ref(null)
-const isLoadingSensorData = ref(false)
+// Estados locales para datos de sensores (ya no se necesitan, se usan del composable)
 
 // Estados locales para última fecha de riego
 const lastIrrigationData = ref(null)
@@ -308,30 +322,7 @@ const showSuccess = (message) => toast.success(message)
 const showError = (message) => toast.error(message)
 const showWarning = (message) => toast.warning(message)
 
-// Función para cargar último dato de sensor del dispositivo activo
-const loadLatestSensorData = async () => {
-  if (!userStore.user?.id || userStore.isDemoMode) return
-  
-  try {
-    isLoadingSensorData.value = true
-    console.log('🌡️ Cargando último dato de sensor para usuario:', userStore.user.id)
-    
-    const response = await SensorAPI.getLatestSensorReadingForActiveDevice(userStore.user.id)
-    
-    if (response.success && response.data) {
-      latestSensorData.value = response.data
-      console.log('✅ Último dato de sensor cargado:', response.data)
-    } else {
-      console.log('❌ No se encontraron datos de sensor')
-      latestSensorData.value = null
-    }
-  } catch (error) {
-    console.error('❌ Error cargando último dato de sensor:', error)
-    latestSensorData.value = null
-  } finally {
-    isLoadingSensorData.value = false
-  }
-}
+// Función para cargar último dato de sensor del dispositivo activo (ya no se necesita, se usa del composable)
 
 // Función para cargar la última fecha de riego desde la base de datos
 const loadLastIrrigationDate = async () => {
@@ -370,34 +361,25 @@ const selectedCropName = computed(() => {
   return selectedCrop ? selectedCrop.name : null
 })
 
-// Computed para obtener temperatura y humedad más recientes
+// Computed para obtener temperatura y humedad más recientes desde el composable
 const currentTemperature = computed(() => {
-  console.log('🔍 currentTemperature computed - latestSensorData:', latestSensorData.value)
-  
-  if (latestSensorData.value?.temperature !== null && latestSensorData.value?.temperature !== undefined) {
-    console.log('🔍 Temperatura original (tipo):', typeof latestSensorData.value.temperature, latestSensorData.value.temperature)
-    // Convertir a número antes de usar toFixed
-    const temp = Number(latestSensorData.value.temperature).toFixed(1)
-    console.log('🌡️ Temperatura calculada:', temp)
-    return temp
+  if (sensorTemperature.value !== null && sensorTemperature.value !== undefined) {
+    return Number(sensorTemperature.value).toFixed(1)
   }
-  
-  console.log('❌ No hay datos de temperatura disponibles')
   return null
 })
 
-const currentHumidity = computed(() => {
-  console.log('🔍 currentHumidity computed - latestSensorData:', latestSensorData.value)
-  
-  if (latestSensorData.value?.humidity !== null && latestSensorData.value?.humidity !== undefined) {
-    console.log('🔍 Humedad original (tipo):', typeof latestSensorData.value.humidity, latestSensorData.value.humidity)
-    // Convertir a número antes de usar toFixed
-    const humidity = Number(latestSensorData.value.humidity).toFixed(1)
-    console.log('💧 Humedad calculada:', humidity)
-    return humidity
+const currentSoilHumidity = computed(() => {
+  if (sensorSoilHumidity.value !== null && sensorSoilHumidity.value !== undefined) {
+    return Number(sensorSoilHumidity.value).toFixed(1)
   }
-  
-  console.log('❌ No hay datos de humedad disponibles')
+  return null
+})
+
+const currentAirHumidity = computed(() => {
+  if (sensorAirHumidity.value !== null && sensorAirHumidity.value !== undefined) {
+    return Number(sensorAirHumidity.value).toFixed(1)
+  }
   return null
 })
 
@@ -462,17 +444,8 @@ watch(() => realDataPoints?.value, (newData) => {
     const latestData = newData[newData.length - 1]
     console.log('🔄 Último dato de sensores:', latestData)
     console.log('🌡️ Temperatura actual:', currentTemperature.value)
-    console.log('💧 Humedad actual:', currentHumidity.value)
-  }
-}, { deep: true })
-
-// Watcher para monitorear cambios en los datos de sensores del dispositivo activo
-watch(() => latestSensorData.value, (newData) => {
-  if (newData) {
-    console.log('📊 Último dato de sensor actualizado:', newData)
-    console.log('🌡️ Temperatura:', newData.temperature, '°C')
-    console.log('💧 Humedad:', newData.humidity, '%')
-    console.log('📱 Dispositivo:', newData.device?.name)
+    console.log('💧 Humedad suelo actual:', currentSoilHumidity.value)
+    console.log('💧 Humedad aire actual:', currentAirHumidity.value)
   }
 }, { deep: true })
 
@@ -561,7 +534,8 @@ watch(() => cropStore.crops, (newCrops) => {
 watch(() => realDataPoints?.value, (newData) => {
   console.log('🌡️ Datos de sensores actualizados:', newData?.length || 0)
   console.log('🌡️ Temperatura actual:', currentTemperature.value)
-  console.log('💧 Humedad actual:', currentHumidity.value)
+  console.log('💧 Humedad suelo actual:', currentSoilHumidity.value)
+  console.log('💧 Humedad aire actual:', currentAirHumidity.value)
 }, { deep: true })
 
 // Computed para formatear la fecha del último riego
@@ -644,36 +618,16 @@ onMounted(async () => {
         // Verificar datos de sensores
         console.log('🌡️ Datos de sensores iniciales:', realDataPoints.value?.length || 0)
         console.log('🌡️ Temperatura actual:', currentTemperature.value)
-        console.log('💧 Humedad actual:', currentHumidity.value)
-        
-        // Si no hay datos de sensores, esperar un poco más
-        if (!realDataPoints.value || realDataPoints.value.length === 0) {
-          console.log('⏳ No hay datos de sensores, esperando...')
-          setTimeout(() => {
-            console.log('🌡️ Datos de sensores después de esperar:', realDataPoints.value?.length || 0)
-            console.log('🌡️ Temperatura actual:', currentTemperature.value)
-            console.log('💧 Humedad actual:', currentHumidity.value)
-          }, 2000)
-        }
+        console.log('💧 Humedad suelo actual:', currentSoilHumidity.value)
+        console.log('💧 Humedad aire actual:', currentAirHumidity.value)
         
         // Inicializar datos de sensores
         console.log('🚀 Inicializando datos de sensores...')
         startSimulation()
         
-        // Cargar último dato de sensor del dispositivo activo
-        console.log('🚀 Cargando datos de sensores...')
-        await loadLatestSensorData()
-        
         // Cargar última fecha de riego
         console.log('🚀 Cargando última fecha de riego...')
         await loadLastIrrigationDate()
-        
-        // Configurar actualización automática cada 10 segundos
-        setInterval(async () => {
-          if (!userStore.isDemoMode) {
-            await loadLatestSensorData()
-          }
-        }, 10000)
         
         // Configurar actualización automática de última fecha de riego cada 30 segundos
         setInterval(async () => {

@@ -147,18 +147,22 @@ const goBack = () => {
       <!-- Información de crecimiento -->
       <div class="bg-gray-800/50 border border-gray-600/30 rounded-lg p-6">
         <h2 class="text-xl font-semibold text-white mb-4">Información de Crecimiento</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">Días de Crecimiento</label>
             <p class="text-white">{{ crop.growth_days || 'No especificado' }}</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Humedad Mínima (%)</label>
-            <p class="text-white">{{ crop.humidity_min || 'No especificado' }}</p>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Humedad del Suelo (%)</label>
+            <p class="text-white">
+              {{ crop.soil_humidity_min || 'N/A' }} - {{ crop.soil_humidity_max || 'N/A' }}
+            </p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Humedad Máxima (%)</label>
-            <p class="text-white">{{ crop.humidity_max || 'No especificado' }}</p>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Humedad del Aire (%)</label>
+            <p class="text-white">
+              {{ crop.air_humidity_min || 'N/A' }} - {{ crop.air_humidity_max || 'N/A' }}
+            </p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">Temperatura Máxima (°C)</label>

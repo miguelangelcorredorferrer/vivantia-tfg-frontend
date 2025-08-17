@@ -38,33 +38,35 @@ const handleTTNUplink = async (req, res) => {
     
     console.log('🔍 Payload decodificado:', JSON.stringify(payload, null, 2));
     
-    // Extraer datos - verificar nombres de campos
-    const { temperature, humidity, soil_moisture, humedad, temp } = payload;
-    
-    console.log('🌡️ Datos extraídos:', { 
-      temperature, 
-      humidity, 
-      soil_moisture, 
-      humedad, 
-      temp 
+    // Extraer datos según nuevo formato de payload
+    const {
+      temperature_c,
+      humidity_rh,
+      soil_moisture_pct
+    } = payload;
+
+    console.log('🌡️ Datos extraídos:', {
+      temperature_c,
+      humidity_rh,
+      soil_moisture_pct
     });
-    
-    // Usar diferentes nombres de campos que pueden venir de TTN
-    // Si no hay humidity, usar soil_moisture como humedad del suelo
-    const finalTemperature = Number(temperature || temp) || null;
-    const finalHumidity = Number(humidity || humedad || soil_moisture) || null;
-    
-    console.log('✅ Datos finales:', { 
-      temperature: finalTemperature, 
-      humidity: finalHumidity,
-      soil_moisture: Number(soil_moisture) || null
+
+    // Convertir y asegurar números
+    const finalTemperature = Number(temperature_c) || null;
+    const finalAirHumidity = Number(humidity_rh) || null;
+    const finalSoilHumidity = Number(soil_moisture_pct) || null;
+
+    console.log('✅ Datos finales normalizados:', {
+      temperature: finalTemperature,
+      air_humidity: finalAirHumidity,
+      soil_humidity: finalSoilHumidity
     });
-    
+
     // Preparar datos para guardar en PostgreSQL
-    // Usar el device_id real del dispositivo validado
     const sensorData = {
-      device_id: validatedDevice.id, // Device ID real del dispositivo autorizado //
-      humidity: finalHumidity,
+      device_id: validatedDevice.id,
+      air_humidity: finalAirHumidity,
+      soil_humidity: finalSoilHumidity,
       temperature: finalTemperature
     };
     
@@ -77,8 +79,8 @@ const handleTTNUplink = async (req, res) => {
     // Formatear datos para emitir a clientes (si usas Socket.IO)
     const newData = {
       temperature: finalTemperature,
-      humidity: finalHumidity,
-      soil_moisture: Number(soil_moisture) || null,
+      air_humidity: finalAirHumidity,
+      soil_humidity: finalSoilHumidity,
       timestamp: savedReading.created_at,
       device_id: validatedDevice.id,
       device_name: validatedDevice.device_name

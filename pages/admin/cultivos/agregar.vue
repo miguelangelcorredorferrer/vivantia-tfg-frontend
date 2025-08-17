@@ -20,8 +20,10 @@ const formData = ref({
   description: '',
   image: '',
   category: '',
-  humidity_min: '',
-  humidity_max: '',
+  soil_humidity_min: '',
+  soil_humidity_max: '',
+  air_humidity_min: '',
+  air_humidity_max: '',
   temperature_max: '',
   growth_days: '',
   session: '',
@@ -73,10 +75,28 @@ const handleSubmit = async () => {
     // Validar campos obligatorios
     if (!formData.value.user_id || !formData.value.name || 
         !formData.value.description || !formData.value.category ||
-        !formData.value.humidity_min || !formData.value.humidity_max || 
+        !formData.value.soil_humidity_min || !formData.value.soil_humidity_max || 
+        !formData.value.air_humidity_min || !formData.value.air_humidity_max ||
         !formData.value.temperature_max || !formData.value.growth_days || 
         !formData.value.session) {
       throw new Error('Todos los campos obligatorios deben estar completos')
+    }
+    
+    // Validaciones adicionales
+    const errors = []
+    
+    // Validar humedad del suelo
+    if (parseFloat(formData.value.soil_humidity_min) >= parseFloat(formData.value.soil_humidity_max)) {
+      errors.push('La humedad del suelo mínima debe ser menor que la máxima')
+    }
+    
+    // Validar humedad del aire
+    if (parseFloat(formData.value.air_humidity_min) >= parseFloat(formData.value.air_humidity_max)) {
+      errors.push('La humedad del aire mínima debe ser menor que la máxima')
+    }
+    
+    if (errors.length > 0) {
+      throw new Error(errors.join('\n'))
     }
     
     // Crear cultivo
@@ -296,35 +316,71 @@ const clearImage = () => {
             <p class="text-xs text-gray-500 mt-1">Selecciona una imagen del cultivo (opcional, máximo 5MB)</p>
           </div>
 
-          <!-- Humedad mínima -->
+          <!-- Humedad del suelo mínima -->
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
-              Humedad Mínima (%) *
+              Humedad del Suelo Mínima (%) *
             </label>
             <input
-              v-model="formData.humidity_min"
+              v-model="formData.soil_humidity_min"
               type="number"
               min="0"
               max="100"
+              step="0.1"
               required
               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Ej: 60"
             />
           </div>
 
-          <!-- Humedad máxima -->
+          <!-- Humedad del suelo máxima -->
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
-              Humedad Máxima (%) *
+              Humedad del Suelo Máxima (%) *
             </label>
             <input
-              v-model="formData.humidity_max"
+              v-model="formData.soil_humidity_max"
               type="number"
               min="0"
               max="100"
+              step="0.1"
               required
               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Ej: 80"
+            />
+          </div>
+
+          <!-- Humedad del aire mínima -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Humedad del Aire Mínima (%) *
+            </label>
+            <input
+              v-model="formData.air_humidity_min"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              required
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Ej: 40"
+            />
+          </div>
+
+          <!-- Humedad del aire máxima -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Humedad del Aire Máxima (%) *
+            </label>
+            <input
+              v-model="formData.air_humidity_max"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              required
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Ej: 70"
             />
           </div>
 

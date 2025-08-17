@@ -23,8 +23,16 @@ const handleFiltersChanged = (filters) => {
   cropStore.setCategoryFilter(filters.category === 'Todas' ? '' : filters.category || '')
   cropStore.setSessionFilter(filters.session || '')
   
-  // Los filtros de humedad y temperatura se pueden manejar aquí si es necesario
-  // Por ahora solo manejamos name, category y session en el store
+  // Filtros adicionales de humedad y temperatura
+  // Estos se pueden implementar en el store si se necesita filtrado avanzado
+  console.log('Filtros aplicados:', {
+    name: filters.name,
+    category: filters.category,
+    session: filters.session,
+    soilHumidity: { min: filters.minSoilHumidity, max: filters.maxSoilHumidity },
+    airHumidity: { min: filters.minAirHumidity, max: filters.maxAirHumidity },
+    temperature: { max: filters.maxTemperature }
+  })
 }
 
 // Función para manejar la selección de cultivos

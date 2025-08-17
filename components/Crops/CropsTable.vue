@@ -37,7 +37,8 @@
             <th scope="col" class="px-6 py-4 font-medium">Cultivo</th>
             <th scope="col" class="px-6 py-4 font-medium">Categoría</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Temporada</th>
-            <th scope="col" class="px-6 py-4 font-medium text-center">Humedad (%)</th>
+            <th scope="col" class="px-6 py-4 font-medium text-center">Hum. Suelo (%)</th>
+            <th scope="col" class="px-6 py-4 font-medium text-center">Hum. Aire (%)</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Temp. Máx. (°C)</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Crecimiento (días)</th>
             <th scope="col" class="px-6 py-4 font-medium text-center">Estado Bomba</th>
@@ -80,11 +81,19 @@
               </div>
             </td>
 
-            <!-- Humedad -->
+            <!-- Humedad Suelo -->
             <td class="px-6 py-4 text-center">
               <div class="text-gray-300">
-                <div class="text-sm font-medium">{{ crop.humidity_min }}% - {{ crop.humidity_max }}%</div>
-                <div class="text-xs text-gray-500">Rango óptimo</div>
+                <div class="text-sm font-medium">{{ crop.soil_humidity_min }}% - {{ crop.soil_humidity_max }}%</div>
+                <div class="text-xs text-gray-500">Suelo</div>
+              </div>
+            </td>
+
+            <!-- Humedad Aire -->
+            <td class="px-6 py-4 text-center">
+              <div class="text-gray-300">
+                <div class="text-sm font-medium">{{ crop.air_humidity_min }}% - {{ crop.air_humidity_max }}%</div>
+                <div class="text-xs text-gray-500">Aire</div>
               </div>
             </td>
 

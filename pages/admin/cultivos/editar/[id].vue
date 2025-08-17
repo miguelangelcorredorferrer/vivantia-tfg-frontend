@@ -23,8 +23,10 @@ const form = ref({
   description: '',
   category: '',
   growth_days: '',
-  humidity_min: '',
-  humidity_max: '',
+  soil_humidity_min: '',
+  soil_humidity_max: '',
+  air_humidity_min: '',
+  air_humidity_max: '',
   temperature_max: '',
   session: '',
   selected: false
@@ -43,8 +45,10 @@ onMounted(async () => {
         description: foundCrop.description || '',
         category: foundCrop.category || '',
         growth_days: foundCrop.growth_days || '',
-        humidity_min: foundCrop.humidity_min || '',
-        humidity_max: foundCrop.humidity_max || '',
+        soil_humidity_min: foundCrop.soil_humidity_min || '',
+        soil_humidity_max: foundCrop.soil_humidity_max || '',
+        air_humidity_min: foundCrop.air_humidity_min || '',
+        air_humidity_max: foundCrop.air_humidity_max || '',
         temperature_max: foundCrop.temperature_max || '',
         session: foundCrop.session || '',
         selected: foundCrop.selected || false
@@ -71,14 +75,36 @@ const saveCrop = async () => {
       return
     }
 
+    // Validaciones adicionales
+    const errors = []
+    
+    // Validar humedad del suelo
+    if (form.value.soil_humidity_min && form.value.soil_humidity_max && 
+        parseFloat(form.value.soil_humidity_min) >= parseFloat(form.value.soil_humidity_max)) {
+      errors.push('La humedad del suelo mínima debe ser menor que la máxima')
+    }
+    
+    // Validar humedad del aire
+    if (form.value.air_humidity_min && form.value.air_humidity_max && 
+        parseFloat(form.value.air_humidity_min) >= parseFloat(form.value.air_humidity_max)) {
+      errors.push('La humedad del aire mínima debe ser menor que la máxima')
+    }
+    
+    if (errors.length > 0) {
+      toast.error(errors.join('\n'))
+      return
+    }
+
     // Preparar datos para enviar
     const updateData = {
       name: form.value.name.trim(),
       description: form.value.description.trim() || null,
       category: form.value.category.trim() || null,
       growth_days: form.value.growth_days ? parseInt(form.value.growth_days) : null,
-      humidity_min: form.value.humidity_min ? parseFloat(form.value.humidity_min) : null,
-      humidity_max: form.value.humidity_max ? parseFloat(form.value.humidity_max) : null,
+      soil_humidity_min: form.value.soil_humidity_min ? parseFloat(form.value.soil_humidity_min) : null,
+      soil_humidity_max: form.value.soil_humidity_max ? parseFloat(form.value.soil_humidity_max) : null,
+      air_humidity_min: form.value.air_humidity_min ? parseFloat(form.value.air_humidity_min) : null,
+      air_humidity_max: form.value.air_humidity_max ? parseFloat(form.value.air_humidity_max) : null,
       temperature_max: form.value.temperature_max ? parseFloat(form.value.temperature_max) : null,
       session: form.value.session.trim() || null,
       selected: form.value.selected
@@ -111,8 +137,10 @@ const resetForm = () => {
       description: crop.value.description || '',
       category: crop.value.category || '',
       growth_days: crop.value.growth_days || '',
-      humidity_min: crop.value.humidity_min || '',
-      humidity_max: crop.value.humidity_max || '',
+      soil_humidity_min: crop.value.soil_humidity_min || '',
+      soil_humidity_max: crop.value.soil_humidity_max || '',
+      air_humidity_min: crop.value.air_humidity_min || '',
+      air_humidity_max: crop.value.air_humidity_max || '',
       temperature_max: crop.value.temperature_max || '',
       session: crop.value.session || '',
       selected: crop.value.selected || false
@@ -224,7 +252,7 @@ const resetForm = () => {
           </div>
 
           <!-- Información de crecimiento -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
             <div>
               <label for="growth_days" class="block text-sm font-medium text-gray-300 mb-2">
                 Días de Crecimiento
@@ -240,12 +268,12 @@ const resetForm = () => {
             </div>
             
             <div>
-              <label for="humidity_min" class="block text-sm font-medium text-gray-300 mb-2">
-                Humedad Mínima (%)
+              <label for="soil_humidity_min" class="block text-sm font-medium text-gray-300 mb-2">
+                Humedad del Suelo Mínima (%)
               </label>
               <input
-                id="humidity_min"
-                v-model="form.humidity_min"
+                id="soil_humidity_min"
+                v-model="form.soil_humidity_min"
                 type="number"
                 min="0"
                 max="100"
@@ -256,12 +284,44 @@ const resetForm = () => {
             </div>
             
             <div>
-              <label for="humidity_max" class="block text-sm font-medium text-gray-300 mb-2">
-                Humedad Máxima (%)
+              <label for="soil_humidity_max" class="block text-sm font-medium text-gray-300 mb-2">
+                Humedad del Suelo Máxima (%)
               </label>
               <input
-                id="humidity_max"
-                v-model="form.humidity_max"
+                id="soil_humidity_max"
+                v-model="form.soil_humidity_max"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="0-100"
+              />
+            </div>
+            
+            <div>
+              <label for="air_humidity_min" class="block text-sm font-medium text-gray-300 mb-2">
+                Humedad del Aire Mínima (%)
+              </label>
+              <input
+                id="air_humidity_min"
+                v-model="form.air_humidity_min"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="0-100"
+              />
+            </div>
+            
+            <div>
+              <label for="air_humidity_max" class="block text-sm font-medium text-gray-300 mb-2">
+                Humedad del Aire Máxima (%)
+              </label>
+              <input
+                id="air_humidity_max"
+                v-model="form.air_humidity_max"
                 type="number"
                 min="0"
                 max="100"

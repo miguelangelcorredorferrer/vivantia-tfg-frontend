@@ -47,7 +47,8 @@ export function useSensorData() {
     ]
   })
 
-  const humidityData = ref({
+  // Gráfica de humedad del suelo
+  const soilHumidityData = ref({
     labels: [],
     datasets: [
       {
@@ -89,11 +90,35 @@ export function useSensorData() {
     ]
   })
 
+  // Gráfica de humedad ambiental
+  const airHumidityData = ref({
+    labels: [],
+    datasets: [
+      {
+        label: 'Humedad Ambiental',
+        data: [],
+        borderColor: '#22d3ee', // Cyan para aire
+        backgroundColor: 'rgba(34,211,238,0.1)',
+        borderWidth: 3,
+        tension: 0.6,
+        fill: true,
+        pointBackgroundColor: '#22d3ee',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 8
+      }
+    ]
+  })
+
   // Valores actuales
   const currentTemperature = ref(25.0)
-  const currentHumidity = ref(65.0)
+  // Gráfica de humedad ambiental
+  const currentSoilHumidity = ref(65.0)
+  const currentAirHumidity = ref(70.0)
   const temperatureTrend = ref({ value: 0, direction: 'neutral' })
-  const humidityTrend = ref({ value: 0, direction: 'neutral' })
+  const soilHumidityTrend = ref({ value: 0, direction: 'neutral' })
+  const airHumidityTrend = ref({ value: 0, direction: 'neutral' })
 
   let interval = null
   const maxDataPoints = 20
@@ -119,13 +144,20 @@ export function useSensorData() {
   }
 
   // Función para generar humedad realista
-  const generateRandomHumidity = () => {
+  const generateRandomSoilHumidity = () => {
     const baseHumidity = 65
     const timeOfDay = new Date().getHours()
     const dailyCycle = Math.cos((timeOfDay - 6) * Math.PI / 12) * 10 // Ciclo diario inverso
     const randomVariation = (Math.random() - 0.5) * 8
     const humidity = baseHumidity + dailyCycle + randomVariation
     return Math.max(30, Math.min(90, humidity))
+  }
+
+  const generateRandomAirHumidity = () => {
+    const baseHumidity = 70
+    const randomVariation = (Math.random() - 0.5) * 10
+    const humidity = baseHumidity + randomVariation
+    return Math.max(20, Math.min(100, humidity))
   }
 
   // Formatear tiempo
@@ -149,8 +181,8 @@ export function useSensorData() {
     temperatureData.value.datasets[1].data = new Array(labelsLength).fill(cropThresholds.value.temperatureMax)
     
     // Umbrales de humedad - crear nuevos arrays
-    humidityData.value.datasets[1].data = new Array(labelsLength).fill(cropThresholds.value.humidityMin)
-    humidityData.value.datasets[2].data = new Array(labelsLength).fill(cropThresholds.value.humidityMax)
+    soilHumidityData.value.datasets[1].data = new Array(labelsLength).fill(cropThresholds.value.humidityMin)
+    soilHumidityData.value.datasets[2].data = new Array(labelsLength).fill(cropThresholds.value.humidityMax)
   }
 
   // Inicializar tendencias cuando no hay datos previos
@@ -159,7 +191,11 @@ export function useSensorData() {
       value: '0.0',
       direction: 'neutral'
     }
-    humidityTrend.value = {
+    soilHumidityTrend.value = {
+      value: '0.0',
+      direction: 'neutral'
+    }
+    airHumidityTrend.value = {
       value: '0.0',
       direction: 'neutral'
     }
@@ -167,12 +203,14 @@ export function useSensorData() {
   }
 
   // Calcular tendencias de manera simplificada y precisa
-  const calculateTrends = (currentTemp, previousTemp, currentHumidity, previousHumidity) => {
+  const calculateTrends = (currentTemp, previousTemp, currentSoilHum, previousSoilHum, currentAirHum, previousAirHum) => {
     console.log('🔄 Calculating trends with:', {
       currentTemp,
       previousTemp,
-      currentHumidity,
-      previousHumidity
+      currentSoilHum,
+      previousSoilHum,
+      currentAirHum,
+      previousAirHum
     })
     
     // Umbral mínimo para considerar un cambio significativo
@@ -215,40 +253,57 @@ export function useSensorData() {
       console.log('🌡️ Temperature trend: No valid previous data, set to neutral')
     }
 
-    // Calcular tendencia de humedad (diferencia absoluta, no porcentaje)
-    if (previousHumidity !== null && !isNaN(previousHumidity) && !isNaN(currentHumidity)) {
-      const humidityChange = currentHumidity - previousHumidity
+    // Tendencia de humedad del suelo
+    if (previousSoilHum !== null && !isNaN(previousSoilHum) && !isNaN(currentSoilHum)) {
+      const soilChange = currentSoilHum - previousSoilHum
       
-      console.log('💧 Humidity calculation:', {
-        current: currentHumidity,
-        previous: previousHumidity,
-        change: humidityChange,
-        absChange: Math.abs(humidityChange),
+      console.log('💧 Soil Humidity calculation:', {
+        current: currentSoilHum,
+        previous: previousSoilHum,
+        change: soilChange,
+        absChange: Math.abs(soilChange),
         threshold: MIN_HUMIDITY_CHANGE
       })
       
       // Solo actualizar si hay un cambio significativo
-      if (Math.abs(humidityChange) >= MIN_HUMIDITY_CHANGE) {
-        humidityTrend.value = {
-          value: Math.abs(humidityChange).toFixed(1), // Mostrar diferencia absoluta
-          direction: humidityChange > 0 ? 'up' : 'down'
+      if (Math.abs(soilChange) >= MIN_HUMIDITY_CHANGE) {
+        soilHumidityTrend.value = {
+          value: Math.abs(soilChange).toFixed(1), // Mostrar diferencia absoluta
+          direction: soilChange > 0 ? 'up' : 'down'
         }
       } else {
         // Si el cambio es muy pequeño, mantener neutral
-        humidityTrend.value = {
+        soilHumidityTrend.value = {
           value: '0.0',
           direction: 'neutral'
         }
       }
       
-      console.log('💧 Humidity trend result:', humidityTrend.value)
+      console.log('💧 Soil Humidity trend result:', soilHumidityTrend.value)
     } else {
       // Si no hay datos previos válidos, inicializar como neutral
-      humidityTrend.value = {
+      soilHumidityTrend.value = {
         value: '0.0',
         direction: 'neutral'
       }
-      console.log('💧 Humidity trend: No valid previous data, set to neutral')
+      console.log('💧 Soil Humidity trend: No valid previous data, set to neutral')
+    }
+
+    // Tendencia de humedad ambiental
+    if (previousAirHum !== null && !isNaN(previousAirHum) && !isNaN(currentAirHum)) {
+      const airChange = currentAirHum - previousAirHum
+      const MIN_HUMIDITY_CHANGE = 0.5
+
+      if (Math.abs(airChange) >= MIN_HUMIDITY_CHANGE) {
+        airHumidityTrend.value = {
+          value: Math.abs(airChange).toFixed(1),
+          direction: airChange > 0 ? 'up' : 'down'
+        }
+      } else {
+        airHumidityTrend.value = { value: '0.0', direction: 'neutral' }
+      }
+    } else {
+      airHumidityTrend.value = { value: '0.0', direction: 'neutral' }
     }
   }
 
@@ -332,13 +387,14 @@ export function useSensorData() {
     // Extraer datos para las gráficas
     const labels = dataPoints.map(point => formatTimeFromString(point.received_at))
     const temperatureValues = dataPoints.map(point => Number(point.temperature || 0))
-    const humidityValues = dataPoints.map(point => Number(point.humidity || 0))
+    const soilHumidityValues = dataPoints.map(point => Number(point.soil_humidity || 0))
+    const airHumidityValues = dataPoints.map(point => Number(point.air_humidity || 0))
 
     // Calcular rangos dinámicos para los ejes Y
     const tempMin = Math.min(...temperatureValues, cropThresholds.value.temperatureMax)
     const tempMax = Math.max(...temperatureValues, cropThresholds.value.temperatureMax)
-    const humidityMin = Math.min(...humidityValues, cropThresholds.value.humidityMin, cropThresholds.value.humidityMax)
-    const humidityMax = Math.max(...humidityValues, cropThresholds.value.humidityMin, cropThresholds.value.humidityMax)
+    const humidityMin = Math.min(...soilHumidityValues, cropThresholds.value.humidityMin, cropThresholds.value.humidityMax)
+    const humidityMax = Math.max(...soilHumidityValues, cropThresholds.value.humidityMin, cropThresholds.value.humidityMax)
 
     // Añadir margen del 10% para mejor visualización
     const tempRange = tempMax - tempMin
@@ -349,10 +405,12 @@ export function useSensorData() {
     // Actualizar valores actuales
     const lastPoint = dataPoints[dataPoints.length - 1]
     const oldTemp = currentTemperature.value
-    const oldHumidity = currentHumidity.value
+    const oldSoilHum = currentSoilHumidity.value
+    const oldAirHum = currentAirHumidity.value
     
     currentTemperature.value = Number(lastPoint.temperature || 0)
-    currentHumidity.value = Number(lastPoint.humidity || 0)
+    currentSoilHumidity.value = Number(lastPoint.soil_humidity || 0)
+    currentAirHumidity.value = Number(lastPoint.air_humidity || 0)
 
     // Calcular tendencias
     if (dataPoints.length > 1) {
@@ -361,21 +419,25 @@ export function useSensorData() {
       console.log('📊 Data points for trend calculation:', {
         currentPoint: {
           temperature: lastPoint.temperature,
-          humidity: lastPoint.humidity,
+          soil_humidity: lastPoint.soil_humidity,
+          air_humidity: lastPoint.air_humidity,
           received_at: lastPoint.received_at
         },
         previousPoint: {
           temperature: prevPoint.temperature,
-          humidity: prevPoint.humidity,
+          soil_humidity: prevPoint.soil_humidity,
+          air_humidity: prevPoint.air_humidity,
           received_at: prevPoint.received_at
         }
       })
       
       calculateTrends(
-        Number(lastPoint.temperature || 0), 
+        Number(lastPoint.temperature || 0),
         Number(prevPoint.temperature || 0),
-        Number(lastPoint.humidity || 0), 
-        Number(prevPoint.humidity || 0)
+        Number(lastPoint.soil_humidity || 0),
+        Number(prevPoint.soil_humidity || 0),
+        Number(lastPoint.air_humidity || 0),
+        Number(prevPoint.air_humidity || 0)
       )
     } else {
       // Si es el primer punto, inicializar tendencias
@@ -404,21 +466,21 @@ export function useSensorData() {
       }
     }
 
-    // Actualizar gráfica de humedad con rangos dinámicos
-    humidityData.value = {
-      ...humidityData.value,
+    // Actualizar gráfica de humedad del suelo
+    soilHumidityData.value = {
+      ...soilHumidityData.value,
       labels: [...labels],
       datasets: [
         {
-          ...humidityData.value.datasets[0],
-          data: [...humidityValues]
+          ...soilHumidityData.value.datasets[0],
+          data: [...soilHumidityValues]
         },
         {
-          ...humidityData.value.datasets[1],
+          ...soilHumidityData.value.datasets[1],
           data: new Array(labels.length).fill(cropThresholds.value.humidityMin)
         },
         {
-          ...humidityData.value.datasets[2],
+          ...soilHumidityData.value.datasets[2],
           data: new Array(labels.length).fill(cropThresholds.value.humidityMax)
         }
       ],
@@ -429,10 +491,24 @@ export function useSensorData() {
       }
     }
 
+    // Actualizar gráfica de humedad ambiental (sin umbrales por ahora)
+    airHumidityData.value = {
+      ...airHumidityData.value,
+      labels: [...labels],
+      datasets: [
+        {
+          ...airHumidityData.value.datasets[0],
+          data: [...airHumidityValues]
+        }
+      ]
+    }
+
     console.log('✅ Humidity data updated:', {
       labels: labels.length,
-      humidityValues: humidityValues.length,
-      latestHumidity: humidityValues[humidityValues.length - 1],
+      soilHumidityValues: soilHumidityValues.length,
+      latestSoilHumidity: soilHumidityValues[soilHumidityValues.length - 1],
+      airHumidityValues: airHumidityValues.length,
+      latestAirHumidity: airHumidityValues[airHumidityValues.length - 1],
       thresholds: { min: cropThresholds.value.humidityMin, max: cropThresholds.value.humidityMax },
       yAxisRange: { min: Math.max(0, humidityMin - humidityMargin), max: Math.min(100, humidityMax + humidityMargin) }
     })
@@ -448,24 +524,30 @@ export function useSensorData() {
     const timeLabel = formatTime(now)
 
     const oldTemp = currentTemperature.value
-    const oldHumidity = currentHumidity.value
+    const oldSoilHum = currentSoilHumidity.value
+    const oldAirHum = currentAirHumidity.value
 
     const newTemp = generateRandomTemperature()
-    const newHumidity = generateRandomHumidity()
+    const newSoilHumidity = generateRandomSoilHumidity()
+    const newAirHumidity = generateRandomAirHumidity()
 
-    console.log(`📊 New values - Temp: ${newTemp.toFixed(1)}°C, Humidity: ${newHumidity.toFixed(1)}%`)
+    console.log(`📊 New values - Temp: ${newTemp.toFixed(1)}°C, SoilHum: ${newSoilHumidity.toFixed(1)}%, AirHum: ${newAirHumidity.toFixed(1)}%`)
 
     currentTemperature.value = Number(newTemp.toFixed(1))
-    currentHumidity.value = Number(newHumidity.toFixed(1))
+    currentSoilHumidity.value = Number(newSoilHumidity.toFixed(1))
+    currentAirHumidity.value = Number(newAirHumidity.toFixed(1))
 
-    calculateTrends(newTemp, oldTemp, newHumidity, oldHumidity)
+    calculateTrends(newTemp, oldTemp, newSoilHumidity, oldSoilHum, newAirHumidity, oldAirHum)
 
     // CRÍTICO: Crear nuevos arrays para forzar reactividad
     const newTempLabels = [...temperatureData.value.labels, timeLabel]
     const newTempData = [...temperatureData.value.datasets[0].data, newTemp]
     
-    const newHumidityLabels = [...humidityData.value.labels, timeLabel]
-    const newHumidityData = [...humidityData.value.datasets[0].data, newHumidity]
+    const newSoilHumidityLabels = [...soilHumidityData.value.labels, timeLabel]
+    const newSoilHumidityData = [...soilHumidityData.value.datasets[0].data, newSoilHumidity]
+
+    const newAirHumidityLabels = [...airHumidityData.value.labels, timeLabel]
+    const newAirHumidityData = [...airHumidityData.value.datasets[0].data, newAirHumidity]
 
     // Mantener solo los últimos N puntos
     if (newTempLabels.length > maxDataPoints) {
@@ -473,9 +555,10 @@ export function useSensorData() {
       newTempData.shift()
     }
 
-    if (newHumidityLabels.length > maxDataPoints) {
-      newHumidityLabels.shift()
-      newHumidityData.shift()
+    if (newSoilHumidityLabels.length > maxDataPoints) {
+      newSoilHumidityLabels.shift()
+      newSoilHumidityData.shift()
+      newAirHumidityData.shift()
     }
 
     // Actualizar con nuevas referencias de arrays para forzar reactividad
@@ -494,26 +577,37 @@ export function useSensorData() {
       ]
     }
 
-    humidityData.value = {
-      ...humidityData.value,
-      labels: newHumidityLabels,
+    soilHumidityData.value = {
+      ...soilHumidityData.value,
+      labels: newSoilHumidityLabels,
       datasets: [
         {
-          ...humidityData.value.datasets[0],
-          data: newHumidityData
+          ...soilHumidityData.value.datasets[0],
+          data: newSoilHumidityData
         },
         {
-          ...humidityData.value.datasets[1],
-          data: new Array(newHumidityLabels.length).fill(cropThresholds.value.humidityMin)
+          ...soilHumidityData.value.datasets[1],
+          data: new Array(newSoilHumidityLabels.length).fill(cropThresholds.value.humidityMin)
         },
         {
-          ...humidityData.value.datasets[2],
-          data: new Array(newHumidityLabels.length).fill(cropThresholds.value.humidityMax)
+          ...soilHumidityData.value.datasets[2],
+          data: new Array(newSoilHumidityLabels.length).fill(cropThresholds.value.humidityMax)
         }
       ]
     }
 
-    console.log('✅ Data updated - Temp points:', newTempData.length, 'Humidity points:', newHumidityData.length)
+    airHumidityData.value = {
+      ...airHumidityData.value,
+      labels: newAirHumidityLabels,
+      datasets: [
+        {
+          ...airHumidityData.value.datasets[0],
+          data: newAirHumidityData
+        }
+      ]
+    }
+
+    console.log('✅ Data updated - Temp points:', newTempData.length, 'SoilHum points:', newSoilHumidityData.length, 'AirHum points:', newAirHumidityData.length)
   }
 
   // Inicializar simulación
@@ -574,9 +668,8 @@ export function useSensorData() {
     return `${currentTemperature.value}°C`
   })
 
-  const formattedHumidity = computed(() => {
-    return `${currentHumidity.value}%`
-  })
+  const formattedSoilHumidity = computed(() => `${currentSoilHumidity.value}%`)
+  const formattedAirHumidity = computed(() => `${currentAirHumidity.value}%`)
 
   // Lifecycle hooks
   onMounted(async () => {
@@ -591,14 +684,18 @@ export function useSensorData() {
 
   return {
     temperatureData,
-    humidityData,
+    soilHumidityData,
+    airHumidityData,
     currentTemperature,
-    currentHumidity,
+    currentSoilHumidity,
+    currentAirHumidity,
     temperatureTrend,
-    humidityTrend,
+    soilHumidityTrend,
+    airHumidityTrend,
     cropThresholds,
     formattedTemperature,
-    formattedHumidity,
+    formattedSoilHumidity,
+    formattedAirHumidity,
     realDataPoints,
     startSimulation,
     stopSimulation

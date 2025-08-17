@@ -113,6 +113,12 @@ const handleViewCrop = (crop) => {
               Categoría
             </th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+              Hum. Suelo (%)
+            </th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+              Hum. Aire (%)
+            </th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
               Sesión
             </th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -129,7 +135,7 @@ const handleViewCrop = (crop) => {
         <tbody class="divide-y divide-gray-600/30">
           <!-- Estado de carga -->
           <tr v-if="isLoading">
-            <td colspan="7" class="px-6 py-8 text-center">
+            <td colspan="9" class="px-6 py-8 text-center">
               <div class="flex items-center justify-center space-x-2">
                 <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
                 <span class="text-gray-400">Cargando cultivos...</span>
@@ -139,7 +145,7 @@ const handleViewCrop = (crop) => {
 
           <!-- Sin cultivos -->
           <tr v-else-if="crops.length === 0">
-            <td colspan="7" class="px-6 py-8 text-center">
+            <td colspan="9" class="px-6 py-8 text-center">
               <div class="text-gray-400">
                 <svg class="w-12 h-12 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
@@ -185,6 +191,20 @@ const handleViewCrop = (crop) => {
             <!-- Columna Categoría -->
             <td class="px-6 py-4 whitespace-nowrap text-center">
               <div class="text-sm text-white">{{ crop.category || 'Sin categoría' }}</div>
+            </td>
+            
+            <!-- Columna Humedad del Suelo -->
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <div class="text-sm text-blue-400">
+                {{ crop.soil_humidity_min || 'N/A' }} - {{ crop.soil_humidity_max || 'N/A' }}
+              </div>
+            </td>
+            
+            <!-- Columna Humedad del Aire -->
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <div class="text-sm text-cyan-400">
+                {{ crop.air_humidity_min || 'N/A' }} - {{ crop.air_humidity_max || 'N/A' }}
+              </div>
             </td>
             
             <!-- Columna Sesión -->

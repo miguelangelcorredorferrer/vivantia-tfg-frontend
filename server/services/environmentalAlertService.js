@@ -32,18 +32,32 @@ export const createTemperatureMaxThresholdAlert = async (user_id, temperature, m
   return await createEnvironmentalAlert(user_id, 'temperature_max_threshold', title, message, 'warning');
 };
 
-// Crear alerta de humedad mínima no alcanzada
-export const createHumidityMinThresholdAlert = async (user_id, humidity, minHumidity, cropName = 'tu cultivo') => {
-  const title = '💧 Humedad mínima requerida';
-  const message = `La humedad actual (${humidity}%) está por debajo del mínimo recomendado (${minHumidity}%) para ${cropName}. Es recomendable iniciar el riego.`;
-  
-  return await createEnvironmentalAlert(user_id, 'humidity_min_threshold', title, message, 'warning');
+// ==== ALERTAS DE HUMEDAD DEL SUELO ====
+export const createSoilHumidityMinThresholdAlert = async (user_id, humidity, minHumidity, cropName = 'tu cultivo') => {
+  const title = '💧 Humedad del suelo baja';
+  const message = `La humedad del suelo actual (${humidity}%) está por debajo del mínimo recomendado (${minHumidity}%) para ${cropName}. Es recomendable iniciar el riego.`;
+
+  return await createEnvironmentalAlert(user_id, 'soil_humidity_min_threshold', title, message, 'warning');
 };
 
-// Crear alerta de humedad máxima excedida
-export const createHumidityMaxThresholdAlert = async (user_id, humidity, maxHumidity, cropName = 'tu cultivo') => {
-  const title = '💧 Humedad máxima excedida';
-  const message = `La humedad actual (${humidity}%) ha superado el máximo recomendado (${maxHumidity}%) para ${cropName}. Considera mejorar la ventilación o reducir el riego.`;
-  
-  return await createEnvironmentalAlert(user_id, 'humidity_max_threshold', title, message, 'warning');
+export const createSoilHumidityMaxThresholdAlert = async (user_id, humidity, maxHumidity, cropName = 'tu cultivo') => {
+  const title = '💧 Humedad del suelo alta';
+  const message = `La humedad del suelo actual (${humidity}%) ha superado el máximo recomendado (${maxHumidity}%) para ${cropName}. Considera pausar el riego o mejorar el drenaje.`;
+
+  return await createEnvironmentalAlert(user_id, 'soil_humidity_max_threshold', title, message, 'warning');
+};
+
+// ==== ALERTAS DE HUMEDAD AMBIENTAL ====
+export const createAirHumidityMinThresholdAlert = async (user_id, humidity, minHumidity, cropName = 'tu cultivo') => {
+  const title = '💧 Humedad ambiental baja';
+  const message = `La humedad ambiental actual (${humidity}%) está por debajo del mínimo recomendado (${minHumidity}%) para ${cropName}. Considera aumentar la humedad relativa.`;
+
+  return await createEnvironmentalAlert(user_id, 'air_humidity_min_threshold', title, message, 'warning');
+};
+
+export const createAirHumidityMaxThresholdAlert = async (user_id, humidity, maxHumidity, cropName = 'tu cultivo') => {
+  const title = '💧 Humedad ambiental alta';
+  const message = `La humedad ambiental actual (${humidity}%) ha superado el máximo recomendado (${maxHumidity}%) para ${cropName}. Considera mejorar la ventilación.`;
+
+  return await createEnvironmentalAlert(user_id, 'air_humidity_max_threshold', title, message, 'warning');
 };

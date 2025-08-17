@@ -16,7 +16,8 @@ CREATE TYPE alert_subtype AS ENUM (
   'user_registered', 'user_logged_in', 'username_changed', 'password_changed', 'session_closed',
   
   -- Environmental alerts
-  'temperature_max_threshold', 'humidity_min_threshold', 'humidity_max_threshold',
+  'temperature_max_threshold', 'air_humidity_min_threshold', 'air_humidity_max_threshold', 
+  'soil_humidity_min_threshold', 'soil_humidity_max_threshold',
   
   -- Device alerts
   'device_added', 'api_key_copied', 'device_offline', 'device_online', 'device_deleted', 'device_edited',
@@ -53,8 +54,10 @@ CREATE TABLE crops (
   image VARCHAR(255), 
   category VARCHAR(255), 
   growth_days INTEGER, 
-  humidity_min DECIMAL(5,2),
-  humidity_max DECIMAL(5,2), 
+  air_humidity_min DECIMAL(5,2),
+  air_humidity_max DECIMAL(5,2), 
+  soil_humidity_min DECIMAL(5,2),
+  soil_humidity_max DECIMAL(5,2), 
   temperature_max DECIMAL(5,2), 
   session VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW(),
@@ -81,7 +84,8 @@ CREATE TABLE devices (
 CREATE TABLE sensor_readings (
   id SERIAL PRIMARY KEY,
   device_id INTEGER REFERENCES devices(id) ON DELETE CASCADE,
-  humidity DECIMAL(5,2), 
+  air_humidity DECIMAL(5,2), 
+  soil_humidity DECIMAL(5,2), 
   temperature DECIMAL(5,2),
   received_at TIMESTAMP DEFAULT NOW()
 );
@@ -114,8 +118,10 @@ CREATE TABLE programmed_settings (
 
 CREATE TABLE automatic_settings (
   config_id INTEGER PRIMARY KEY REFERENCES irrigation_configs(id) ON DELETE CASCADE,
-  humidity_min_threshold DECIMAL(5,2) NOT NULL,
-  humidity_max_threshold DECIMAL(5,2) NOT NULL,
+  air_humidity_min_threshold DECIMAL(5,2) NOT NULL,
+  air_humidity_max_threshold DECIMAL(5,2) NOT NULL,
+  soil_humidity_min_threshold DECIMAL(5,2) NOT NULL,
+  soil_humidity_max_threshold DECIMAL(5,2) NOT NULL,
   temperature_max_threshold DECIMAL(5,2) NOT NULL,
   use_crop_thresholds BOOLEAN DEFAULT TRUE
 );

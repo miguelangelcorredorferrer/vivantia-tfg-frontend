@@ -79,43 +79,78 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Left Column - Requirements -->
           <div class="space-y-6">
-            <!-- Environmental Requirements -->
-            <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
-              <h2 class="text-xl font-bold text-white mb-6 flex items-center">
-                <ThermometerIcon />
-                <span class="ml-3">Requerimientos Ambientales</span>
-              </h2>
-              
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Humidity Card -->
-                <div class="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 p-6 rounded-lg border border-blue-700/50">
-                  <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold text-blue-300">Humedad del Suelo</h3>
-                    <HumidityIcon />
-                  </div>
-                  <div class="text-center">
-                    <div class="text-2xl font-bold text-blue-200 mb-2">
-                      {{ crop.humidity_min }}% - {{ crop.humidity_max }}%
-                    </div>
-                    <div class="text-sm text-blue-300">Rango óptimo</div>
-                  </div>
-                </div>
+                         <!-- Environmental Requirements -->
+             <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
+               <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+                 <ThermometerIcon />
+                 <span class="ml-3">Requerimientos Ambientales</span>
+               </h2>
+               
+               <div class="space-y-4">
+                 <!-- Soil Humidity Card -->
+                 <div class="relative overflow-hidden bg-gradient-to-r from-blue-600/20 via-blue-700/15 to-blue-800/20 p-6 rounded-xl border border-blue-500/30 hover:border-blue-400/50 transition-all duration-300 group">
+                   <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                   <div class="relative z-10">
+                     <div class="flex items-center justify-between">
+                       <div class="flex items-center space-x-4">
+                         <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center group-hover:bg-blue-500/30 transition-colors duration-300">
+                           <HumidityIcon class="w-6 h-6 text-blue-300" />
+                         </div>
+                         <div>
+                           <h3 class="font-semibold text-blue-200 text-xl">Humedad del Suelo</h3>
+                           <p class="text-sm text-blue-300/80">Rango óptimo del suelo</p>
+                         </div>
+                       </div>
+                       <div class="text-right">
+                         <div class="text-4xl font-bold text-blue-100">{{ crop.soil_humidity_min }}% - {{ crop.soil_humidity_max }}%</div>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
 
-                <!-- Temperature Card -->
-                <div class="bg-gradient-to-br from-red-900/30 to-orange-900/30 p-6 rounded-lg border border-red-700/50">
-                  <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold text-red-300">Temperatura Máxima</h3>
-                    <ThermometerIcon />
-                  </div>
-                  <div class="text-center">
-                    <div class="text-2xl font-bold text-red-200 mb-2">
-                      {{ crop.temperature_max }}°C
-                    </div>
-                    <div class="text-sm text-red-300">Temperatura máxima tolerada</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                 <!-- Air Humidity Card -->
+                 <div class="relative overflow-hidden bg-gradient-to-r from-cyan-600/20 via-cyan-700/15 to-teal-800/20 p-6 rounded-xl border border-cyan-500/30 hover:border-cyan-400/50 transition-all duration-300 group">
+                   <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                   <div class="relative z-10">
+                     <div class="flex items-center justify-between">
+                       <div class="flex items-center space-x-4">
+                         <div class="w-12 h-12 bg-cyan-500/20 rounded-full flex items-center justify-center group-hover:bg-cyan-500/30 transition-colors duration-300">
+                           <HumidityIcon class="w-6 h-6 text-cyan-300" />
+                         </div>
+                         <div>
+                           <h3 class="font-semibold text-cyan-200 text-xl">Humedad del Aire</h3>
+                           <p class="text-sm text-cyan-300/80">Rango óptimo ambiental</p>
+                         </div>
+                       </div>
+                       <div class="text-right">
+                         <div class="text-4xl font-bold text-cyan-100">{{ crop.air_humidity_min }}% - {{ crop.air_humidity_max }}%</div>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+
+                 <!-- Temperature Card -->
+                 <div class="relative overflow-hidden bg-gradient-to-r from-red-600/20 via-red-700/15 to-orange-800/20 p-6 rounded-xl border border-red-500/30 hover:border-red-400/50 transition-all duration-300 group">
+                   <div class="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                   <div class="relative z-10">
+                     <div class="flex items-center justify-between">
+                       <div class="flex items-center space-x-4">
+                         <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center group-hover:bg-red-500/30 transition-colors duration-300">
+                           <ThermometerIcon class="w-6 h-6 text-red-300" />
+                         </div>
+                         <div>
+                           <h3 class="font-semibold text-red-200 text-xl">Temperatura Máxima</h3>
+                           <p class="text-sm text-red-300/80">Temperatura máxima tolerada</p>
+                         </div>
+                       </div>
+                       <div class="text-right">
+                         <div class="text-4xl font-bold text-red-100">{{ crop.temperature_max }}°C</div>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </div>
 
             <!-- Growth Information -->
             <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">

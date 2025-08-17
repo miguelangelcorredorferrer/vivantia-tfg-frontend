@@ -5,20 +5,20 @@ import { handleNotFoundError, handleBadRequestError, handleInternalServerError, 
 // Crear una nueva lectura de sensor
 const createSensorReading = async (req, res) => {
   try {
-    const { device_id, humidity, temperature } = req.body;
+    const { device_id, air_humidity, soil_humidity, temperature } = req.body;
 
     // Validar campos obligatorios
-    if (!device_id || humidity === undefined || temperature === undefined) {
-      return handleBadRequestError('Device ID, humedad y temperatura son obligatorios', res);
+    if (!device_id || air_humidity === undefined || soil_humidity === undefined || temperature === undefined) {
+      return handleBadRequestError('Device ID, humedad del aire, humedad del suelo y temperatura son obligatorios', res);
     }
 
     const query = `
-      INSERT INTO sensor_readings (device_id, humidity, temperature)
-      VALUES ($1, $2, $3)
+      INSERT INTO sensor_readings (device_id, air_humidity, soil_humidity, temperature)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
     
-    const values = [device_id, humidity, temperature];
+    const values = [device_id, air_humidity, soil_humidity, temperature];
     
     const result = await pool.query(query, values);
     const reading = new SensorReading(result.rows[0]);

@@ -7,8 +7,10 @@ class Crop {
     this.image = data.image;
     this.category = data.category;
     this.growth_days = data.growth_days;
-    this.humidity_min = data.humidity_min;
-    this.humidity_max = data.humidity_max;
+    this.soil_humidity_min = data.soil_humidity_min;
+    this.soil_humidity_max = data.soil_humidity_max;
+    this.air_humidity_min = data.air_humidity_min;
+    this.air_humidity_max = data.air_humidity_max;
     this.temperature_max = data.temperature_max;
     this.session = data.session;
     this.created_at = data.created_at;
@@ -20,19 +22,16 @@ class Crop {
     return this.selected;
   }
 
-  // Obtener rango óptimo de humedad
-  getOptimalHumidityRange() {
-    return {
-      min: this.humidity_min,
-      max: this.humidity_max,
-      range: `${this.humidity_min}% - ${this.humidity_max}%`
-    };
+  // Verificar si la humedad del suelo está en rango óptimo
+  isSoilHumidityOptimal(humidity) {
+    if (this.soil_humidity_min === null || this.soil_humidity_max === null) return null;
+    return humidity >= this.soil_humidity_min && humidity <= this.soil_humidity_max;
   }
 
-  // Verificar si una humedad está en el rango óptimo
-  isHumidityOptimal(humidity) {
-    if (!this.humidity_min || !this.humidity_max) return null;
-    return humidity >= this.humidity_min && humidity <= this.humidity_max;
+  // Verificar si la humedad del aire está en rango óptimo
+  isAirHumidityOptimal(humidity) {
+    if (this.air_humidity_min === null || this.air_humidity_max === null) return null;
+    return humidity >= this.air_humidity_min && humidity <= this.air_humidity_max;
   }
 
   // Verificar si la temperatura está en rango seguro
@@ -42,14 +41,22 @@ class Crop {
   }
 
   // Verificar si necesita atención basado en condiciones
-  needsAttention(currentHumidity, currentTemperature) {
+  needsAttention(currentSoilHumidity, currentAirHumidity, currentTemperature) {
     const issues = [];
     
-    if (currentHumidity !== undefined && !this.isHumidityOptimal(currentHumidity)) {
-      if (currentHumidity < this.humidity_min) {
-        issues.push('Humedad muy baja');
-      } else if (currentHumidity > this.humidity_max) {
-        issues.push('Humedad muy alta');
+    if (currentSoilHumidity !== undefined && !this.isSoilHumidityOptimal(currentSoilHumidity)) {
+      if (currentSoilHumidity < this.soil_humidity_min) {
+        issues.push('Humedad del suelo muy baja');
+      } else if (currentSoilHumidity > this.soil_humidity_max) {
+        issues.push('Humedad del suelo muy alta');
+      }
+    }
+
+    if (currentAirHumidity !== undefined && !this.isAirHumidityOptimal(currentAirHumidity)) {
+      if (currentAirHumidity < this.air_humidity_min) {
+        issues.push('Humedad del aire muy baja');
+      } else if (currentAirHumidity > this.air_humidity_max) {
+        issues.push('Humedad del aire muy alta');
       }
     }
     

@@ -14,11 +14,19 @@ const createCrop = async (req, res) => {
   try {
     const {
       user_id, name, description, image, category, growth_days,
-      humidity_min, humidity_max, temperature_max, session, selected = false
+      soil_humidity_min, soil_humidity_max, air_humidity_min, air_humidity_max,
+      temperature_max, session, selected = false
     } = req.body;
 
     // Determinar el user_id: si se proporciona en el body (admin) o usar el usuario autenticado (usuario normal)
     const finalUserId = user_id || req.user.id;
+
+    // Debug: Log de los datos recibidos
+    console.log('🔍 createCrop - Datos recibidos:', {
+      soil_humidity_min, soil_humidity_max, 
+      air_humidity_min, air_humidity_max,
+      temperature_max, growth_days
+    });
 
     // Validar campos obligatorios
     if (!name) {
@@ -28,23 +36,26 @@ const createCrop = async (req, res) => {
     const query = `
       INSERT INTO crops (
         user_id, name, description, image, category, growth_days,
-        humidity_min, humidity_max, temperature_max, session, selected
+        soil_humidity_min, soil_humidity_max, air_humidity_min, air_humidity_max,
+        temperature_max, session, selected
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
     `;
     
     const cleanValues = [
-      finalUserId, 
-      name, 
-      description || null, 
-      image || null, 
-      category || null, 
-      growth_days || null,
-      humidity_min || null, 
-      humidity_max || null, 
-      temperature_max || null, 
-      session || null, 
+      finalUserId,
+      name,
+      description || null,
+      image || null,
+      category || null,
+      growth_days !== undefined && growth_days !== '' ? growth_days : null,
+      soil_humidity_min !== undefined && soil_humidity_min !== '' ? soil_humidity_min : null,
+      soil_humidity_max !== undefined && soil_humidity_max !== '' ? soil_humidity_max : null,
+      air_humidity_min !== undefined && air_humidity_min !== '' ? air_humidity_min : null,
+      air_humidity_max !== undefined && air_humidity_max !== '' ? air_humidity_max : null,
+      temperature_max !== undefined && temperature_max !== '' ? temperature_max : null,
+      session || null,
       selected
     ];
     
@@ -200,6 +211,43 @@ const getAllCrops = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener cultivos',
+      error: error.message
+    });
+  }
+};
+
+// Obtener todos los cultivos con información de usuario (para admin)
+const getAllCropsWithUsers = async (req, res) => {
+  try {
+    const query = `
+      SELECT c.*, u.name as user_name, u.email as user_email
+      FROM crops c
+      LEFT JOIN users u ON c.user_id = u.id
+      ORDER BY c.created_at DESC
+    `;
+    const result = await pool.query(query);
+    
+    const crops = result.rows.map(row => {
+      const crop = new Crop(row);
+      // Agregar información del usuario
+      crop.user = {
+        id: crop.user_id,
+        name: row.user_name || 'Usuario eliminado',
+        email: row.user_email || 'N/A'
+      };
+      return crop;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: crops.length,
+      data: crops
+    });
+  } catch (error) {
+    console.error('Error al obtener cultivos con usuarios:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener cultivos con información de usuarios',
       error: error.message
     });
   }
@@ -570,6 +618,7 @@ export {
   getCropByUserId,
   getAllCropsByUserId,
   getAllCrops,
+  getAllCropsWithUsers,
   getSelectedCropByUserId,
   getCropCategories,
   updateCrop,

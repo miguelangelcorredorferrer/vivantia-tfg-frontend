@@ -22,18 +22,26 @@
           <!-- Información del modo automático -->
           <div class="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4">
             <h3 class="font-semibold text-purple-300 mb-3">Configuración del Modo Automático</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <p class="text-gray-400">Temperatura Máxima:</p>
                 <p class="font-bold text-white">{{ getThresholdsFromConfig().maxTemperature }}°C</p>
               </div>
               <div>
-                <p class="text-gray-400">Humedad Mínima:</p>
-                <p class="font-bold text-white">{{ getThresholdsFromConfig().minHumidity }}%</p>
+                <p class="text-gray-400">Hum. Suelo Min:</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig().minSoilHumidity }}%</p>
               </div>
               <div>
-                <p class="text-gray-400">Humedad Máxima:</p>
-                <p class="font-bold text-white">{{ getThresholdsFromConfig().maxHumidity }}%</p>
+                <p class="text-gray-400">Hum. Suelo Max:</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig().maxSoilHumidity }}%</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Hum. Aire Min:</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig().minAirHumidity }}%</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Hum. Aire Max:</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig().maxAirHumidity }}%</p>
               </div>
               <div>
                 <p class="text-gray-400">Duración Máxima:</p>
@@ -204,7 +212,7 @@
       <!-- Estado actual de sensores -->
       <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <h2 class="text-xl font-bold text-white mb-4">Estado Actual de Sensores</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Temperatura -->
           <div class="bg-gradient-to-br from-red-900/30 to-orange-900/30 p-4 rounded-lg border border-red-700/50">
             <div class="flex items-center justify-between mb-2">
@@ -215,14 +223,24 @@
             <p class="text-sm text-red-300 mt-1">{{ getTemperatureStatus() }}</p>
           </div>
 
-          <!-- Humedad -->
-          <div class="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 p-4 rounded-lg border border-blue-700/50">
+          <!-- Humedad del Suelo -->
+          <div class="bg-gradient-to-br from-blue-900/30 to-blue-800/30 p-4 rounded-lg border border-blue-700/50">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="font-medium text-blue-300">Humedad</h3>
+              <h3 class="font-medium text-blue-300">Humedad Suelo</h3>
               <HumidityIcon />
             </div>
-            <p class="text-3xl font-bold text-blue-200">{{ currentHumidity }}%</p>
-            <p class="text-sm text-blue-300 mt-1">{{ getHumidityStatus() }}</p>
+            <p class="text-3xl font-bold text-blue-200">{{ currentSoilHumidity }}%</p>
+            <p class="text-sm text-blue-300 mt-1">{{ getSoilHumidityStatus() }}</p>
+          </div>
+          
+          <!-- Humedad del Aire -->
+          <div class="bg-gradient-to-br from-cyan-900/30 to-teal-900/30 p-4 rounded-lg border border-cyan-700/50">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-medium text-cyan-300">Humedad Aire</h3>
+              <HumidityIcon />
+            </div>
+            <p class="text-3xl font-bold text-cyan-200">{{ currentAirHumidity }}%</p>
+            <p class="text-sm text-cyan-300 mt-1">{{ getAirHumidityStatus() }}</p>
           </div>
         </div>
       </div>
@@ -265,19 +283,19 @@
             </div>
           </div>
 
-          <!-- Configuración de humedad -->
+          <!-- Configuración de humedad del suelo -->
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-4">
               Umbrales de Humedad del Suelo
             </label>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Humedad mínima -->
+              <!-- Humedad del suelo mínima -->
               <div class="bg-blue-900/30 border border-blue-700/50 rounded-lg p-4">
-                <h4 class="font-medium text-blue-300 mb-3">Humedad Mínima</h4>
+                <h4 class="font-medium text-blue-300 mb-3">Humedad Suelo Mínima</h4>
                 <div class="flex items-center space-x-4">
                   <input 
-                    v-model.number="thresholds.minHumidity"
+                    v-model.number="thresholds.minSoilHumidity"
                     type="number" 
                     min="0" 
                     max="100"
@@ -286,7 +304,7 @@
                   <span class="text-sm text-gray-300">%</span>
                 </div>
                 <input 
-                  v-model.number="thresholds.minHumidity"
+                  v-model.number="thresholds.minSoilHumidity"
                   type="range" 
                   min="0" 
                   max="100"
@@ -295,12 +313,12 @@
                 <p class="text-xs text-blue-300 mt-2">Se activará el riego cuando baje de este valor</p>
               </div>
 
-              <!-- Humedad máxima -->
+              <!-- Humedad del suelo máxima -->
               <div class="bg-cyan-900/30 border border-cyan-700/50 rounded-lg p-4">
-                <h4 class="font-medium text-cyan-300 mb-3">Humedad Máxima</h4>
+                <h4 class="font-medium text-cyan-300 mb-3">Humedad Suelo Máxima</h4>
                 <div class="flex items-center space-x-4">
                   <input 
-                    v-model.number="thresholds.maxHumidity"
+                    v-model.number="thresholds.maxSoilHumidity"
                     type="number" 
                     min="0" 
                     max="100"
@@ -309,13 +327,68 @@
                   <span class="text-sm text-gray-300">%</span>
                 </div>
                 <input 
-                  v-model.number="thresholds.maxHumidity"
+                  v-model.number="thresholds.maxSoilHumidity"
                   type="range" 
                   min="0" 
                   max="100"
                   class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider mt-2"
                 >
                 <p class="text-xs text-cyan-300 mt-2">Se detendrá el riego al alcanzar este valor</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Configuración de humedad del aire -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-4">
+              Umbrales de Humedad del Aire
+            </label>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Humedad del aire mínima -->
+              <div class="bg-teal-900/30 border border-teal-700/50 rounded-lg p-4">
+                <h4 class="font-medium text-teal-300 mb-3">Humedad Aire Mínima</h4>
+                <div class="flex items-center space-x-4">
+                  <input 
+                    v-model.number="thresholds.minAirHumidity"
+                    type="number" 
+                    min="0" 
+                    max="100"
+                    class="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
+                  >
+                  <span class="text-sm text-gray-300">%</span>
+                </div>
+                <input 
+                  v-model.number="thresholds.minAirHumidity"
+                  type="range" 
+                  min="0" 
+                  max="100"
+                  class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider mt-2"
+                >
+                <p class="text-xs text-teal-300 mt-2">Se activará el riego cuando baje de este valor</p>
+              </div>
+
+              <!-- Humedad del aire máxima -->
+              <div class="bg-emerald-900/30 border border-emerald-700/50 rounded-lg p-4">
+                <h4 class="font-medium text-emerald-300 mb-3">Humedad Aire Máxima</h4>
+                <div class="flex items-center space-x-4">
+                  <input 
+                    v-model.number="thresholds.maxAirHumidity"
+                    type="number" 
+                    min="0" 
+                    max="100"
+                    class="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
+                  >
+                  <span class="text-sm text-gray-300">%</span>
+                </div>
+                <input 
+                  v-model.number="thresholds.maxAirHumidity"
+                  type="range" 
+                  min="0" 
+                  max="100"
+                  class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider mt-2"
+                >
+                <p class="text-xs text-emerald-300 mt-2">Útil para control adicional basado en humedad ambiental</p>
               </div>
             </div>
           </div>
@@ -359,7 +432,8 @@
             <h3 class="font-medium text-purple-300 mb-2">Vista Previa de Configuración</h3>
             <div class="text-sm text-purple-200 space-y-1">
               <p><strong>Temperatura máxima:</strong> {{ thresholds.maxTemperature }}°C</p>
-              <p><strong>Humedad objetivo:</strong> {{ thresholds.minHumidity }}% - {{ thresholds.maxHumidity }}%</p>
+              <p><strong>Humedad suelo objetivo:</strong> {{ thresholds.minSoilHumidity }}% - {{ thresholds.maxSoilHumidity }}%</p>
+              <p><strong>Humedad aire objetivo:</strong> {{ thresholds.minAirHumidity }}% - {{ thresholds.maxAirHumidity }}%</p>
               <p><strong>Duración máxima:</strong> {{ formatDuration() }}</p>
               <p><strong>Estado actual:</strong> {{ getCurrentConditionStatus() }}</p>
             </div>
@@ -398,7 +472,8 @@
             ¿Estás seguro de que quieres configurar el modo automático con estos parámetros?
             <br><br>
             <strong>Temperatura máxima:</strong> {{ thresholds.maxTemperature }}°C<br>
-            <strong>Humedad objetivo:</strong> {{ thresholds.minHumidity }}% - {{ thresholds.maxHumidity }}%<br>
+            <strong>Humedad suelo:</strong> {{ thresholds.minSoilHumidity }}% - {{ thresholds.maxSoilHumidity }}%<br>
+            <strong>Humedad aire:</strong> {{ thresholds.minAirHumidity }}% - {{ thresholds.maxAirHumidity }}%<br>
             <strong>Duración máxima:</strong> {{ formatDuration() }}
           </p>
           <div class="flex space-x-4">
@@ -490,13 +565,16 @@ const {
 
 // Estados reactivos para sensores (simulados)
 const currentTemperature = ref(24.5)
-const currentHumidity = ref(45)
+const currentSoilHumidity = ref(45)
+const currentAirHumidity = ref(65)
 
 // Configuración de umbrales
 const thresholds = ref({
   maxTemperature: 28,
-  minHumidity: 30,
-  maxHumidity: 70
+  minSoilHumidity: 30,
+  maxSoilHumidity: 70,
+  minAirHumidity: 40,
+  maxAirHumidity: 80
 })
 
 const duration = ref({
@@ -527,22 +605,32 @@ const getTemperatureStatus = () => {
   return 'Temperatura normal'
 }
 
-const getHumidityStatus = () => {
-  if (currentHumidity.value <= thresholds.value.minHumidity) {
-    return 'Humedad baja - Riego recomendado'
-  } else if (currentHumidity.value >= thresholds.value.maxHumidity) {
-    return 'Humedad alta - Riego no necesario'
+const getSoilHumidityStatus = () => {
+  if (currentSoilHumidity.value <= thresholds.value.minSoilHumidity) {
+    return 'Humedad suelo baja - Riego recomendado'
+  } else if (currentSoilHumidity.value >= thresholds.value.maxSoilHumidity) {
+    return 'Humedad suelo alta - Riego no necesario'
   }
-  return 'Humedad en rango óptimo'
+  return 'Humedad suelo en rango óptimo'
+}
+
+const getAirHumidityStatus = () => {
+  if (currentAirHumidity.value <= thresholds.value.minAirHumidity) {
+    return 'Humedad aire baja'
+  } else if (currentAirHumidity.value >= thresholds.value.maxAirHumidity) {
+    return 'Humedad aire alta'
+  }
+  return 'Humedad aire en rango óptimo'
 }
 
 const getCurrentConditionStatus = () => {
   const tempNeedsWater = currentTemperature.value >= thresholds.value.maxTemperature
-  const humidityNeedsWater = currentHumidity.value <= thresholds.value.minHumidity
+  const soilHumidityNeedsWater = currentSoilHumidity.value <= thresholds.value.minSoilHumidity
+  const airHumidityNeedsWater = currentAirHumidity.value <= thresholds.value.minAirHumidity
   
-  if (tempNeedsWater && humidityNeedsWater) {
+  if (tempNeedsWater && (soilHumidityNeedsWater || airHumidityNeedsWater)) {
     return 'Se activaría el riego ahora'
-  } else if (tempNeedsWater || humidityNeedsWater) {
+  } else if (tempNeedsWater || soilHumidityNeedsWater || airHumidityNeedsWater) {
     return 'Condiciones cercanas al umbral'
   }
   return 'Condiciones estables - Sin riego necesario'
@@ -566,8 +654,10 @@ const formatDuration = () => {
 const isValidConfiguration = () => {
   return (
     thresholds.value.maxTemperature > 0 &&
-    thresholds.value.minHumidity >= 0 &&
-    thresholds.value.maxHumidity > thresholds.value.minHumidity &&
+    thresholds.value.minSoilHumidity >= 0 &&
+    thresholds.value.maxSoilHumidity > thresholds.value.minSoilHumidity &&
+    thresholds.value.minAirHumidity >= 0 &&
+    thresholds.value.maxAirHumidity > thresholds.value.minAirHumidity &&
     ((duration.value.minutes > 0) || (duration.value.seconds > 0))
   )
 }
@@ -578,8 +668,13 @@ const confirmConfiguration = () => {
     return
   }
   
-  if (thresholds.value.minHumidity >= thresholds.value.maxHumidity) {
-    showError('La humedad mínima debe ser menor que la máxima')
+  if (thresholds.value.minSoilHumidity >= thresholds.value.maxSoilHumidity) {
+    showError('La humedad del suelo mínima debe ser menor que la máxima')
+    return
+  }
+  
+  if (thresholds.value.minAirHumidity >= thresholds.value.maxAirHumidity) {
+    showError('La humedad del aire mínima debe ser menor que la máxima')
     return
   }
   
@@ -598,8 +693,10 @@ const saveAutomaticConfiguration = () => {
     const config = {
       thresholds: {
         maxTemperature: thresholds.value.maxTemperature,
-        minHumidity: thresholds.value.minHumidity,
-        maxHumidity: thresholds.value.maxHumidity
+        minSoilHumidity: thresholds.value.minSoilHumidity,
+        maxSoilHumidity: thresholds.value.maxSoilHumidity,
+        minAirHumidity: thresholds.value.minAirHumidity,
+        maxAirHumidity: thresholds.value.maxAirHumidity
       },
       duration: {
         minutes: duration.value.minutes || 0,
@@ -688,8 +785,10 @@ const getThresholdsFromConfig = () => {
   if (!modeConfig.value || !modeConfig.value.thresholds) {
     return {
       maxTemperature: 0,
-      minHumidity: 0,
-      maxHumidity: 0
+      minSoilHumidity: 0,
+      maxSoilHumidity: 0,
+      minAirHumidity: 0,
+      maxAirHumidity: 0
     }
   }
   
@@ -724,15 +823,18 @@ onMounted(() => {
   setInterval(() => {
     // Simular variaciones pequeñas en los sensores
     currentTemperature.value += (Math.random() - 0.5) * 0.5
-    currentHumidity.value += (Math.random() - 0.5) * 2
+    currentSoilHumidity.value += (Math.random() - 0.5) * 2
+    currentAirHumidity.value += (Math.random() - 0.5) * 1.5
     
     // Mantener valores en rangos realistas
     currentTemperature.value = Math.max(15, Math.min(40, currentTemperature.value))
-    currentHumidity.value = Math.max(0, Math.min(100, currentHumidity.value))
+    currentSoilHumidity.value = Math.max(0, Math.min(100, currentSoilHumidity.value))
+    currentAirHumidity.value = Math.max(0, Math.min(100, currentAirHumidity.value))
     
     // Redondear para mostrar valores limpios
     currentTemperature.value = Math.round(currentTemperature.value * 10) / 10
-    currentHumidity.value = Math.round(currentHumidity.value)
+    currentSoilHumidity.value = Math.round(currentSoilHumidity.value)
+    currentAirHumidity.value = Math.round(currentAirHumidity.value)
   }, 3000)
 })
 

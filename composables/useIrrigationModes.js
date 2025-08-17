@@ -195,19 +195,22 @@ export const useIrrigationModes = () => {
     
     // Simular valores de sensores (en una implementación real vendrían del IoT)
     const currentTemperature = 25 + Math.random() * 10 // 25-35°C
-    const currentHumidity = 40 + Math.random() * 30 // 40-70%
+    const currentSoilHumidity = 40 + Math.random() * 30 // 40-70%
+    const currentAirHumidity = 50 + Math.random() * 30 // 50-80%
     
-    const { maxTemperature, minHumidity, maxHumidity } = modeConfig.value.thresholds
+    const { maxTemperature, minSoilHumidity, maxSoilHumidity, minAirHumidity, maxAirHumidity } = modeConfig.value.thresholds
     
-    // Verificar si se deben activar las condiciones
-    const shouldActivate = currentTemperature >= maxTemperature || currentHumidity <= minHumidity
+    // Verificar si se deben activar las condiciones (usando ambos tipos de humedad)
+    const shouldActivate = currentTemperature >= maxTemperature || 
+                          currentSoilHumidity <= minSoilHumidity || 
+                          currentAirHumidity <= minAirHumidity
     
     // SOLO mostrar logs de las condiciones, NO activar automáticamente
     if (shouldActivate && !isWatering.value && !isPaused.value) {
       console.log('Condiciones automáticas cumplidas - pero NO activando riego automáticamente')
-      console.log('Temperatura:', currentTemperature, '°C, Humedad:', currentHumidity, '%')
-      console.log('Umbrales - Temp max:', maxTemperature, '°C, Humedad min:', minHumidity, '%')
-    } else if (isWatering.value && currentHumidity >= maxHumidity) {
+      console.log('Temperatura:', currentTemperature, '°C, Humedad suelo:', currentSoilHumidity, '%, Humedad aire:', currentAirHumidity, '%')
+      console.log('Umbrales - Temp max:', maxTemperature, '°C, Humedad suelo min:', minSoilHumidity, '%, Humedad aire min:', minAirHumidity, '%')
+    } else if (isWatering.value && (currentSoilHumidity >= maxSoilHumidity || currentAirHumidity >= maxAirHumidity)) {
       console.log('Humedad máxima alcanzada - deteniendo riego')
       stopAutomaticWatering()
     }
@@ -583,7 +586,7 @@ export const useIrrigationModes = () => {
       
       case 'automatico':
         const thresholds = modeConfig.value.thresholds
-        return `Temp máx: ${thresholds?.maxTemperature || 0}°C, Humedad: ${thresholds?.minHumidity || 0}-${thresholds?.maxHumidity || 0}%`
+        return `Temp máx: ${thresholds?.maxTemperature || 0}°C, H.Suelo: ${thresholds?.minSoilHumidity || 0}-${thresholds?.maxSoilHumidity || 0}%, H.Aire: ${thresholds?.minAirHumidity || 0}-${thresholds?.maxAirHumidity || 0}%`
       
       default:
         return ''

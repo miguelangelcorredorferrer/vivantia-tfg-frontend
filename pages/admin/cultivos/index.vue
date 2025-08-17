@@ -16,9 +16,17 @@ const { toast } = useToastNotifications()
 // Cargar cultivos al montar el componente
 onMounted(async () => {
   try {
+    console.log('🌱 Cargando cultivos en admin/cultivos...')
     await adminStore.fetchAllCrops()
+    console.log('✅ Cultivos cargados exitosamente:', adminStore.crops.length)
   } catch (error) {
-    toast.error('Error al cargar cultivos')
+    console.error('❌ Error cargando cultivos en admin:', error)
+    // Solo mostrar error si no es un problema de conexión o datos vacíos
+    if (error.message && !error.message.includes('No se encontraron')) {
+      toast.error(`Error al cargar cultivos: ${error.message}`)
+    } else {
+      console.log('ℹ️ No hay cultivos disponibles o error de conexión')
+    }
   }
 })
 
@@ -42,16 +50,14 @@ const handleDeleteCrop = async (cropId) => {
 
 // Manejar edición de cultivo
 const handleEditCrop = (crop) => {
-  // TODO: Implementar modal de edición o navegación
-  console.log('Editar cultivo:', crop)
-  toast.info('Función de edición en desarrollo')
+  console.log('Navegar a edición de cultivo:', crop.id)
+  navigateTo(`/admin/cultivos/editar/${crop.id}`)
 }
 
 // Manejar visualización de cultivo
 const handleViewCrop = (crop) => {
-  // TODO: Implementar modal de visualización o navegación
-  console.log('Ver cultivo:', crop)
-  toast.info('Función de visualización en desarrollo')
+  console.log('Navegar a visualización de cultivo:', crop.id)
+  navigateTo(`/admin/cultivos/ver/${crop.id}`)
 }
 </script>
 
@@ -70,9 +76,20 @@ const handleViewCrop = (crop) => {
           <p class="text-gray-400">Bienvenido al centro de control del sistema Vivantia</p>
         </div>
       </div>
-      <div class="mt-4">
-        <h2 class="text-xl font-semibold text-white">Gestión de Cultivos</h2>
-        <p class="text-gray-400 mt-1">Administración y supervisión de todos los cultivos del sistema</p>
+      <div class="mt-4 flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-semibold text-white">Gestión de Cultivos</h2>
+          <p class="text-gray-400 mt-1">Administración y supervisión de todos los cultivos del sistema</p>
+        </div>
+        <NuxtLink 
+          to="/admin/cultivos/agregar"
+          class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          <span>Agregar Cultivo</span>
+        </NuxtLink>
       </div>
     </div>
 

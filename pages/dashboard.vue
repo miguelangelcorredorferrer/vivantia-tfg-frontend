@@ -6,6 +6,7 @@ import { useUserStore } from '~/stores/user'
 import { thermometerIcon, humidityIcon } from '~/assets/icons'
 import WorkingTemperatureChart from '~/components/Charts/WorkingTemperatureChart.vue'
 import WorkingHumidityChart from '~/components/Charts/WorkingHumidityChart.vue'
+import WorkingAirHumidityChart from '~/components/Charts/WorkingAirHumidityChart.vue'
 import { demoData } from '~/utils/demoData'
 import {
   DemoBanner,
@@ -35,21 +36,32 @@ const generateDemoDataPoint = () => {
   const now = new Date()
   const timeLabel = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   
-  // Usar los valores base de la imagen
-  const baseTemperature = 19.5
-  const baseHumidity = 68.3
+  // Obtener el último punto de datos para generar variaciones más realistas
+  let baseTemperature = 19.5
+  let baseSoilHumidity = 68.3
+  let baseAirHumidity = 75.0
   
-  // Generar variaciones realistas
-  const temperatureVariation = (Math.random() - 0.5) * 2 // ±1°C
-  const humidityVariation = (Math.random() - 0.5) * 3 // ±1.5%
+  if (demoDataPoints.value.length > 0) {
+    const lastPoint = demoDataPoints.value[demoDataPoints.value.length - 1]
+    baseTemperature = lastPoint.temperature
+    baseSoilHumidity = lastPoint.soilHumidity
+    baseAirHumidity = lastPoint.airHumidity
+  }
+  
+  // Generar variaciones más pequeñas y realistas para cambios graduales
+  const temperatureVariation = (Math.random() - 0.5) * 0.8 // Variación más pequeña
+  const soilHumidityVariation = (Math.random() - 0.5) * 1.2 // Variación más pequeña
+  const airHumidityVariation = (Math.random() - 0.5) * 1.5 // Variación más pequeña
   
   const temperature = Math.max(18, Math.min(22, baseTemperature + temperatureVariation))
-  const humidity = Math.max(65, Math.min(72, baseHumidity + humidityVariation))
+  const soilHumidity = Math.max(65, Math.min(72, baseSoilHumidity + soilHumidityVariation))
+  const airHumidity = Math.max(70, Math.min(80, baseAirHumidity + airHumidityVariation))
   
   const newPoint = {
     time: timeLabel,
     temperature: parseFloat(temperature.toFixed(1)),
-    humidity: parseFloat(humidity.toFixed(1))
+    soilHumidity: parseFloat(soilHumidity.toFixed(1)),
+    airHumidity: parseFloat(airHumidity.toFixed(1))
   }
   
   // Añadir nuevo punto
@@ -63,11 +75,28 @@ const generateDemoDataPoint = () => {
   // Actualizar lectura actual
   demoCurrentReading.value = {
     temperature: newPoint.temperature,
-    humidity: newPoint.humidity,
+    soilHumidity: newPoint.soilHumidity,
+    airHumidity: newPoint.airHumidity,
     timestamp: now.toISOString()
   }
   
   console.log('🎭 Demo data point added:', newPoint)
+  
+  // Log de tendencias para debugging
+  if (demoDataPoints.value.length >= 2) {
+    const last = demoDataPoints.value[demoDataPoints.value.length - 1]
+    const previous = demoDataPoints.value[demoDataPoints.value.length - 2]
+    
+    const tempChange = last.temperature - previous.temperature
+    const soilChange = last.soilHumidity - previous.soilHumidity
+    const airChange = last.airHumidity - previous.airHumidity
+    
+    console.log('📊 Demo trends calculation:', {
+      temperature: `${previous.temperature} → ${last.temperature} (change: ${tempChange.toFixed(1)}°C)`,
+      soilHumidity: `${previous.soilHumidity} → ${last.soilHumidity} (change: ${soilChange.toFixed(1)}%)`,
+      airHumidity: `${previous.airHumidity} → ${last.airHumidity} (change: ${airChange.toFixed(1)}%)`
+    })
+  }
 }
 
 // Función para simular datos en tiempo real en modo demo
@@ -96,18 +125,22 @@ const stopDemoSimulation = () => {
   }
 }
 
-// Obtener datos de sensores (mantener funcionalidad existente)
+// Obtener datos de sensores con nuevo soporte de humedad dual
 const sensorDataComposable = useSensorData()
 const {
   temperatureData: realTemperatureData,
-  humidityData: realHumidityData,
+  soilHumidityData: realSoilHumidityData,
+  airHumidityData: realAirHumidityData,
   currentTemperature: realCurrentTemperature,
-  currentHumidity: realCurrentHumidity,
+  currentSoilHumidity: realCurrentSoilHumidity,
+  currentAirHumidity: realCurrentAirHumidity,
   temperatureTrend: realTemperatureTrend,
-  humidityTrend: realHumidityTrend,
+  soilHumidityTrend: realSoilHumidityTrend,
+  airHumidityTrend: realAirHumidityTrend,
   cropThresholds: realCropThresholds,
   formattedTemperature: realFormattedTemperature,
-  formattedHumidity: realFormattedHumidity
+  formattedSoilHumidity: realFormattedSoilHumidity,
+  formattedAirHumidity: realFormattedAirHumidity
 } = sensorDataComposable
 
 // Datos computados que cambian según el modo
@@ -138,16 +171,15 @@ const temperatureData = computed(() => {
   return realTemperatureData.value
 })
 
-const humidityData = computed(() => {
+const soilHumidityData = computed(() => {
   if (userStore.isDemoMode) {
-    // En modo demo, usar datos demo directamente
     const demoHistory = demoDataPoints.value
     return {
       labels: demoHistory.map(item => item.time),
       datasets: [
         {
-          label: 'Humedad (%)',
-          data: demoHistory.map(item => item.humidity),
+          label: 'Humedad del Suelo (%)',
+          data: demoHistory.map(item => item.soilHumidity),
           borderColor: '#3b82f6',
           backgroundColor: 'transparent',
           borderWidth: 3,
@@ -162,7 +194,33 @@ const humidityData = computed(() => {
       ]
     }
   }
-  return realHumidityData.value
+  return realSoilHumidityData.value
+})
+
+const airHumidityData = computed(() => {
+  if (userStore.isDemoMode) {
+    const demoHistory = demoDataPoints.value
+    return {
+      labels: demoHistory.map(item => item.time),
+      datasets: [
+        {
+          label: 'Humedad Ambiental (%)',
+          data: demoHistory.map(item => item.airHumidity),
+          borderColor: '#22d3ee',
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          tension: 0.6,
+          fill: false,
+          pointBackgroundColor: '#22d3ee',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 8
+        }
+      ]
+    }
+  }
+  return realAirHumidityData.value
 })
 
 const currentTemperature = computed(() => {
@@ -172,32 +230,114 @@ const currentTemperature = computed(() => {
   return realCurrentTemperature.value
 })
 
-const currentHumidity = computed(() => {
+const currentSoilHumidity = computed(() => {
   if (userStore.isDemoMode) {
-    return demoCurrentReading.value?.humidity || demoDataPoints.value[demoDataPoints.value.length - 1]?.humidity || demoData.sensorData.current.humidity
+    return demoCurrentReading.value?.soilHumidity || demoDataPoints.value[demoDataPoints.value.length - 1]?.soilHumidity || demoData.sensorData.current.soilHumidity || 68.3
   }
-  return realCurrentHumidity.value
+  return realCurrentSoilHumidity.value
+})
+
+const currentAirHumidity = computed(() => {
+  if (userStore.isDemoMode) {
+    return demoCurrentReading.value?.airHumidity || demoDataPoints.value[demoDataPoints.value.length - 1]?.airHumidity || 75.0
+  }
+  return realCurrentAirHumidity.value
 })
 
 const temperatureTrend = computed(() => {
   if (userStore.isDemoMode) {
-    return { direction: 'down', percentage: 8.3, value: 19.5 }
+    // Calcular tendencia exactamente igual que en modo usuario
+    const demoHistory = demoDataPoints.value
+    if (demoHistory.length >= 2) {
+      const current = demoHistory[demoHistory.length - 1].temperature
+      const previous = demoHistory[demoHistory.length - 2].temperature
+      const tempChange = current - previous
+      const MIN_TEMP_CHANGE = 0.1
+      
+      // Solo mostrar tendencia si hay cambio significativo
+      if (Math.abs(tempChange) >= MIN_TEMP_CHANGE) {
+        return {
+          direction: tempChange > 0 ? 'up' : 'down',
+          value: Math.abs(tempChange).toFixed(1) // Diferencia absoluta en grados
+        }
+      } else {
+        return {
+          direction: 'neutral',
+          value: '0.0'
+        }
+      }
+    }
+    // Fallback si no hay suficientes datos
+    return { direction: 'neutral', value: '0.0' }
   }
   return realTemperatureTrend.value
 })
 
-const humidityTrend = computed(() => {
+const soilHumidityTrend = computed(() => {
   if (userStore.isDemoMode) {
-    return { direction: 'down', percentage: 4.3, value: 68.3 }
+    // Calcular tendencia exactamente igual que en modo usuario
+    const demoHistory = demoDataPoints.value
+    if (demoHistory.length >= 2) {
+      const current = demoHistory[demoHistory.length - 1].soilHumidity
+      const previous = demoHistory[demoHistory.length - 2].soilHumidity
+      const soilChange = current - previous
+      const MIN_HUMIDITY_CHANGE = 0.5
+      
+      // Solo mostrar tendencia si hay cambio significativo
+      if (Math.abs(soilChange) >= MIN_HUMIDITY_CHANGE) {
+        return {
+          direction: soilChange > 0 ? 'up' : 'down',
+          value: Math.abs(soilChange).toFixed(1) // Diferencia absoluta
+        }
+      } else {
+        return {
+          direction: 'neutral',
+          value: '0.0'
+        }
+      }
+    }
+    // Fallback si no hay suficientes datos
+    return { direction: 'neutral', value: '0.0' }
   }
-  return realHumidityTrend.value
+  return realSoilHumidityTrend.value
+})
+
+const airHumidityTrend = computed(() => {
+  if (userStore.isDemoMode) {
+    // Calcular tendencia exactamente igual que en modo usuario
+    const demoHistory = demoDataPoints.value
+    if (demoHistory.length >= 2) {
+      const current = demoHistory[demoHistory.length - 1].airHumidity
+      const previous = demoHistory[demoHistory.length - 2].airHumidity
+      const airChange = current - previous
+      const MIN_HUMIDITY_CHANGE = 0.5
+      
+      // Solo mostrar tendencia si hay cambio significativo
+      if (Math.abs(airChange) >= MIN_HUMIDITY_CHANGE) {
+        return {
+          direction: airChange > 0 ? 'up' : 'down',
+          value: Math.abs(airChange).toFixed(1) // Diferencia absoluta
+        }
+      } else {
+        return {
+          direction: 'neutral',
+          value: '0.0'
+        }
+      }
+    }
+    // Fallback si no hay suficientes datos
+    return { direction: 'neutral', value: '0.0' }
+  }
+  return realAirHumidityTrend.value
 })
 
 const cropThresholds = computed(() => {
   if (userStore.isDemoMode) {
     return {
-      humidityMin: demoData.crop.humidity_min,
-      humidityMax: demoData.crop.humidity_max,
+      soilHumidityMin: demoData.crop.soil_humidity_min,
+      soilHumidityMax: demoData.crop.soil_humidity_max,
+      airHumidityMin: demoData.crop.air_humidity_min,
+      airHumidityMax: demoData.crop.air_humidity_max,
       temperatureMax: demoData.crop.temperature_max
     }
   }
@@ -211,11 +351,18 @@ const formattedTemperature = computed(() => {
   return realFormattedTemperature.value
 })
 
-const formattedHumidity = computed(() => {
+const formattedSoilHumidity = computed(() => {
   if (userStore.isDemoMode) {
-    return `${currentHumidity.value.toFixed(1)}%`
+    return `${currentSoilHumidity.value.toFixed(1)}%`
   }
-  return realFormattedHumidity.value
+  return realFormattedSoilHumidity.value
+})
+
+const formattedAirHumidity = computed(() => {
+  if (userStore.isDemoMode) {
+    return `${currentAirHumidity.value.toFixed(1)}%`
+  }
+  return realFormattedAirHumidity.value
 })
 
 // Datos de dispositivo y cultivo para demo
@@ -260,7 +407,8 @@ onMounted(async () => {
       // Inicializar con datos base
       demoCurrentReading.value = {
         temperature: demoData.sensorData.current.temperature,
-        humidity: demoData.sensorData.current.humidity,
+        soilHumidity: demoData.sensorData.current.soilHumidity,
+        airHumidity: demoData.sensorData.current.airHumidity,
         timestamp: new Date().toISOString()
       }
       
@@ -268,12 +416,14 @@ onMounted(async () => {
       for (let i = 0; i < 5; i++) {
         const timeLabel = new Date(Date.now() - (4 - i) * 3000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
         const baseTemp = 19.5 + (Math.random() - 0.5) * 2
-        const baseHumidity = 68.3 + (Math.random() - 0.5) * 3
+        const baseSoilHumidity = 68.3 + (Math.random() - 0.5) * 3
+        const baseAirHumidity = 75.0 + (Math.random() - 0.5) * 4
         
         demoDataPoints.value.push({
           time: timeLabel,
           temperature: parseFloat(baseTemp.toFixed(1)),
-          humidity: parseFloat(baseHumidity.toFixed(1))
+          soilHumidity: parseFloat(baseSoilHumidity.toFixed(1)),
+          airHumidity: parseFloat(baseAirHumidity.toFixed(1))
         })
       }
       
@@ -343,8 +493,8 @@ const handleExitDemo = () => {
       </div>
     </div>
 
-    <!-- Gráficas principales mejoradas -->
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+    <!-- Gráficas principales ahora en 2 columnas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Información de temperatura -->
       <SensorCard 
         title="Temperatura Ambiental"
@@ -359,20 +509,39 @@ const handleExitDemo = () => {
         :chart-props="{ temperatureMax: currentCrop?.temperature_max || 28 }"
       />
 
-      <!-- Información de humedad -->
+      <!-- Información de humedad del suelo -->
       <SensorCard 
-        title="Humedad del Suelo"
+        title="Humedad del Suelo" 
         description="Sensor Capacitive Soil Moisture - Actualización cada 2 minutos"
         :icon="humidityIcon"
         icon-bg-class="bg-gradient-to-br from-blue-500 to-blue-600"
         value-color-class="text-blue-400"
-        :formatted-value="formattedHumidity"
-        :trend="humidityTrend"
+        :formatted-value="formattedSoilHumidity"
+        :trend="soilHumidityTrend"
         :chart-component="WorkingHumidityChart"
-        :chart-data="humidityData"
+        :chart-data="soilHumidityData"
         :chart-props="{ 
-          humidityMin: currentCrop?.humidity_min || 40,
-          humidityMax: currentCrop?.humidity_max || 80 
+          humidityMin: currentCrop?.soil_humidity_min || 40,
+          humidityMax: currentCrop?.soil_humidity_max || 80 
+        }"
+      />
+    </div>
+
+    <!-- Humedad Ambiental en fila aparte -->
+    <div class="mt-8">
+      <SensorCard 
+        title="Humedad Ambiental"
+        description="Sensor DHT11 - Actualización cada 2 minutos"
+        :icon="humidityIcon"
+        icon-bg-class="bg-gradient-to-br from-cyan-500 to-cyan-600"
+        value-color-class="text-cyan-400"
+        :formatted-value="formattedAirHumidity"
+        :trend="airHumidityTrend"
+        :chart-component="WorkingAirHumidityChart"
+        :chart-data="airHumidityData"
+        :chart-props="{ 
+          airHumidityMin: currentCrop?.air_humidity_min || 30,
+          airHumidityMax: currentCrop?.air_humidity_max || 85 
         }"
       />
     </div>

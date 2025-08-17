@@ -96,7 +96,7 @@
                   </label>
                   <input
                     id="minHumidity"
-                    v-model.number="formData.humidity_min"
+                    v-model.number="formData.soil_humidity_min"
                     type="number"
                     min="0"
                     max="100"
@@ -114,7 +114,7 @@
                   </label>
                   <input
                     id="maxHumidity"
-                    v-model.number="formData.humidity_max"
+                    v-model.number="formData.soil_humidity_max"
                     type="number"
                     min="0"
                     max="100"
@@ -123,6 +123,40 @@
                     placeholder="80"
                   />
                   <p class="mt-1 text-xs text-gray-400">Valor máximo recomendado</p>
+                </div>
+
+                <!-- Humedad Aire Mín -->
+                <div>
+                  <label for="minAirHum" class="block text-sm font-medium text-white mb-2">
+                    Humedad Aire Min (%)
+                  </label>
+                  <input
+                    id="minAirHum"
+                    v-model.number="formData.air_humidity_min"
+                    type="number"
+                    min="0"
+                    max="100"
+                    required
+                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    placeholder="50"
+                  />
+                </div>
+
+                <!-- Humedad Aire Máx -->
+                <div>
+                  <label for="maxAirHum" class="block text-sm font-medium text-white mb-2">
+                    Humedad Aire Máx (%)
+                  </label>
+                  <input
+                    id="maxAirHum"
+                    v-model.number="formData.air_humidity_max"
+                    type="number"
+                    min="0"
+                    max="100"
+                    required
+                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    placeholder="85"
+                  />
                 </div>
 
                 <!-- Temperatura Máxima -->
@@ -428,8 +462,10 @@ const formData = reactive({
   name: '',
   description: '',
   category: '',
-  humidity_min: 0,
-  humidity_max: 0,
+  soil_humidity_min: 0,
+  soil_humidity_max: 0,
+  air_humidity_min: 0,
+  air_humidity_max: 0,
   temperature_max: 0,
   growth_days: 0,
   session: '',
@@ -440,16 +476,28 @@ const formData = reactive({
 const validationErrors = computed(() => {
   const errors = []
   
-  if (formData.humidity_min >= formData.humidity_max) {
-    errors.push('La humedad mínima debe ser menor que la máxima')
+  if (formData.soil_humidity_min >= formData.soil_humidity_max) {
+    errors.push('La humedad del suelo mínima debe ser menor que la máxima')
   }
-  
-  if (formData.humidity_min < 0 || formData.humidity_min > 100) {
-    errors.push('La humedad mínima debe estar entre 0 y 100%')
+
+  if (formData.soil_humidity_min < 0 || formData.soil_humidity_min > 100) {
+    errors.push('La humedad del suelo mínima debe estar entre 0 y 100%')
   }
-  
-  if (formData.humidity_max < 0 || formData.humidity_max > 100) {
-    errors.push('La humedad máxima debe estar entre 0 y 100%')
+
+  if (formData.soil_humidity_max < 0 || formData.soil_humidity_max > 100) {
+    errors.push('La humedad del suelo máxima debe estar entre 0 y 100%')
+  }
+
+  if (formData.air_humidity_min >= formData.air_humidity_max) {
+    errors.push('La humedad del aire mínima debe ser menor que la máxima')
+  }
+
+  if (formData.air_humidity_min < 0 || formData.air_humidity_min > 100) {
+    errors.push('La humedad del aire mínima debe estar entre 0 y 100%')
+  }
+
+  if (formData.air_humidity_max < 0 || formData.air_humidity_max > 100) {
+    errors.push('La humedad del aire máxima debe estar entre 0 y 100%')
   }
   
   if (formData.temperature_max < 0 || formData.temperature_max > 50) {
@@ -500,8 +548,10 @@ const loadCrop = async () => {
       name: foundCrop.name,
       description: foundCrop.description,
       category: foundCrop.category,
-      humidity_min: foundCrop.humidity_min,
-      humidity_max: foundCrop.humidity_max,
+      soil_humidity_min: foundCrop.soil_humidity_min,
+      soil_humidity_max: foundCrop.soil_humidity_max,
+      air_humidity_min: foundCrop.air_humidity_min,
+      air_humidity_max: foundCrop.air_humidity_max,
       temperature_max: foundCrop.temperature_max,
       growth_days: foundCrop.growth_days,
       session: foundCrop.session || '',
@@ -531,8 +581,10 @@ const resetForm = () => {
       name: crop.value.name,
       description: crop.value.description,
       category: crop.value.category,
-      humidity_min: crop.value.humidity_min,
-      humidity_max: crop.value.humidity_max,
+      soil_humidity_min: crop.value.soil_humidity_min,
+      soil_humidity_max: crop.value.soil_humidity_max,
+      air_humidity_min: crop.value.air_humidity_min,
+      air_humidity_max: crop.value.air_humidity_max,
       temperature_max: crop.value.temperature_max,
       growth_days: crop.value.growth_days,
       session: crop.value.session || '',
@@ -616,8 +668,10 @@ const handleSubmit = async () => {
       name: formData.name,
       description: formData.description,
       category: formData.category,
-      humidity_min: formData.humidity_min,
-      humidity_max: formData.humidity_max,
+      soil_humidity_min: formData.soil_humidity_min,
+      soil_humidity_max: formData.soil_humidity_max,
+      air_humidity_min: formData.air_humidity_min,
+      air_humidity_max: formData.air_humidity_max,
       temperature_max: formData.temperature_max,
       growth_days: formData.growth_days,
       session: formData.session,

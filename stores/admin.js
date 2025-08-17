@@ -149,14 +149,34 @@ export const useAdminStore = defineStore('admin', () => {
       isLoading.value = true
       error.value = null
       
+      console.log('🔄 AdminStore: Iniciando carga de cultivos...')
       const response = await CropAPI.getAllWithUsers()
-      crops.value = response.data || []
       
-      console.log('✅ AdminStore: Cultivos cargados exitosamente')
+      if (response && response.success) {
+        crops.value = response.data || []
+        console.log('✅ AdminStore: Cultivos cargados exitosamente:', crops.value.length)
+      } else {
+        crops.value = []
+        console.log('⚠️ AdminStore: Respuesta sin datos de cultivos')
+      }
+      
     } catch (err) {
       console.error('❌ AdminStore: Error cargando cultivos:', err)
-      error.value = 'Error al cargar cultivos'
-      throw err
+      console.error('❌ Error details:', {
+        message: err.message,
+        status: err.status,
+        statusCode: err.statusCode,
+        response: err.response?.data
+      })
+      
+      // Inicializar array vacío en caso de error
+      crops.value = []
+      error.value = err.message || 'Error al cargar cultivos'
+      
+      // No throw error si es solo que no hay datos
+      if (!err.message?.includes('404') && !err.message?.includes('No se encontraron')) {
+        throw err
+      }
     } finally {
       isLoading.value = false
     }

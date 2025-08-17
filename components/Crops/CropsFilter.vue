@@ -21,7 +21,8 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <!-- Primera fila de filtros -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Categoría -->
         <div>
           <label for="category-filter" class="block text-sm font-medium text-white mb-2">
@@ -62,45 +63,88 @@
             <option value="Todo el año">Todo el año</option>
           </select>
         </div>
+      </div>
 
-        <!-- Humedad Mínima -->
+      <!-- Segunda fila - Filtros de humedad del suelo -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Humedad del Suelo Mínima -->
         <div>
-          <label for="min-humidity-filter" class="block text-sm font-medium text-white mb-2">
-            Humedad Mín. (%)
+          <label for="min-soil-humidity-filter" class="block text-sm font-medium text-blue-300 mb-2">
+            🌱 Humedad Suelo Mín. (%)
           </label>
           <input
-            id="min-humidity-filter"
-            v-model="localFilters.minHumidity"
+            id="min-soil-humidity-filter"
+            v-model="localFilters.minSoilHumidity"
             type="number"
             min="0"
             max="100"
-            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            class="w-full px-4 py-3 bg-gray-700 border border-blue-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            placeholder="Ej: 40"
+            @input="debouncedUpdate"
+          />
+        </div>
+
+        <!-- Humedad del Suelo Máxima -->
+        <div>
+          <label for="max-soil-humidity-filter" class="block text-sm font-medium text-blue-300 mb-2">
+            🌱 Humedad Suelo Máx. (%)
+          </label>
+          <input
+            id="max-soil-humidity-filter"
+            v-model="localFilters.maxSoilHumidity"
+            type="number"
+            min="0"
+            max="100"
+            class="w-full px-4 py-3 bg-gray-700 border border-blue-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            placeholder="Ej: 80"
+            @input="debouncedUpdate"
+          />
+        </div>
+      </div>
+
+      <!-- Tercera fila - Filtros de humedad del aire -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Humedad del Aire Mínima -->
+        <div>
+          <label for="min-air-humidity-filter" class="block text-sm font-medium text-cyan-300 mb-2">
+            💨 Humedad Aire Mín. (%)
+          </label>
+          <input
+            id="min-air-humidity-filter"
+            v-model="localFilters.minAirHumidity"
+            type="number"
+            min="0"
+            max="100"
+            class="w-full px-4 py-3 bg-gray-700 border border-cyan-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors"
             placeholder="Ej: 50"
             @input="debouncedUpdate"
           />
         </div>
 
-        <!-- Humedad Máxima -->
+        <!-- Humedad del Aire Máxima -->
         <div>
-          <label for="max-humidity-filter" class="block text-sm font-medium text-white mb-2">
-            Humedad Máx. (%)
+          <label for="max-air-humidity-filter" class="block text-sm font-medium text-cyan-300 mb-2">
+            💨 Humedad Aire Máx. (%)
           </label>
           <input
-            id="max-humidity-filter"
-            v-model="localFilters.maxHumidity"
+            id="max-air-humidity-filter"
+            v-model="localFilters.maxAirHumidity"
             type="number"
             min="0"
             max="100"
-            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-            placeholder="Ej: 80"
+            class="w-full px-4 py-3 bg-gray-700 border border-cyan-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors"
+            placeholder="Ej: 85"
             @input="debouncedUpdate"
           />
         </div>
+      </div>
 
+      <!-- Cuarta fila - Temperatura -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Temperatura Máxima -->
         <div>
-          <label for="max-temp-filter" class="block text-sm font-medium text-white mb-2">
-            Temp. Máx. (°C)
+          <label for="max-temp-filter" class="block text-sm font-medium text-red-300 mb-2">
+            🌡️ Temp. Máx. (°C)
           </label>
           <input
             id="max-temp-filter"
@@ -108,11 +152,14 @@
             type="number"
             min="0"
             max="50"
-            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            class="w-full px-4 py-3 bg-gray-700 border border-red-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
             placeholder="Ej: 30"
             @input="debouncedUpdate"
           />
         </div>
+        
+        <!-- Espacio vacío para mantener simetría -->
+        <div></div>
       </div>
 
       <!-- Botones de acción -->
@@ -172,8 +219,10 @@ const localFilters = reactive({
   name: '',
   category: 'Todas',
   session: '',
-  minHumidity: '',
-  maxHumidity: '',
+  minSoilHumidity: '',
+  maxSoilHumidity: '',
+  minAirHumidity: '',
+  maxAirHumidity: '',
   maxTemperature: ''
 })
 
@@ -182,8 +231,10 @@ const hasActiveFilters = computed(() => {
   return localFilters.name !== '' ||
          localFilters.category !== 'Todas' ||
          localFilters.session !== '' ||
-         localFilters.minHumidity !== '' ||
-         localFilters.maxHumidity !== '' ||
+         localFilters.minSoilHumidity !== '' ||
+         localFilters.maxSoilHumidity !== '' ||
+         localFilters.minAirHumidity !== '' ||
+         localFilters.maxAirHumidity !== '' ||
          localFilters.maxTemperature !== ''
 })
 
@@ -200,8 +251,10 @@ const clearFilters = () => {
   localFilters.name = ''
   localFilters.category = 'Todas'
   localFilters.session = ''
-  localFilters.minHumidity = ''
-  localFilters.maxHumidity = ''
+  localFilters.minSoilHumidity = ''
+  localFilters.maxSoilHumidity = ''
+  localFilters.minAirHumidity = ''
+  localFilters.maxAirHumidity = ''
   localFilters.maxTemperature = ''
   updateFilters()
 }
