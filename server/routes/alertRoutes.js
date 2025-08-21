@@ -11,11 +11,14 @@ import {
   resolveAllAlertsByUserId,
   deleteAlert,
   deleteOldAlerts,
+  deleteMyOldAlerts,
   getAlertCountByType,
   getAlertCountBySeverity,
   createHumidityThresholdAlert,
   createIrrigationStartedAlert,
-  getMyAlerts
+  getMyAlerts,
+  getAllAlertsWithUsers,
+  deleteAllSystemAlerts
 } from '../controllers/alertController.js';
 import { createUserRegisteredAlert } from '../services/authAlertService.js';
 import { createApiKeyCopiedAlert } from '../services/deviceAlertService.js';
@@ -29,6 +32,7 @@ router.use(authMiddleware);
 // Rutas básicas CRUD
 router.post('/', createAlert);
 router.get('/my-alerts', getMyAlerts); // Nueva ruta para obtener alertas del usuario autenticado
+router.delete('/old', deleteMyOldAlerts); // Ruta específica antes de la genérica
 router.get('/:id', getAlertById);
 router.delete('/:id', deleteAlert);
 
@@ -50,6 +54,10 @@ router.put('/resolve-all', resolveAllAlertsByUserId);
 // Rutas de estadísticas (del usuario autenticado)
 router.get('/stats/type', getAlertCountByType);
 router.get('/stats/severity', getAlertCountBySeverity);
+
+// Rutas para administrador
+router.get('/admin/all', getAllAlertsWithUsers);
+router.delete('/admin/all', deleteAllSystemAlerts);
 
 // Rutas para crear alertas específicas (uso interno)
 router.post('/user-registered', createUserRegisteredAlert);

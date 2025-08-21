@@ -301,6 +301,84 @@ const deleteOldAlerts = async (req, res) => {
   }
 };
 
+// Eliminar todas las alertas del usuario autenticado
+const deleteMyOldAlerts = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+
+    console.log(`[DEBUG] deleteMyOldAlerts - Usuario: ${user_id}`);
+
+    // Eliminar TODAS las alertas del usuario actual
+    const query = `DELETE FROM alerts WHERE user_id = $1`;
+    const result = await pool.query(query, [user_id]);
+
+    console.log(`[DEBUG] Se eliminaron ${result.rowCount} alertas del usuario`);
+
+    return handleSuccessResponse(res, { count: result.rowCount }, `${result.rowCount} alertas eliminadas`);
+  } catch (error) {
+    console.error('[DEBUG] Error en deleteMyOldAlerts:', error);
+    return handleInternalServerError('Error al eliminar alertas', res, error);
+  }
+};
+
+// ==================== ENDPOINTS PARA ADMINISTRADOR ====================
+
+// Obtener todas las alertas del sistema con información de usuarios (solo admin)
+const getAllAlertsWithUsers = async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== 'admin') {
+      return handleBadRequestError('Acceso denegado. Solo administradores pueden acceder a esta información', res);
+    }
+
+    const { limit = 100, offset = 0 } = req.query;
+
+    const query = `
+      SELECT 
+        a.*,
+        u.name as user_name,
+        u.email as user_email,
+        u.role as user_role
+      FROM alerts a
+      LEFT JOIN users u ON a.user_id = u.id
+      ORDER BY a.created_at DESC 
+      LIMIT $1 OFFSET $2
+    `;
+    const result = await pool.query(query, [parseInt(limit), parseInt(offset)]);
+    
+    const alerts = result.rows.map(row => {
+      const alert = new Alert(row);
+      return {
+        ...alert.toJSON(),
+        user_name: row.user_name,
+        user_email: row.user_email,
+        user_role: row.user_role
+      };
+    });
+
+    return handleSuccessResponse(res, alerts, `${alerts.length} alertas obtenidas exitosamente`);
+  } catch (error) {
+    return handleInternalServerError('Error al obtener todas las alertas', res, error);
+  }
+};
+
+// Eliminar todas las alertas del sistema (solo admin)
+const deleteAllSystemAlerts = async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== 'admin') {
+      return handleBadRequestError('Acceso denegado. Solo administradores pueden realizar esta acción', res);
+    }
+
+    const query = 'DELETE FROM alerts';
+    const result = await pool.query(query);
+
+    return handleSuccessResponse(res, { count: result.rowCount }, `${result.rowCount} alertas eliminadas del sistema`);
+  } catch (error) {
+    return handleInternalServerError('Error al eliminar todas las alertas del sistema', res, error);
+  }
+};
+
 // Obtener conteo de alertas por tipo (usuario autenticado)
 const getAlertCountByType = async (req, res) => {
   try {
@@ -807,8 +885,12 @@ export {
   resolveAllAlertsByUserId,
   deleteAlert,
   deleteOldAlerts,
+  deleteMyOldAlerts,
   getAlertCountByType,
   getAlertCountBySeverity,
+  // Endpoints para administrador
+  getAllAlertsWithUsers,
+  deleteAllSystemAlerts,
   // Alertas de dispositivo - movidas a deviceAlertService.js
   // Alertas ambientales
   createTemperatureMaxThresholdAlert,

@@ -5,9 +5,8 @@ import {
   createProgrammedSavedAlert, 
   createProgrammedReminderAlert, 
   createProgrammedScheduleAlert, 
-  createProgrammedCancelledAlert, 
-  createAutomaticSavedAlert 
-} from './alertController.js';
+  createProgrammedCancelledAlert 
+} from '../services/irrigationAlertService.js';
 
 // Crear nueva configuración de riego
 const createIrrigationConfig = async (req, res) => {
@@ -538,35 +537,38 @@ const createProgrammedConfig = async (req, res) => {
       // Actualizar configuración existente
       irrigationConfig = existingConfigResult.rows[0];
       console.log('✅ Configuración programada existente encontrada:', irrigationConfig.id);
+      
+      // Actualizar duration_minutes de la configuración existente
+      const updateExistingQuery = `
+        UPDATE irrigation_configs 
+        SET duration_minutes = $1 
+        WHERE id = $2
+        RETURNING *
+      `;
+      const updateResult = await client.query(updateExistingQuery, [duration_minutes, irrigationConfig.id]);
+      irrigationConfig = updateResult.rows[0];
+      console.log('✅ Duración actualizada en configuración existente');
     } else {
       // Crear nueva configuración
       const createConfigQuery = `
-        INSERT INTO irrigation_configs (user_id, crop_id, mode_type, is_active)
-        VALUES ($1, $2, 'programmed', false)
+        INSERT INTO irrigation_configs (user_id, crop_id, mode_type, is_active, duration_minutes)
+        VALUES ($1, $2, 'programmed', false, $3)
         RETURNING *
       `;
-      const createConfigResult = await client.query(createConfigQuery, [user_id, crop_id]);
+      const createConfigResult = await client.query(createConfigQuery, [user_id, crop_id, duration_minutes]);
       irrigationConfig = createConfigResult.rows[0];
       console.log('✅ Nueva configuración programada creada:', irrigationConfig.id);
     }
 
-    // 2. Actualizar duration_minutes en irrigation_config
-    const updateDurationQuery = `
-      UPDATE irrigation_configs 
-      SET duration_minutes = $1 
-      WHERE id = $2
-    `;
-    await client.query(updateDurationQuery, [duration_minutes, irrigationConfig.id]);
-
-    // 3. Eliminar configuración programada anterior si existe
+    // 2. Eliminar configuración programada anterior si existe
     const deletePrevProgrammedQuery = `
       DELETE FROM programmed_settings 
       WHERE config_id = $1
     `;
     await client.query(deletePrevProgrammedQuery, [irrigationConfig.id]);
 
-    // 4. Crear nueva configuración programada
-    console.log('4️⃣ Creando nueva configuración programada...');
+    // 3. Crear nueva configuración programada
+    console.log('3️⃣ Creando nueva configuración programada...');
     const createProgrammedQuery = `
       INSERT INTO programmed_settings (
         config_id, start_datetime, frequency_type, custom_days, 
@@ -600,7 +602,7 @@ const createProgrammedConfig = async (req, res) => {
       throw new Error(`Error en modelo ProgrammedConfig: ${modelError.message}`);
     }
 
-    // 5. Crear registro en pump_activations con status 'programmed'
+    // 4. Crear registro en pump_activations con status 'programmed'
     const createPumpActivationQuery = `
       INSERT INTO pump_activations (
         irrigation_config_id, started_at, duration_minutes, status
@@ -624,7 +626,7 @@ const createProgrammedConfig = async (req, res) => {
       const cropResult = await client.query(cropQuery, [crop_id]);
       const cropName = cropResult.rows[0]?.name || 'Cultivo';
       
-      await createProgrammedSavedAlert(user_id, cropName, frequency_type);
+      await createProgrammedSavedAlert(user_id, cropName, start_datetime, frequency_type);
     } catch (alertError) {
       console.warn('Error al crear alerta de configuración programada:', alertError.message);
     }
@@ -759,6 +761,15 @@ const cancelProgrammedIrrigation = async (req, res) => {
         RETURNING *
       `;
       await client.query(updateLastIrrigationQuery, [irrigation_config_id]);
+
+      // Enviar OFF al cancelar un riego activo/pausado
+      try {
+        const { sendDownlinkForConfig } = await import('../services/ttnService.js');
+        const result = await sendDownlinkForConfig(irrigation_config_id, 'OFF');
+        console.log('[DOWNLINK][OFF][cancelProgrammed] OK:', result);
+      } catch (downlinkError) {
+        console.error('[DOWNLINK][OFF][cancelProgrammed] Error:', downlinkError?.message || downlinkError);
+      }
     }
 
     // 3. Desactivar configuración temporalmente (is_active = false)
@@ -771,6 +782,26 @@ const cancelProgrammedIrrigation = async (req, res) => {
     const configResult = await client.query(deactivateConfigQuery, [irrigation_config_id]);
 
     // NOTA: NO eliminamos programmed_settings para mantener configuración futura
+
+    // Crear alerta de riego programado cancelado
+    try {
+      // Obtener información del usuario y cultivo
+      const infoQuery = `
+        SELECT ic.user_id, c.name as crop_name
+        FROM irrigation_configs ic
+        LEFT JOIN crops c ON ic.crop_id = c.id
+        WHERE ic.id = $1
+      `;
+      const infoResult = await client.query(infoQuery, [irrigation_config_id]);
+      
+      if (infoResult.rows.length > 0) {
+        const { user_id, crop_name } = infoResult.rows[0];
+        const wasActive = pumpResult.rows.length > 0; // Había riego activo
+        await createProgrammedCancelledAlert(user_id, crop_name || 'Cultivo', wasActive);
+      }
+    } catch (alertError) {
+      console.warn('Error al crear alerta de cancelación programada:', alertError.message);
+    }
 
     await client.query('COMMIT');
 

@@ -65,8 +65,36 @@ export default {
             headers: getAuthHeaders()
         })
     },
-    deleteOldAlerts(userId) {
+    deleteOldAlerts(userId, days = 30) {
         return $fetch(`/alerts/user/${userId}/old`, {
+            method: 'DELETE',
+            query: { days },
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    
+    // Eliminar todas las alertas del usuario autenticado
+    deleteMyOldAlerts() {
+        return $fetch('/alerts/old', {
+            method: 'DELETE',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    
+    // Rutas para administrador
+    getAllAlertsWithUsers(params = {}) {
+        return $fetch('/alerts/admin/all', {
+            method: 'GET',
+            query: params,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    
+    deleteAllSystemAlerts() {
+        return $fetch('/alerts/admin/all', {
             method: 'DELETE',
             baseURL: getApiUrl(),
             headers: getAuthHeaders()

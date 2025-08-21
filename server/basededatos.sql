@@ -17,7 +17,7 @@ CREATE TYPE alert_subtype AS ENUM (
   
   -- Environmental alerts
   'temperature_max_threshold', 'air_humidity_min_threshold', 'air_humidity_max_threshold', 
-  'soil_humidity_min_threshold', 'soil_humidity_max_threshold',
+  'soil_humidity_min_threshold', 'soil_humidity_max_threshold', 'system_online', 'system_offline',
   
   -- Device alerts
   'device_added', 'api_key_copied', 'device_offline', 'device_online', 'device_deleted', 'device_edited',
@@ -85,7 +85,7 @@ CREATE TABLE sensor_readings (
   id SERIAL PRIMARY KEY,
   device_id INTEGER REFERENCES devices(id) ON DELETE CASCADE,
   air_humidity DECIMAL(5,2), 
-  soil_humidity DECIMAL(5,2), 
+  soil_humidity DECIMAL(5,2),
   temperature DECIMAL(5,2),
   received_at TIMESTAMP DEFAULT NOW()
 );

@@ -4,7 +4,8 @@ import { sendDownlinkForConfig } from '../services/ttnService.js';
 import { 
   createManualStartedAlert, 
   createEmergencyStopAlert, 
-  createManualCancelledAlert 
+  createManualCancelledAlert,
+  createProgrammedScheduleAlert 
 } from '../services/irrigationAlertService.js';
 
 // Modelo para PumpActivation
@@ -268,7 +269,36 @@ const updatePumpActivationStatus = async (req, res) => {
         console.warn('Error al crear alerta de riego:', alertError.message);
       }
     }
+    // Enviar ON cuando se pasa a 'active' desde un estado programado/inactivo
+    if (status === 'active' && ['programmed', 'inactive'].includes(currentActivation.status)) {
+      try {
+        const r = await sendDownlinkForConfig(currentActivation.irrigation_config_id, 'ON');
+        console.log('[DOWNLINK][ON][activateScheduled] OK:', r);
+      } catch (e) {
+        console.error('[DOWNLINK][ON][activateScheduled] Error:', e?.message || e);
+      }
 
+      // Crear alerta de riego programado iniciado automáticamente
+      if (currentActivation.status === 'programmed') {
+        try {
+          const alertQuery = `
+            SELECT ic.user_id, c.name as crop_name, pa.duration_minutes
+            FROM irrigation_configs ic
+            LEFT JOIN crops c ON ic.crop_id = c.id
+            LEFT JOIN pump_activations pa ON pa.irrigation_config_id = ic.id
+            WHERE ic.id = $1 AND pa.id = $2
+          `;
+          const alertResult = await client.query(alertQuery, [currentActivation.irrigation_config_id, id]);
+          
+          if (alertResult.rows.length > 0) {
+            const { user_id, crop_name, duration_minutes } = alertResult.rows[0];
+            await createProgrammedScheduleAlert(user_id, crop_name || 'Cultivo', duration_minutes);
+          }
+        } catch (alertError) {
+          console.warn('Error al crear alerta de riego programado iniciado:', alertError.message);
+        }
+      }
+    }
     res.status(200).json({
       success: true,
       message: 'Estado de activación actualizado exitosamente',

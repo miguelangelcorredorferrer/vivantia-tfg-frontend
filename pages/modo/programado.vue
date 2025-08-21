@@ -1229,11 +1229,8 @@ const getScheduledTimeFromConfig = () => {
 }
 
 const getDurationFromConfig = () => {
-  if (!irrigationStore.specificConfig?.duration_minutes) {
-    return 'No configurado'
-  }
-  
-  const minutes = irrigationStore.specificConfig.duration_minutes || 0
+  // La duración está en irrigationConfig, no en specificConfig
+  const minutes = irrigationStore.irrigationConfig?.duration_minutes || 0
   
   if (minutes === 0) {
     return 'No configurado'
@@ -1259,7 +1256,20 @@ const navigateToActiveMode = () => {
 
 onMounted(async () => {
   console.log('🚀 onMounted - Cargando configuración...')
-  
+  // Asegurar que la fecha/hora inicial sea futura (ahora + 10 min)
+  try {
+    const now = new Date()
+    const future = new Date(now.getTime() + 10 * 60 * 1000) // +10 minutos
+
+    // Actualizar valores reactivos para que la configuración inicial sea válida
+    scheduledDate.value = new Date(future)
+    selectedDate.value = new Date(future)
+    scheduledTime.value.hour = future.getHours()
+    scheduledTime.value.minute = future.getMinutes()
+  } catch (err) {
+    console.error('Error estableciendo fecha/hora inicial futura:', err)
+  }
+
   try {
     // El middleware crop-required ya se encarga de validar usuario y cultivo
     console.log('📊 Estado de stores en onMounted:', {

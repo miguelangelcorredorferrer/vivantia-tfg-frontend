@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { AlertsIcon } from '~/assets/icons'
 import AlertsTable from '~/components/Alerts/AlertsTable.vue'
+import ConfirmDeleteModal from '~/components/Modals/ConfirmDeleteModal.vue'
+import CleanOldAlertsModal from '~/components/Modals/CleanOldAlertsModal.vue'
 import AlertAPI from '~/api/AlertAPI.js'
 
 // Configurar middleware
@@ -32,6 +34,11 @@ const filters = ref({
 // Estado
 const loading = ref(false)
 const alerts = ref([])
+
+// Estados de modales
+const showDeleteModal = ref(false)
+const showCleanModal = ref(false)
+const alertToDelete = ref(null)
 
 // Cargar alertas
 const loadAlerts = async () => {
@@ -134,10 +141,64 @@ const handleAlertResolved = async (alertId) => {
   try {
     await AlertAPI.resolveAlert(alertId)
     await loadAlerts()
+    toast.success('Alerta marcada como resuelta')
   } catch (error) {
     console.error('Error al marcar alerta como resuelta:', error)
     toast.error('Error al marcar alerta como resuelta')
   }
+}
+
+const handleAlertDeleted = (alertId) => {
+  // Buscar la alerta para mostrar información en el modal
+  const alert = alerts.value.find(a => a.id === alertId)
+  alertToDelete.value = alert
+  showDeleteModal.value = true
+}
+
+const confirmDeleteAlert = async () => {
+  try {
+    if (alertToDelete.value) {
+      await AlertAPI.delete(alertToDelete.value.id)
+      await loadAlerts()
+      toast.success('Alerta eliminada exitosamente')
+    }
+  } catch (error) {
+    console.error('Error al eliminar alerta:', error)
+    toast.error('Error al eliminar alerta')
+  } finally {
+    showDeleteModal.value = false
+    alertToDelete.value = null
+  }
+}
+
+const cancelDeleteAlert = () => {
+  showDeleteModal.value = false
+  alertToDelete.value = null
+}
+
+const deleteOldAlerts = () => {
+  showCleanModal.value = true
+}
+
+const confirmCleanOldAlerts = async (days) => {
+  try {
+    console.log(`[DEBUG] Intentando eliminar todas las alertas del usuario`)
+    const response = await AlertAPI.deleteMyOldAlerts()
+    console.log(`[DEBUG] Respuesta del servidor:`, response)
+    await loadAlerts()
+    toast.success(`${response.count || 0} alertas eliminadas`)
+  } catch (error) {
+    console.error('[DEBUG] Error completo al eliminar alertas:', error)
+    console.error('[DEBUG] Error message:', error.message)
+    console.error('[DEBUG] Error data:', error.data)
+    toast.error(`Error al eliminar alertas: ${error.message || 'Error desconocido'}`)
+  } finally {
+    showCleanModal.value = false
+  }
+}
+
+const cancelCleanOldAlerts = () => {
+  showCleanModal.value = false
 }
 
 onMounted(() => {
@@ -274,6 +335,13 @@ onMounted(() => {
             >
               Marcar Todo como Resuelto
             </button>
+            <button
+              @click="deleteOldAlerts"
+              class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+              title="Elimina alertas resueltas con más de 30 días"
+            >
+              Limpiar Antiguas
+            </button>
           </div>
           
           <div class="text-sm text-gray-400">
@@ -285,8 +353,29 @@ onMounted(() => {
       <!-- Tabla de Alertas -->
       <AlertsTable 
         :alerts="filteredAlerts"
+        :showDeleteButton="true"
         @alert-resolved="handleAlertResolved"
+        @alert-deleted="handleAlertDeleted"
       />
     </div>
+
+    <!-- Modales -->
+    <ConfirmDeleteModal
+      :isOpen="showDeleteModal"
+      title="Eliminar Alerta"
+      :message="alertToDelete ? `¿Estás seguro de que deseas eliminar la alerta '${alertToDelete.title}'?` : ''"
+      warningMessage="Esta acción no se puede deshacer."
+      confirmText="Sí, eliminar"
+      @confirm="confirmDeleteAlert"
+      @cancel="cancelDeleteAlert"
+    />
+
+    <CleanOldAlertsModal
+      :isOpen="showCleanModal"
+      :isAdmin="false"
+      :defaultDays="30"
+      @confirm="confirmCleanOldAlerts"
+      @cancel="cancelCleanOldAlerts"
+    />
   </div>
 </template> 

@@ -79,3 +79,54 @@ export const createIrrigationConfigUpdatedAlert = async (user_id, modeType, crop
   
   return await createIrrigationAlert(user_id, 'config_updated', title, message, 'info');
 };
+
+// ========== ALERTAS PARA MODO PROGRAMADO ==========
+
+// Crear alerta de configuración programada guardada
+export const createProgrammedSavedAlert = async (user_id, cropName, startDateTime, frequencyType) => {
+  const title = 'Configuración programada guardada';
+  const scheduledDate = new Date(startDateTime).toLocaleString('es-ES');
+  let frequencyText = '';
+  
+  switch (frequencyType) {
+    case 'once':
+      frequencyText = 'una vez';
+      break;
+    case 'daily':
+      frequencyText = 'diariamente';
+      break;
+    case 'custom':
+      frequencyText = 'días personalizados';
+      break;
+  }
+  
+  const message = `Se ha programado el riego de ${cropName} para ${scheduledDate} (${frequencyText}).`;
+  
+  return await createIrrigationAlert(user_id, 'programmed_saved', title, message, 'success');
+};
+
+// Crear alerta de recordatorio programado (5 min antes)
+export const createProgrammedReminderAlert = async (user_id, cropName, minutesUntilStart) => {
+  const title = '⏰ Recordatorio de riego programado';
+  const message = `El riego programado de ${cropName} comenzará en ${minutesUntilStart} minutos.`;
+  
+  return await createIrrigationAlert(user_id, 'programmed_reminder', title, message, 'info');
+};
+
+// Crear alerta de riego programado iniciado automáticamente
+export const createProgrammedScheduleAlert = async (user_id, cropName, durationMinutes) => {
+  const title = '🌱 Riego programado iniciado';
+  const message = `Se ha iniciado automáticamente el riego programado de ${cropName} con duración de ${durationMinutes} minutos.`;
+  
+  return await createIrrigationAlert(user_id, 'programmed_schedule', title, message, 'info');
+};
+
+// Crear alerta de configuración programada cancelada
+export const createProgrammedCancelledAlert = async (user_id, cropName, wasActive = false) => {
+  const title = wasActive ? 'Riego programado cancelado' : 'Configuración programada cancelada';
+  const message = wasActive 
+    ? `El riego programado activo de ${cropName} ha sido cancelado.`
+    : `La configuración programada de ${cropName} ha sido cancelada.`;
+  
+  return await createIrrigationAlert(user_id, 'programmed_cancelled', title, message, 'warning');
+};
