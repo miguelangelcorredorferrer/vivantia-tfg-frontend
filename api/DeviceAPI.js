@@ -120,5 +120,14 @@ export default {
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
         })
+    },
+
+    // Crear alerta de API key copiada
+    createApiKeyCopiedAlert() {
+        return $fetch('/devices/api-key-copied', {
+            method: 'POST',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
     }
 } 

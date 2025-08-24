@@ -11,6 +11,7 @@ import {
 
 // Crear un nuevo cultivo
 const createCrop = async (req, res) => {
+  const client = await pool.connect();
   try {
     const {
       user_id, name, description, image, category, growth_days,
@@ -25,12 +26,19 @@ const createCrop = async (req, res) => {
     console.log('🔍 createCrop - Datos recibidos:', {
       soil_humidity_min, soil_humidity_max, 
       air_humidity_min, air_humidity_max,
-      temperature_max, growth_days
+      temperature_max, growth_days, selected
     });
 
     // Validar campos obligatorios
     if (!name) {
       return handleBadRequestError('Nombre del cultivo es obligatorio', res);
+    }
+
+    await client.query('BEGIN');
+
+    // Si el cultivo se marca como seleccionado, deseleccionar otros del mismo usuario
+    if (selected) {
+      await client.query('UPDATE crops SET selected = false WHERE user_id = $1', [finalUserId]);
     }
 
     const query = `
@@ -59,7 +67,9 @@ const createCrop = async (req, res) => {
       selected
     ];
     
-    const result = await pool.query(query, cleanValues);
+    const result = await client.query(query, cleanValues);
+    await client.query('COMMIT');
+    
     const crop = new Crop(result.rows[0]);
 
     // Crear alerta de cultivo agregado
@@ -71,7 +81,10 @@ const createCrop = async (req, res) => {
 
     return handleSuccessResponse(res, crop, 'Cultivo creado exitosamente', 201);
   } catch (error) {
+    await client.query('ROLLBACK');
     return handleInternalServerError('Error al crear cultivo', res, error);
+  } finally {
+    client.release();
   }
 };
 
@@ -197,10 +210,23 @@ const getAllCropsByUserId = async (req, res) => {
 // Obtener todos los cultivos (mantener para compatibilidad)
 const getAllCrops = async (req, res) => {
   try {
+    // Si hay usuario autenticado y no es admin, devolver solo sus cultivos
+    if (req.user && req.user.role !== 'admin') {
+      const query = 'SELECT * FROM crops WHERE user_id = $1 ORDER BY created_at DESC';
+      const result = await pool.query(query, [req.user.id]);
+      const crops = result.rows.map(r => new Crop(r));
+
+      return res.status(200).json({
+        success: true,
+        count: crops.length,
+        data: crops
+      });
+    }
+
+    // Admin o petición sin autenticación → todos los cultivos
     const query = 'SELECT * FROM crops ORDER BY created_at DESC';
     const result = await pool.query(query);
-    
-    const crops = result.rows.map(row => new Crop(row));
+    const crops = result.rows.map(r => new Crop(r));
 
     res.status(200).json({
       success: true,
@@ -579,36 +605,6 @@ const getCropCategories = async (req, res) => {
   }
 };
 
-// Obtener configuraciones de riego asociadas
-const getCropIrrigationConfigs = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Verificar si el cultivo existe
-    const existingCrop = await findCropById(id);
-    if (!existingCrop) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cultivo no encontrado'
-      });
-    }
-
-    const query = 'SELECT * FROM irrigation_configs WHERE crop_id = $1';
-    const result = await pool.query(query, [id]);
-
-    res.status(200).json({
-      success: true,
-      count: result.rows.length,
-      data: result.rows
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener configuraciones de riego',
-      error: error.message
-    });
-  }
-};
 
 export {
   createCrop,
@@ -624,6 +620,5 @@ export {
   updateCrop,
   selectCrop,
   deselectCrop,
-  deleteCrop,
-  getCropIrrigationConfigs
+  deleteCrop
 };

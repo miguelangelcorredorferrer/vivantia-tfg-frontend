@@ -10,14 +10,6 @@ const getAuthHeaders = () => {
 
 export default {
     // Rutas básicas CRUD
-    create(data) {
-        return $fetch('/alerts', {
-            method: 'POST',
-            body: data,
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
     getById(id) {
         return $fetch(`/alerts/${id}`, {
             method: 'GET',
@@ -35,7 +27,7 @@ export default {
     
     // Obtener alertas del usuario autenticado
     getMyAlerts(params = {}) {
-        return $fetch('/alerts/my-alerts', {
+        return $fetch('/alerts', {
             method: 'GET',
             query: params,
             baseURL: getApiUrl(),
@@ -43,32 +35,10 @@ export default {
         })
     },
     
-    // Rutas por usuario
-    getAlertsByUserId(userId) {
-        return $fetch(`/alerts/user/${userId}`, {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    getUnresolvedAlertsByUserId(userId) {
-        return $fetch(`/alerts/user/${userId}/unresolved`, {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
+    // Rutas para resolver alertas
     resolveAllAlertsByUserId() {
         return $fetch('/alerts/resolve-all', {
             method: 'PUT',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    deleteOldAlerts(userId, days = 30) {
-        return $fetch(`/alerts/user/${userId}/old`, {
-            method: 'DELETE',
-            query: { days },
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
         })
@@ -101,21 +71,7 @@ export default {
         })
     },
     
-    // Rutas por filtros
-    getAlertsByType(alertType) {
-        return $fetch(`/alerts/type/${alertType}`, {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    getAlertsBySeverity(severity) {
-        return $fetch(`/alerts/severity/${severity}`, {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
+
     
     // Rutas de acciones
     resolveAlert(id) {
@@ -125,68 +81,8 @@ export default {
             headers: getAuthHeaders()
         })
     },
-    unresolveAlert(id) {
-        return $fetch(`/alerts/${id}/unresolve`, {
-            method: 'PUT',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
     
-    // Rutas de estadísticas
-    getAlertCountByType() {
-        return $fetch('/alerts/stats/type', {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    getAlertCountBySeverity() {
-        return $fetch('/alerts/stats/severity', {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
+
     
-    // Rutas para crear alertas específicas
-    createUserRegisteredAlert(data) {
-        return $fetch('/alerts/user-registered', {
-            method: 'POST',
-            body: data,
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    createDeviceOfflineAlert(data) {
-        return $fetch('/alerts/device-offline', {
-            method: 'POST',
-            body: data,
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    createHumidityThresholdAlert(data) {
-        return $fetch('/alerts/humidity-threshold', {
-            method: 'POST',
-            body: data,
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    createIrrigationStartedAlert(data) {
-        return $fetch('/alerts/irrigation-started', {
-            method: 'POST',
-            body: data,
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    createApiKeyCopiedAlert() {
-        return $fetch('/alerts/device/api-key-copied', {
-            method: 'POST',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    }
+
 } 

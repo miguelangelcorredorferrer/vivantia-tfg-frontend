@@ -2,34 +2,7 @@ import { pool } from '../config/db.js';
 import Alert from '../models/Alert.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
 
-// Crear nueva alerta
-const createAlert = async (req, res) => {
-  try {
-    const {
-      user_id, alert_type, alert_subtype, severity = 'info',
-      title, message, is_resolved = false
-    } = req.body;
 
-    // Validar campos obligatorios
-    if (!user_id || !alert_type || !alert_subtype || !title || !message) {
-      return handleBadRequestError('Todos los campos obligatorios deben ser proporcionados', res);
-    }
-
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [user_id, alert_type, alert_subtype, severity, title, message, is_resolved];
-    const result = await pool.query(query, values);
-    const alert = new Alert(result.rows[0]);
-
-    return handleSuccessResponse(res, alert, 'Alerta creada exitosamente', 201);
-  } catch (error) {
-    return handleInternalServerError('Error al crear alerta', res, error);
-  }
-};
 
 // Buscar alerta por ID
 const findAlertById = async (id) => {
@@ -85,103 +58,6 @@ const getMyAlerts = async (req, res) => {
   }
 };
 
-// Buscar alertas por usuario (para admin o mismo usuario)
-const getAlertsByUserId = async (req, res) => {
-  try {
-    const { user_id } = req.params;
-    const { limit = 50, offset = 0 } = req.query;
-
-    // Verificar permisos: solo admin o el mismo usuario
-    if (req.user.role !== 'admin' && req.user.id.toString() !== user_id) {
-      return handleBadRequestError('No tienes permisos para ver estas alertas', res);
-    }
-
-    const query = `
-      SELECT * FROM alerts 
-      WHERE user_id = $1 
-      ORDER BY created_at DESC 
-      LIMIT $2 OFFSET $3
-    `;
-    const result = await pool.query(query, [user_id, parseInt(limit), parseInt(offset)]);
-    
-    const alerts = result.rows.map(row => new Alert(row).toJSON());
-
-    return handleSuccessResponse(res, alerts, `${alerts.length} alertas obtenidas exitosamente`);
-  } catch (error) {
-    return handleInternalServerError('Error al obtener alertas del usuario', res, error);
-  }
-};
-
-// Buscar alertas no resueltas por usuario
-const getUnresolvedAlertsByUserId = async (req, res) => {
-  try {
-    const { user_id } = req.params;
-
-    const query = `
-      SELECT * FROM alerts 
-      WHERE user_id = $1 AND is_resolved = false 
-      ORDER BY created_at DESC
-    `;
-    const result = await pool.query(query, [user_id]);
-    
-    const alerts = result.rows.map(row => new Alert(row));
-
-    res.status(200).json({
-      success: true,
-      count: alerts.length,
-      data: alerts
-    });
-  } catch (error) {
-    return handleInternalServerError('Error al obtener alertas no resueltas', res, error);
-  }
-};
-
-// Buscar alertas por tipo (usuario autenticado)
-const getAlertsByType = async (req, res) => {
-  try {
-    const { alert_type } = req.params;
-    const { limit = 50 } = req.query;
-    const user_id = req.user.id;
-
-    const query = `
-      SELECT * FROM alerts 
-      WHERE user_id = $1 AND alert_type = $2 
-      ORDER BY created_at DESC 
-      LIMIT $3
-    `;
-    const result = await pool.query(query, [user_id, alert_type, parseInt(limit)]);
-    
-    const alerts = result.rows.map(row => new Alert(row).toJSON());
-
-    return handleSuccessResponse(res, alerts, `${alerts.length} alertas obtenidas exitosamente`);
-  } catch (error) {
-    return handleInternalServerError('Error al obtener alertas por tipo', res, error);
-  }
-};
-
-// Buscar alertas por severidad (usuario autenticado)
-const getAlertsBySeverity = async (req, res) => {
-  try {
-    const { severity } = req.params;
-    const { limit = 50 } = req.query;
-    const user_id = req.user.id;
-
-    const query = `
-      SELECT * FROM alerts 
-      WHERE user_id = $1 AND severity = $2 
-      ORDER BY created_at DESC 
-      LIMIT $3
-    `;
-    const result = await pool.query(query, [user_id, severity, parseInt(limit)]);
-    
-    const alerts = result.rows.map(row => new Alert(row).toJSON());
-
-    return handleSuccessResponse(res, alerts, `${alerts.length} alertas obtenidas exitosamente`);
-  } catch (error) {
-    return handleInternalServerError('Error al obtener alertas por severidad', res, error);
-  }
-};
-
 // Marcar alerta como resuelta
 const resolveAlert = async (req, res) => {
   try {
@@ -202,36 +78,7 @@ const resolveAlert = async (req, res) => {
   }
 };
 
-// Marcar alerta como no resuelta
-const unresolveAlert = async (req, res) => {
-  try {
-    const { id } = req.params;
 
-    const query = 'UPDATE alerts SET is_resolved = false WHERE id = $1 RETURNING *';
-    const result = await pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Alerta no encontrada'
-      });
-    }
-    
-    const alert = new Alert(result.rows[0]);
-
-    res.status(200).json({
-      success: true,
-      message: 'Alerta marcada como no resuelta',
-      data: alert
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error al marcar alerta como no resuelta',
-      error: error.message
-    });
-  }
-};
 
 // Marcar todas las alertas del usuario autenticado como resueltas
 const resolveAllAlertsByUserId = async (req, res) => {
@@ -275,31 +122,7 @@ const deleteAlert = async (req, res) => {
   }
 };
 
-// Eliminar alertas antiguas
-const deleteOldAlerts = async (req, res) => {
-  try {
-    const { days = 30 } = req.query;
 
-    const query = `
-      DELETE FROM alerts 
-      WHERE created_at < NOW() - INTERVAL '${parseInt(days)} days'
-      AND is_resolved = true
-    `;
-    const result = await pool.query(query);
-
-    res.status(200).json({
-      success: true,
-      message: `${result.rowCount} alertas antiguas eliminadas`,
-      count: result.rowCount
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error al eliminar alertas antiguas',
-      error: error.message
-    });
-  }
-};
 
 // Eliminar todas las alertas del usuario autenticado
 const deleteMyOldAlerts = async (req, res) => {
@@ -379,150 +202,6 @@ const deleteAllSystemAlerts = async (req, res) => {
   }
 };
 
-// Obtener conteo de alertas por tipo (usuario autenticado)
-const getAlertCountByType = async (req, res) => {
-  try {
-    const user_id = req.user.id;
-
-    const query = `
-      SELECT 
-        alert_type,
-        COUNT(*) as total,
-        COUNT(CASE WHEN is_resolved = false THEN 1 END) as unresolved
-      FROM alerts 
-      WHERE user_id = $1 
-      GROUP BY alert_type
-    `;
-    const result = await pool.query(query, [user_id]);
-
-    return handleSuccessResponse(res, result.rows, 'Estadísticas por tipo obtenidas exitosamente');
-  } catch (error) {
-    return handleInternalServerError('Error al obtener conteo por tipo', res, error);
-  }
-};
-
-// Obtener conteo de alertas por severidad (usuario autenticado)
-const getAlertCountBySeverity = async (req, res) => {
-  try {
-    const user_id = req.user.id;
-
-    const query = `
-      SELECT 
-        severity,
-        COUNT(*) as total,
-        COUNT(CASE WHEN is_resolved = false THEN 1 END) as unresolved
-      FROM alerts 
-      WHERE user_id = $1 
-      GROUP BY severity
-    `;
-    const result = await pool.query(query, [user_id]);
-
-    return handleSuccessResponse(res, result.rows, 'Estadísticas por severidad obtenidas exitosamente');
-  } catch (error) {
-    return handleInternalServerError('Error al obtener conteo por severidad', res, error);
-  }
-};
-
-// Funciones de conveniencia para crear alertas específicas
-
-// ==================== ALERTAS DE USUARIO ====================
-// NOTA: Las funciones de alertas de autenticación se han movido a authAlertService.js
-
-// ==================== ALERTAS DE DISPOSITIVOS ====================
-// NOTA: Las funciones de alertas de dispositivos se han movido a deviceAlertService.js
-
-
-
-// NOTA: Las funciones createDeviceOfflineAlert y createDeviceOnlineAlert se han movido a deviceAlertService.js
-
-// ==================== ALERTAS AMBIENTALES ====================
-
-// Crear alerta de umbral máximo de temperatura
-const createTemperatureMaxThresholdAlert = async (user_id, currentTemperature, threshold) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'environmental',
-      'temperature_max_threshold',
-      'warning',
-      'Temperatura crítica',
-      `La temperatura ha superado el umbral máximo (${currentTemperature}°C vs ${threshold}°C).`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de temperatura máxima: ${error.message}`);
-  }
-};
-
-// Crear alerta de umbral mínimo de humedad
-const createHumidityMinThresholdAlert = async (user_id, currentHumidity, threshold) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'environmental',
-      'humidity_min_threshold',
-      'warning',
-      'Humedad crítica baja',
-      `La humedad del suelo está por debajo del umbral mínimo (${currentHumidity}% vs ${threshold}%).`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de humedad mínima: ${error.message}`);
-  }
-};
-
-// Crear alerta de umbral máximo de humedad
-const createHumidityMaxThresholdAlert = async (user_id, currentHumidity, threshold) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'environmental',
-      'humidity_max_threshold',
-      'warning',
-      'Humedad crítica alta',
-      `La humedad del suelo está por encima del umbral máximo (${currentHumidity}% vs ${threshold}%).`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de humedad máxima: ${error.message}`);
-  }
-};
-
-// Crear alerta de umbral de humedad (función genérica - mantener compatibilidad)
-const createHumidityThresholdAlert = async (user_id, currentHumidity, threshold, isMin = true) => {
-  if (isMin) {
-    return await createHumidityMinThresholdAlert(user_id, currentHumidity, threshold);
-  } else {
-    return await createHumidityMaxThresholdAlert(user_id, currentHumidity, threshold);
-  }
-};
 
 // ==================== ALERTAS DE CULTIVOS ====================
 
@@ -762,31 +441,7 @@ const createProgrammedSavedAlert = async (user_id, scheduleInfo) => {
   }
 };
 
-// Crear alerta de recordatorio de riego programado
-const createProgrammedReminderAlert = async (user_id, timeUntil, cropName) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'irrigation',
-      'programmed_reminder',
-      'warning',
-      'Recordatorio de riego',
-      `Tu riego programado para "${cropName}" comenzará en ${timeUntil}.`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de recordatorio: ${error.message}`);
-  }
-};
+
 
 // Crear alerta de riego programado ejecutado
 const createProgrammedScheduleAlert = async (user_id, cropName) => {
@@ -866,51 +521,32 @@ const createAutomaticSavedAlert = async (user_id, thresholdInfo) => {
   }
 };
 
-// Función de compatibilidad con el código existente
-const createIrrigationStartedAlert = async (user_id, duration, mode, cropName = 'Cultivo') => {
-  return await createManualStartedAlert(user_id, duration, cropName);
-};
+
 
 export {
-  createAlert,
+  // Funciones básicas del controlador (usadas por rutas)
   findAlertById,
   getAlertById,
   getMyAlerts,
-  getAlertsByUserId,
-  getUnresolvedAlertsByUserId,
-  getAlertsByType,
-  getAlertsBySeverity,
   resolveAlert,
-  unresolveAlert,
   resolveAllAlertsByUserId,
   deleteAlert,
-  deleteOldAlerts,
   deleteMyOldAlerts,
-  getAlertCountByType,
-  getAlertCountBySeverity,
   // Endpoints para administrador
   getAllAlertsWithUsers,
   deleteAllSystemAlerts,
-  // Alertas de dispositivo - movidas a deviceAlertService.js
-  // Alertas ambientales
-  createTemperatureMaxThresholdAlert,
-  createHumidityMinThresholdAlert,
-  createHumidityMaxThresholdAlert,
-  createHumidityThresholdAlert,
-  // Alertas de cultivo
+  // Alertas de cultivo (usadas por cropController)
   createCropSelectedAlert,
   createCropDeselectedAlert,
   createCropEditedAlert,
   createCropDeletedAlert,
   createCropAddedAlert,
-  // Alertas de riego
+  // Alertas de riego (usadas por pumpActivationController e irrigationConfigController)
   createManualStartedAlert,
   createEmergencyStopAlert,
   createManualCancelledAlert,
   createProgrammedSavedAlert,
-  createProgrammedReminderAlert,
   createProgrammedScheduleAlert,
   createProgrammedCancelledAlert,
-  createAutomaticSavedAlert,
-  createIrrigationStartedAlert
+  createAutomaticSavedAlert
 };

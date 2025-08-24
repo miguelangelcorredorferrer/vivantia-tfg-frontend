@@ -18,21 +18,6 @@ export default {
             headers: getAuthHeaders()
         })
     },
-    getById(id) {
-        return $fetch(`/sensor-readings/${id}`, {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    update(id, data) {
-        return $fetch(`/sensor-readings/${id}`, {
-            method: 'PUT',
-            body: data,
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
     delete(id) {
         return $fetch(`/sensor-readings/${id}`, {
             method: 'DELETE',
@@ -51,13 +36,6 @@ export default {
     },
     getLatestSensorReadingByDeviceId(deviceId) {
         return $fetch(`/sensor-readings/device/${deviceId}/latest`, {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    getDeviceSensorStats(deviceId) {
-        return $fetch(`/sensor-readings/device/${deviceId}/stats`, {
             method: 'GET',
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
@@ -89,28 +67,5 @@ export default {
         })
     },
     
-    // Rutas de estadísticas
-    getAverageSensorReadingsByPeriod(period) {
-        return $fetch(`/sensor-readings/stats/average/${period}`, {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
-    getHourlyAverageSensorReadings() {
-        return $fetch('/sensor-readings/stats/hourly-average', {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    },
     
-    // Rutas de mantenimiento
-    deleteOldSensorReadings() {
-        return $fetch('/sensor-readings/maintenance/old-readings', {
-            method: 'DELETE',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    }
 } 

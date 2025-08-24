@@ -101,12 +101,5 @@ export default {
         })
     },
     
-    // Rutas relacionadas
-    getCropIrrigationConfigs(id) {
-        return $fetch(`/crops/${id}/irrigation-configs`, {
-            method: 'GET',
-            baseURL: getApiUrl(),
-            headers: getAuthHeaders()
-        })
-    }
+    
 } 

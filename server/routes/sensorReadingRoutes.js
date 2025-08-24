@@ -1,16 +1,10 @@
 import express from 'express';
 import {
   createSensorReading,
-  getSensorReadingById,
   getSensorReadingsByDeviceId,
   getSensorReadingsByDateRange,
   getLatestSensorReadingByDeviceId,
-  getAverageSensorReadingsByPeriod,
-  getHourlyAverageSensorReadings,
   getSensorReadingsOutOfThreshold,
-  deleteOldSensorReadings,
-  getDeviceSensorStats,
-  updateSensorReading,
   deleteSensorReading,
   getLatestSensorReadingForActiveDevice
 } from '../controllers/sensorReadingController.js';
@@ -19,14 +13,11 @@ const router = express.Router();
 
 // Rutas básicas CRUD
 router.post('/', createSensorReading);
-router.get('/:id', getSensorReadingById);
-router.put('/:id', updateSensorReading);
 router.delete('/:id', deleteSensorReading);
 
 // Rutas por dispositivo
 router.get('/device/:device_id', getSensorReadingsByDeviceId);
 router.get('/device/:device_id/latest', getLatestSensorReadingByDeviceId);
-router.get('/device/:device_id/stats', getDeviceSensorStats);
 
 // Ruta para obtener último dato del dispositivo activo del usuario
 router.get('/user/:user_id/active-device/latest', getLatestSensorReadingForActiveDevice);
@@ -35,11 +26,5 @@ router.get('/user/:user_id/active-device/latest', getLatestSensorReadingForActiv
 router.get('/date-range/:start_date/:end_date', getSensorReadingsByDateRange);
 router.get('/threshold/out-of-range', getSensorReadingsOutOfThreshold);
 
-// Rutas de estadísticas
-router.get('/stats/average/:period', getAverageSensorReadingsByPeriod);
-router.get('/stats/hourly-average', getHourlyAverageSensorReadings);
-
-// Rutas de mantenimiento
-router.delete('/maintenance/old-readings', deleteOldSensorReadings);
 
 export default router;

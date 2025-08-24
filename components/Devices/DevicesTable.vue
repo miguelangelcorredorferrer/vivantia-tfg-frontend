@@ -428,8 +428,8 @@ const copyAppKey = async (appKey, index) => {
     
     // Crear alerta en backend
     try {
-      const AlertAPI = (await import('~/api/AlertAPI.js')).default
-      await AlertAPI.createApiKeyCopiedAlert()
+      const DeviceAPI = (await import('~/api/DeviceAPI.js')).default
+      await DeviceAPI.createApiKeyCopiedAlert()
     } catch (e) {
       console.warn('No se pudo crear la alerta de API key copiada:', e)
     }
@@ -457,8 +457,8 @@ const copyAppKey = async (appKey, index) => {
       
       // Crear alerta en backend (fallback)
       try {
-        const AlertAPI = (await import('~/api/AlertAPI.js')).default
-        await AlertAPI.createApiKeyCopiedAlert()
+        const DeviceAPI = (await import('~/api/DeviceAPI.js')).default
+        await DeviceAPI.createApiKeyCopiedAlert()
       } catch (e) {
         console.warn('No se pudo crear la alerta de API key copiada (fallback):', e)
       }

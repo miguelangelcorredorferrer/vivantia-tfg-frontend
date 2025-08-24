@@ -14,7 +14,8 @@ import {
   deleteDevice,
   getDeviceSensorReadings,
   getDeviceLatestReading,
-  checkActiveDevicesForUser
+  checkActiveDevicesForUser,
+  createApiKeyCopiedAlert
 } from '../controllers/deviceController.js';
 
 const router = express.Router();
@@ -42,5 +43,8 @@ router.put('/:id/deactivate', authMiddleware, deactivateDevice);
 // Rutas relacionadas con sensores (requieren autenticación)
 router.get('/:id/sensor-readings', authMiddleware, getDeviceSensorReadings);
 router.get('/:id/latest-reading', authMiddleware, getDeviceLatestReading);
+
+// Rutas relacionadas con alertas (requieren autenticación)
+router.post('/api-key-copied', authMiddleware, createApiKeyCopiedAlert);
 
 export default router;

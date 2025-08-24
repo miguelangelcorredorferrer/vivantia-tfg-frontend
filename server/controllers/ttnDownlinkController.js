@@ -127,7 +127,7 @@ export async function sendDownlinkForConfig(irrigationConfigId, command, port = 
 export const sendOnCommand = async (req, res) => {
   try {
     const { irrigation_config_id } = req.body;
-    await sendDownlinkAuto(irrigation_config_id, 'ON');
+    await sendDownlinkForConfig(irrigation_config_id, 'ON');
     return res.json({ success: true, message: 'Comando ON enviado' });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -137,7 +137,7 @@ export const sendOnCommand = async (req, res) => {
 export const sendOffCommand = async (req, res) => {
   try {
     const { irrigation_config_id } = req.body;
-    await sendDownlinkAuto(irrigation_config_id, 'OFF');
+    await sendDownlinkForConfig(irrigation_config_id, 'OFF');
     return res.json({ success: true, message: 'Comando OFF enviado' });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });

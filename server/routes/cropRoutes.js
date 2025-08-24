@@ -12,8 +12,7 @@ import {
   updateCrop,
   selectCrop,
   deselectCrop,
-  deleteCrop,
-  getCropIrrigationConfigs
+  deleteCrop
 } from '../controllers/cropController.js';
 
 const router = express.Router();
@@ -35,8 +34,5 @@ router.get('/user/:user_id/selected', authMiddleware, getSelectedCropByUserId);
 // Rutas de acciones (requieren autenticación)
 router.put('/:id/select', authMiddleware, selectCrop);
 router.put('/:id/deselect', authMiddleware, deselectCrop);
-
-// Rutas relacionadas (requieren autenticación)
-router.get('/:id/irrigation-configs', authMiddleware, getCropIrrigationConfigs);
 
 export default router;

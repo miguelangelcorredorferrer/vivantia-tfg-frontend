@@ -666,6 +666,35 @@ const getDeviceLatestReading = async (req, res) => {
   }
 };
 
+// Crear alerta de API key copiada
+const createApiKeyCopiedAlert = async (req, res) => {
+  try {
+    const { user } = req;
+    if (!user?.id) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'No autenticado' 
+      });
+    }
+    
+    // Importar dinámicamente para evitar dependencias circulares
+    const { createApiKeyCopiedAlert } = await import('../services/deviceAlertService.js');
+    const alert = await createApiKeyCopiedAlert(user.id);
+    
+    return res.status(201).json({ 
+      success: true, 
+      data: alert,
+      message: 'Alerta de API key copiada creada exitosamente'
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Error al crear alerta de clave API copiada', 
+      error: error.message 
+    });
+  }
+};
+
 export {
   createDevice,
   findDeviceById,
@@ -682,5 +711,6 @@ export {
   deactivateDevice,
   deleteDevice,
   getDeviceSensorReadings,
-  getDeviceLatestReading
+  getDeviceLatestReading,
+  createApiKeyCopiedAlert
 };
