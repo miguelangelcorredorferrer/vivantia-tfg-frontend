@@ -232,16 +232,25 @@ export function useSensorData() {
         
       } else {
         // 🔴 EVALUAR DESACTIVACIÓN (solo si SÍ está activo)
-        const soilOptimal = currentSoilHumidity.value >= thresholds.maxSoilHumidity
+        // Condiciones para desactivar: todas las condiciones deben estar en rango seguro
+        const temperatureOk = currentTemperature.value <= thresholds.maxTemperature
+        const soilHumidityOk = currentSoilHumidity.value >= thresholds.minSoilHumidity && 
+                              currentSoilHumidity.value <= thresholds.maxSoilHumidity
+        const airHumidityOk = currentAirHumidity.value >= thresholds.minAirHumidity
+        
+        // Desactivar cuando TODAS las condiciones estén OK (o al menos el suelo esté en rango aceptable)
+        const shouldDeactivate = temperatureOk && soilHumidityOk && airHumidityOk
         
         console.log('🤖 [AUTO] Evaluando DESACTIVACIÓN:', {
-          soil: `${currentSoilHumidity.value}% >= ${thresholds.maxSoilHumidity}% = ${soilOptimal}`,
-          shouldDeactivate: soilOptimal,
+          temperature: `${currentTemperature.value}°C <= ${thresholds.maxTemperature}°C = ${temperatureOk}`,
+          soil: `${currentSoilHumidity.value}% (${thresholds.minSoilHumidity}%-${thresholds.maxSoilHumidity}%) = ${soilHumidityOk}`,
+          air: `${currentAirHumidity.value}% >= ${thresholds.minAirHumidity}% = ${airHumidityOk}`,
+          shouldDeactivate: shouldDeactivate,
           currentlyActive: true
         })
         
-        if (soilOptimal) {
-          console.log('🔴 [AUTO] ¡Humedad óptima alcanzada! Desactivando riego automático...')
+        if (shouldDeactivate) {
+          console.log('🔴 [AUTO] ¡Todas las condiciones son óptimas! Desactivando riego automático...')
           
           try {
             const response = await IrrigationAPI.toggleAutomaticPump(userStore.user.id, 'deactivate')
