@@ -250,17 +250,25 @@ export function useSensorData() {
         })
         
         if (shouldDeactivate) {
-          console.log('🔴 [AUTO] ¡Todas las condiciones son óptimas! Desactivando riego automático...')
+          console.log('🔴 [AUTO] ¡Todas las condiciones son óptimas! Desactivando y cancelando configuración automática...')
           
           try {
-            const response = await IrrigationAPI.toggleAutomaticPump(userStore.user.id, 'deactivate')
+            // 1. Desactivar el riego
+            const deactivateResponse = await IrrigationAPI.toggleAutomaticPump(userStore.user.id, 'deactivate')
             
-            if (response.success) {
+            if (deactivateResponse.success) {
               console.log('✅ [AUTO] Riego automático DESACTIVADO exitosamente')
-              // NO RECARGAR - Solo actualizar estado reactivo
-              // El estado se actualizará automáticamente en la próxima consulta
+              
+              // 2. Cancelar completamente la configuración automática para permitir otros modos
+              try {
+                await IrrigationAPI.cancelAutomaticConfig(userStore.user.id)
+                console.log('✅ [AUTO] Configuración automática CANCELADA - otros modos desbloqueados')
+              } catch (cancelError) {
+                console.error('❌ [AUTO] Error cancelando configuración:', cancelError)
+              }
+              
             } else {
-              console.log('⚠️ [AUTO] Error en la desactivación:', response.message)
+              console.log('⚠️ [AUTO] Error en la desactivación:', deactivateResponse.message)
             }
           } catch (apiError) {
             console.error('❌ [AUTO] Error llamando API de desactivación:', apiError)

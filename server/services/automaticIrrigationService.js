@@ -92,13 +92,9 @@ const evaluateAutomaticIrrigation = async (deviceId, sensorData) => {
       `;
       const pumpActivationResult = await client.query(insertPumpQuery, [config.config_id]);
       
-      // Enviar comando ON
-      try {
-        await sendDownlinkForConfig(config.config_id, 'ON');
-        console.log('✅ [AUTO] Comando ON enviado exitosamente');
-      } catch (downlinkError) {
-        console.error('❌ [AUTO] Error enviando comando ON:', downlinkError);
-      }
+      // NOTA: El comando ON se envía desde el frontend (toggleAutomaticPump)
+      // para evitar comandos duplicados. No enviar desde aquí.
+      console.log('ℹ️ [AUTO] Comando ON será enviado por el frontend');
       
       // Crear alerta
       await createAutomaticIrrigationStartedAlert(
