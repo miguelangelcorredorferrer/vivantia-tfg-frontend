@@ -3,11 +3,11 @@
 <template>
   <div class="space-y-8">
     <div class="max-w-2xl mx-auto">
-      <!-- Widget de estado automático cuando está activo (solo cuando está configurado pero no regando ni pausado) -->
-      <div v-if="isAutomaticActive && !isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+      <!-- Widget de estado automático cuando está configurado pero no activo -->
+      <div v-if="automaticConfig && !automaticConfig.is_active" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
         <div class="text-xs text-gray-500 mb-2">
-          Debug: isAutomaticActive={{ isAutomaticActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
+          Debug: automaticConfig={{ !!automaticConfig }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}
         </div>
         <h2 class="text-xl font-bold text-white mb-6">Modo Automático Configurado</h2>
         
@@ -25,27 +25,33 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <p class="text-gray-400">Temperatura Máxima:</p>
-                <p class="font-bold text-white">{{ getThresholdsFromConfig().maxTemperature }}°C</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig()?.maxTemperature || 0 }}°C</p>
               </div>
               <div>
                 <p class="text-gray-400">Hum. Suelo Min:</p>
-                <p class="font-bold text-white">{{ getThresholdsFromConfig().minSoilHumidity }}%</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig()?.minSoilHumidity || 0 }}%</p>
               </div>
               <div>
                 <p class="text-gray-400">Hum. Suelo Max:</p>
-                <p class="font-bold text-white">{{ getThresholdsFromConfig().maxSoilHumidity }}%</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig()?.maxSoilHumidity || 0 }}%</p>
               </div>
               <div>
                 <p class="text-gray-400">Hum. Aire Min:</p>
-                <p class="font-bold text-white">{{ getThresholdsFromConfig().minAirHumidity }}%</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig()?.minAirHumidity || 0 }}%</p>
               </div>
               <div>
                 <p class="text-gray-400">Hum. Aire Max:</p>
-                <p class="font-bold text-white">{{ getThresholdsFromConfig().maxAirHumidity }}%</p>
+                <p class="font-bold text-white">{{ getThresholdsFromConfig()?.maxAirHumidity || 0 }}%</p>
               </div>
               <div>
                 <p class="text-gray-400">Duración Máxima:</p>
                 <p class="font-bold text-white">{{ getDurationFromConfig() }}</p>
+              </div>
+              <div>
+                <p class="text-gray-400">Estado de la Configuración:</p>
+                <p class="font-bold" :class="automaticConfig?.is_active ? 'text-green-400' : 'text-orange-400'">
+                  {{ automaticConfig?.is_active ? 'Activa (Riego iniciado)' : 'Preparada (Esperando condiciones)' }}
+                </p>
               </div>
             </div>
           </div>
@@ -75,7 +81,7 @@
       </div>
 
       <!-- Widget de riego activo cuando está regando -->
-      <div v-if="isAutomaticActive && isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+      <div v-if="automaticConfig?.is_active && isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
         <div class="text-xs text-gray-500 mb-2">
           Debug: isAutomaticActive={{ isAutomaticActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
@@ -99,8 +105,8 @@
                 <p class="font-bold text-white">Bomba Activa</p>
               </div>
               <div>
-                <p class="text-gray-400">Tiempo Restante:</p>
-                <p class="font-bold text-white">{{ remainingTime || 'Calculando...' }}</p>
+                <p class="text-gray-400">Estado:</p>
+                <p class="font-bold text-white">Riego Activo</p>
               </div>
             </div>
           </div>
@@ -127,7 +133,7 @@
       </div>
 
       <!-- Widget de riego pausado -->
-      <div v-if="isAutomaticActive && isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+      <div v-if="automaticConfig?.is_active && isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
         <div class="text-xs text-gray-500 mb-2">
           Debug: isAutomaticActive={{ isAutomaticActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
@@ -151,8 +157,8 @@
                 <p class="font-bold text-white">Pausado</p>
               </div>
               <div>
-                <p class="text-gray-400">Tiempo Restante:</p>
-                <p class="font-bold text-white">{{ remainingTime || 'Calculando...' }}</p>
+                <p class="text-gray-400">Estado:</p>
+                <p class="font-bold text-white">Riego Activo</p>
               </div>
             </div>
           </div>
@@ -212,14 +218,17 @@
       <!-- Estado actual de sensores -->
       <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <h2 class="text-xl font-bold text-white mb-4">Estado Actual de Sensores</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div v-if="lastSensorUpdate" class="text-xs text-gray-400 mb-4">
+            Última actualización: {{ new Date(lastSensorUpdate).toLocaleString('es-ES') }}
+          </div>
+          <div v-if="lastSensorUpdate" class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Temperatura -->
           <div class="bg-gradient-to-br from-red-900/30 to-orange-900/30 p-4 rounded-lg border border-red-700/50">
             <div class="flex items-center justify-between mb-2">
               <h3 class="font-medium text-red-300">Temperatura</h3>
               <ThermometerIcon />
             </div>
-            <p class="text-3xl font-bold text-red-200">{{ currentTemperature }}°C</p>
+            <p class="text-3xl font-bold text-red-200">{{ currentTemperature.toFixed(1) }}°C</p>
             <p class="text-sm text-red-300 mt-1">{{ getTemperatureStatus() }}</p>
           </div>
 
@@ -229,7 +238,7 @@
               <h3 class="font-medium text-blue-300">Humedad Suelo</h3>
               <HumidityIcon />
             </div>
-            <p class="text-3xl font-bold text-blue-200">{{ currentSoilHumidity }}%</p>
+            <p class="text-3xl font-bold text-blue-200">{{ currentSoilHumidity.toFixed(1) }}%</p>
             <p class="text-sm text-blue-300 mt-1">{{ getSoilHumidityStatus() }}</p>
           </div>
           
@@ -239,9 +248,13 @@
               <h3 class="font-medium text-cyan-300">Humedad Aire</h3>
               <HumidityIcon />
             </div>
-            <p class="text-3xl font-bold text-cyan-200">{{ currentAirHumidity }}%</p>
+            <p class="text-3xl font-bold text-cyan-200">{{ currentAirHumidity.toFixed(1) }}%</p>
             <p class="text-sm text-cyan-300 mt-1">{{ getAirHumidityStatus() }}</p>
           </div>
+        </div>
+          <div v-else class="text-center text-gray-400 py-8">
+            <p>📡 Cargando datos de sensores...</p>
+            <p class="text-sm mt-2">Asegúrate de que tu dispositivo IoT esté enviando datos.</p>
         </div>
       </div>
 
@@ -393,35 +406,26 @@
             </div>
           </div>
 
-          <!-- Configuración de tiempo -->
+          <!-- Información de funcionamiento automático -->
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
-              Duración Máxima del Riego
+              Funcionamiento Automático
             </label>
-            <div class="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-4">
-              <div class="grid grid-cols-2 gap-4 mb-3">
-                <div>
-                  <label class="block text-xs text-gray-400 mb-1">Minutos</label>
-                  <input 
-                    v-model.number="duration.minutes"
-                    type="number" 
-                    min="1" 
-                    max="30"
-                    class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-                  >
+            <div class="bg-green-900/30 border border-green-700/50 rounded-lg p-4">
+              <div class="flex items-center space-x-3 mb-3">
+                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <CheckIcon class="w-5 h-5 text-white" />
                 </div>
-                <div>
-                  <label class="block text-xs text-gray-400 mb-1">Segundos</label>
-                  <input 
-                    v-model.number="duration.seconds"
-                    type="number" 
-                    min="0" 
-                    max="59"
-                    class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-                  >
+                <h4 class="font-medium text-green-300">Riego Inteligente</h4>
                 </div>
-              </div>
-              <p class="text-xs text-yellow-300">Tiempo máximo de riego por activación automática</p>
+              <p class="text-sm text-green-200 mb-2">
+                El sistema activará y desactivará el riego automáticamente basándose en:
+              </p>
+              <ul class="text-xs text-green-300 space-y-1">
+                <li>• <strong>Activación:</strong> Temperatura alta + (Humedad suelo baja O Humedad aire baja)</li>
+                <li>• <strong>Desactivación:</strong> Humedad del suelo alcanza el nivel óptimo</li>
+                <li>• <strong>Sin duración fija:</strong> El riego se ajusta a las condiciones reales</li>
+              </ul>
             </div>
           </div>
 
@@ -434,7 +438,8 @@
               <p><strong>Temperatura máxima:</strong> {{ thresholds.maxTemperature }}°C</p>
               <p><strong>Humedad suelo objetivo:</strong> {{ thresholds.minSoilHumidity }}% - {{ thresholds.maxSoilHumidity }}%</p>
               <p><strong>Humedad aire objetivo:</strong> {{ thresholds.minAirHumidity }}% - {{ thresholds.maxAirHumidity }}%</p>
-              <p><strong>Duración máxima:</strong> {{ formatDuration() }}</p>
+              <p><strong>Cultivo seleccionado:</strong> {{ selectedCrop?.name || 'Ninguno' }}</p>
+              <p><strong>Dispositivo activo:</strong> {{ activeDevice?.device_name || 'Ninguno' }}</p>
               <p><strong>Estado actual:</strong> {{ getCurrentConditionStatus() }}</p>
             </div>
           </div>
@@ -474,7 +479,7 @@
             <strong>Temperatura máxima:</strong> {{ thresholds.maxTemperature }}°C<br>
             <strong>Humedad suelo:</strong> {{ thresholds.minSoilHumidity }}% - {{ thresholds.maxSoilHumidity }}%<br>
             <strong>Humedad aire:</strong> {{ thresholds.minAirHumidity }}% - {{ thresholds.maxAirHumidity }}%<br>
-            <strong>Duración máxima:</strong> {{ formatDuration() }}
+            <strong>Funcionamiento:</strong> Automático (basado en sensores)
           </p>
           <div class="flex space-x-4">
             <button 
@@ -532,8 +537,15 @@
 definePageMeta({
   middleware: ['auth', 'visitor-block', 'crop-required']
 })
+
 import { useToastNotifications } from '~/composables/useToastNotifications'
-import { useIrrigationModes } from '~/composables/useIrrigationModes'
+import { useCropStore } from '~/stores/crop'
+import { useDeviceStore } from '~/stores/device'
+import { useUserStore } from '~/stores/user'
+import { useIrrigationStore } from '~/stores/irrigation'
+import { useSensorData } from '~/composables/useSensorData.js'
+import IrrigationAPI from '~/api/IrrigationAPI'
+import SensorAPI from '~/api/SensorAPI'
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -546,29 +558,42 @@ import {
   WarningIcon
 } from '~/assets/icons'
 
-// Sistema de modos de riego
+// Stores
+const cropStore = useCropStore()
+const deviceStore = useDeviceStore()
+const userStore = useUserStore()
+const irrigationStore = useIrrigationStore()
+
+// Usar composable de datos de sensores
 const {
-  isAutomaticActive,
-  isWatering,
-  remainingTime,
-  isPaused,
-  modeConfig,
-  activeMode,
-  activateAutomaticMode,
-  cancelActiveMode,
-  cancelAutomaticMode,
-  pauseIrrigation,
-  resumeIrrigation,
-  triggerAutomaticWatering,
-  clearAllIntervals
-} = useIrrigationModes()
+  currentTemperature, 
+  currentSoilHumidity, 
+  currentAirHumidity,
+  realDataPoints
+} = useSensorData()
 
-// Estados reactivos para sensores (simulados)
-const currentTemperature = ref(24.5)
-const currentSoilHumidity = ref(45)
-const currentAirHumidity = ref(65)
+// Composables
+const { showSuccess, showError, showWarning } = useToastNotifications()
+const router = useRouter()
 
-// Configuración de umbrales
+// Estados reactivos
+const automaticConfig = ref(null)
+const isWatering = ref(false)
+const isPaused = ref(false)
+const isActivating = ref(false)
+const showCancelModal = ref(false)
+const showConfirmModal = ref(false)
+
+// Computed properties para datos del cultivo y dispositivo
+const selectedCrop = computed(() => {
+  return cropStore.crops.find(crop => crop.selected) || null
+})
+
+const activeDevice = computed(() => {
+  return deviceStore.devices.find(device => device.is_active_communication) || null
+})
+
+// Configuración de umbrales (inicializa con datos del cultivo)
 const thresholds = ref({
   maxTemperature: 28,
   minSoilHumidity: 30,
@@ -577,23 +602,87 @@ const thresholds = ref({
   maxAirHumidity: 80
 })
 
-const duration = ref({
-  minutes: 10,
-  seconds: 0
+// Computed adicional para último timestamp (del composable)
+const lastSensorUpdate = computed(() => {
+  if (realDataPoints.value && realDataPoints.value.length > 0) {
+    const lastPoint = realDataPoints.value[realDataPoints.value.length - 1]
+    return lastPoint.received_at
+  }
+  return null
 })
 
 
 
-const showConfirmModal = ref(false)
-const showCancelModal = ref(false)
+// Métodos para manejo de datos de sensores
 
-// Composables
-const { toast } = useToastNotifications()
-const router = useRouter()
 
-// Helper functions para toast
-const showSuccess = (message) => toast.success(message)
-const showError = (message) => toast.error(message)
+
+
+const checkAutomaticStatus = async () => {
+  if (userStore.isDemoMode) return
+  
+  try {
+    console.log('🔄 Verificando estado automático...')
+    const response = await IrrigationAPI.getAutomaticConfigStatus(userStore.user.id)
+    
+    if (response.success && response.data) {
+      automaticConfig.value = response.data
+      isWatering.value = response.data.pump_status === 'active'
+      isPaused.value = response.data.pump_status === 'paused'
+      
+      // Actualizar store de irrigación
+      irrigationStore.activeMode = 'automatic'
+      irrigationStore.irrigationConfig = response.data
+      
+      // Configuración activa detectada
+      if (automaticConfig.value) {
+        console.log('✅ Configuración automática activa encontrada')
+        
+        // ✅ ESTADO AUTOMÁTICO: Si se detecta que el riego se activó automáticamente
+        if (response.data.is_active && response.data.pump_status === 'active') {
+          console.log('✅ Riego automático detectado - estado actualizado reactivamente')
+          // NO RECARGAR - El estado ya se actualizó arriba en las líneas 629-631
+        }
+      }
+      
+      console.log('✅ Estado automático cargado:', response.data)
+    } else if (response.isNotFound) {
+      // 404 esperado - no hay configuración automática activa
+      automaticConfig.value = null
+      isWatering.value = false
+      isPaused.value = false
+      irrigationStore.activeMode = null
+      irrigationStore.irrigationConfig = null
+      console.log('ℹ️ No hay configuración automática activa (respuesta normal)')
+    } else {
+      // Otro tipo de respuesta no exitosa
+      automaticConfig.value = null
+      isWatering.value = false
+      isPaused.value = false
+      irrigationStore.activeMode = null
+      irrigationStore.irrigationConfig = null
+      console.log('ℹ️ No hay configuración automática activa')
+    }
+  } catch (error) {
+    // Si es un 404, significa que no hay configuración activa (es normal)
+    if (error.status === 404 || error.statusCode === 404) {
+      console.log('ℹ️ No hay configuración automática activa (404 es normal)')
+      automaticConfig.value = null
+      isWatering.value = false
+      isPaused.value = false
+      irrigationStore.activeMode = null
+      irrigationStore.irrigationConfig = null
+    } else {
+      console.error('❌ Error verificando estado automático:', error)
+      // Error real - también limpiar estado
+      automaticConfig.value = null
+      isWatering.value = false
+      isPaused.value = false
+      irrigationStore.activeMode = null
+      irrigationStore.irrigationConfig = null
+    }
+  }
+}
 
 // Métodos
 const getTemperatureStatus = () => {
@@ -636,19 +725,18 @@ const getCurrentConditionStatus = () => {
   return 'Condiciones estables - Sin riego necesario'
 }
 
-const formatDuration = () => {
-  const totalMinutes = duration.value.minutes || 0
-  const totalSeconds = duration.value.seconds || 0
-  
-  let result = ''
-  if (totalMinutes > 0) {
-    result += `${totalMinutes} min`
+// Función para cargar umbrales desde el cultivo seleccionado
+const loadCropThresholds = () => {
+  if (selectedCrop.value) {
+    thresholds.value = {
+      maxTemperature: selectedCrop.value.temperature_max || 28,
+      minSoilHumidity: selectedCrop.value.soil_humidity_min || 30,
+      maxSoilHumidity: selectedCrop.value.soil_humidity_max || 70,
+      minAirHumidity: selectedCrop.value.air_humidity_min || 40,
+      maxAirHumidity: selectedCrop.value.air_humidity_max || 80
+    }
+    console.log('🌱 Umbrales cargados desde cultivo:', thresholds.value)
   }
-  if (totalSeconds > 0) {
-    result += `${result ? ' ' : ''}${totalSeconds} seg`
-  }
-  
-  return result || 'No configurado'
 }
 
 const isValidConfiguration = () => {
@@ -658,7 +746,7 @@ const isValidConfiguration = () => {
     thresholds.value.maxSoilHumidity > thresholds.value.minSoilHumidity &&
     thresholds.value.minAirHumidity >= 0 &&
     thresholds.value.maxAirHumidity > thresholds.value.minAirHumidity &&
-    ((duration.value.minutes > 0) || (duration.value.seconds > 0))
+    selectedCrop.value && activeDevice.value // Validar que haya cultivo y dispositivo
   )
 }
 
@@ -681,79 +769,154 @@ const confirmConfiguration = () => {
   showConfirmModal.value = true
 }
 
-const saveAutomaticConfiguration = () => {
+const saveAutomaticConfiguration = async () => {
   console.log('saveAutomaticConfiguration llamado')
   
   // Cerrar el modal de confirmación INMEDIATAMENTE
   showConfirmModal.value = false
+  isActivating.value = true
   
-  // Pequeño delay para asegurar que el modal se cierre
-  setTimeout(() => {
-    // Configuración del modo automático
-    const config = {
-      thresholds: {
-        maxTemperature: thresholds.value.maxTemperature,
-        minSoilHumidity: thresholds.value.minSoilHumidity,
-        maxSoilHumidity: thresholds.value.maxSoilHumidity,
-        minAirHumidity: thresholds.value.minAirHumidity,
-        maxAirHumidity: thresholds.value.maxAirHumidity
-      },
-      duration: {
-        minutes: duration.value.minutes || 0,
-        seconds: duration.value.seconds || 0
-      }
+  try {
+    // Configuración del modo automático (sin duración, se basa en sensores)
+    const configData = {
+      user_id: userStore.user.id,
+      crop_id: selectedCrop.value.id
     }
     
-    console.log('Guardando configuración automática:', config)
+    console.log('🟢 Guardando configuración automática:', configData)
     
-    // Activar el modo automático usando el composable
-    activateAutomaticMode(config)
+    // Crear configuración automática usando la nueva API
+    const response = await IrrigationAPI.createSimpleAutomaticConfig(configData)
     
-    showSuccess('Modo automático configurado exitosamente')
-    
-    // Forzar la reactividad después de activar el modo
-    nextTick(() => {
-      console.log('Configuración guardada - verificando estado:', {
-        isAutomaticActive: isAutomaticActive.value,
-        isWatering: isWatering.value,
-        modeConfig: modeConfig.value
-      })
+    if (response.success) {
+      automaticConfig.value = response.data
       
-      // Forzar una actualización adicional si es necesario
-      if (!isAutomaticActive.value) {
-        console.log('Forzando actualización del estado...')
-        // Trigger reactivity
-        isAutomaticActive.value = isAutomaticActive.value
-      }
-    })
-  }, 100)
+      // ✅ CRÍTICO: Actualizar store para bloquear otros modos
+      // Incluso si is_active=false (preparada), el modo automático debe bloquear otros
+      irrigationStore.activeMode = 'automatic'
+      irrigationStore.irrigationConfig = response.data
+      
+      showSuccess('Modo automático configurado exitosamente')
+      console.log('✅ Configuración automática guardada y otros modos bloqueados:', response.data)
+      console.log('🔒 Modo automático activo en store - otros modos bloqueados')
+      
+    } else {
+      showError(response.message || 'Error al guardar configuración automática')
+    }
+  } catch (error) {
+    console.error('❌ Error guardando configuración automática:', error)
+    showError('Error al guardar configuración automática')
+  } finally {
+    isActivating.value = false
+  }
 }
 
 const goBack = () => {
   router.push('/modo')
 }
 
-const handleCancelAutomaticMode = () => {
-  console.log('handleCancelAutomaticMode llamado')
+// Funciones para pausar y reanudar riego automático
+const pauseIrrigation = async () => {
   try {
-    // Cancelar el modo automático usando el composable
-    cancelAutomaticMode()
+    if (!automaticConfig.value) return
     
-    // Mostrar mensaje de éxito
+    // Usar la API de pump activations para pausar
+    const response = await $fetch(`/api/irrigation/pump-activation/${automaticConfig.value.pump_activation_id}/pause`, {
+      method: 'PUT',
+      baseURL: 'http://localhost:3001',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    if (response.success) {
+      isPaused.value = true
+      isWatering.value = false
+      showSuccess('Riego automático pausado')
+    }
+  } catch (error) {
+    console.error('Error pausando riego:', error)
+    showError('Error al pausar el riego')
+  }
+}
+
+const resumeIrrigation = async () => {
+  try {
+    if (!automaticConfig.value) return
+    
+    // Usar la API de pump activations para reanudar
+    const response = await $fetch(`/api/irrigation/pump-activation/${automaticConfig.value.pump_activation_id}/resume`, {
+      method: 'PUT',
+      baseURL: 'http://localhost:3001',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    if (response.success) {
+      isPaused.value = false
+      isWatering.value = true
+      showSuccess('Riego automático reanudado')
+    }
+  } catch (error) {
+    console.error('Error reanudando riego:', error)
+    showError('Error al reanudar el riego')
+  }
+}
+
+// Función triggerAutomaticWatering implementada más abajo
+
+const handleCancelAutomaticMode = async () => {
+  console.log('handleCancelAutomaticMode llamado')
+  
+  try {
+    // Cancelar el modo automático usando la nueva API
+    const response = await IrrigationAPI.cancelAutomaticConfig(userStore.user.id)
+    
+    if (response.success) {
+      // Limpiar estado local
+      automaticConfig.value = null
+      isWatering.value = false
+      isPaused.value = false
+      
+      // Actualizar store de irrigación
+      irrigationStore.activeMode = null
+      irrigationStore.irrigationConfig = null
+      
     showSuccess('Configuración automática cancelada')
+      console.log('✅ Configuración automática cancelada')
     
     // Cerrar el modal
     showCancelModal.value = false
-    
-    console.log('Configuración cancelada exitosamente')
     
     // Redirigir a la página principal después de un breve delay
     setTimeout(() => {
       router.push('/modo')
     }, 500)
-    
+    } else if (response.isNotFound) {
+      // 404 - No hay configuración para cancelar (es normal)
+      console.log('ℹ️ No hay configuración automática para cancelar')
+      
+      // Limpiar estado de todos modos
+      automaticConfig.value = null
+      isWatering.value = false
+      isPaused.value = false
+      irrigationStore.activeMode = null
+      irrigationStore.irrigationConfig = null
+      
+      showSuccess('No hay configuración activa')
+      showCancelModal.value = false
+      
+      setTimeout(() => {
+        router.push('/modo')
+      }, 500)
+    } else {
+      showError(response.message || 'Error al cancelar configuración automática')
+    }
   } catch (error) {
-    console.error('Error al cancelar configuración:', error)
+    console.error('❌ Error al cancelar configuración:', error)
     showError('Error al cancelar la configuración')
   }
 }
@@ -780,134 +943,190 @@ const closeConfirmModal = () => {
   }
 }
 
+// Función para simular activación automática
+const triggerAutomaticWatering = async () => {
+  if (userStore.isDemoMode) {
+    showWarning('La simulación no está disponible en modo demo')
+    return
+  }
+  
+  if (!automaticConfig.value) {
+    showError('No hay configuración automática guardada')
+    return
+  }
+  
+  if (!activeDevice.value) {
+    showError('No hay dispositivo activo')
+    return
+  }
+  
+  try {
+    console.log('🧪 Iniciando simulación de activación automática...')
+    
+    // 1. Obtener umbrales del cultivo
+    const thresholds = getThresholdsFromConfig()
+    console.log('📊 Umbrales del cultivo:', thresholds)
+    
+    // 2. Crear datos de simulación que GARANTIZAN activación
+    // Para activar necesitamos: temp > max OR soil < min OR air < min
+    const simulationData = {
+      device_id: activeDevice.value.id,
+      temperature: parseFloat(thresholds.maxTemperature) + 2,  // +2°C sobre máximo (GARANTIZA activación)
+      air_humidity: parseFloat(thresholds.minAirHumidity) - 5, // -5% bajo mínimo (GARANTIZA activación)
+      // Para humedad suelo: si min es 0, usar -1 para que sea menor que 0
+      soil_humidity: Math.max(parseFloat(thresholds.minSoilHumidity) - 5, -1) // Garantizar que sea menor que mínimo
+    }
+    
+    console.log('🧪 Datos de simulación:', simulationData)
+    console.log(`   - Temp: ${simulationData.temperature}°C (máx: ${thresholds.maxTemperature}°C)`)
+    console.log(`   - Aire: ${simulationData.air_humidity}% (mín: ${thresholds.minAirHumidity}%)`)
+    console.log(`   - Suelo: ${simulationData.soil_humidity}% (mín: ${thresholds.minSoilHumidity}%)`)
+    
+    // 3. Insertar datos en la base de datos usando SensorAPI
+    console.log('💾 Insertando datos de simulación...')
+    const insertResponse = await SensorAPI.create({
+      device_id: simulationData.device_id,
+      temperature: simulationData.temperature,
+      air_humidity: simulationData.air_humidity,
+      soil_humidity: simulationData.soil_humidity
+    })
+    
+    console.log('✅ Datos insertados:', insertResponse)
+    
+    // 4. Llamar directamente al endpoint simple para activar el riego
+    console.log('🤖 Activando riego automático directamente...')
+    const evaluationResponse = await IrrigationAPI.toggleAutomaticPump(userStore.user.id, 'activate')
+    
+    console.log('✅ Evaluación completada:', evaluationResponse)
+    
+    // 5. Verificar el resultado
+    if (evaluationResponse.success && evaluationResponse.data.pumpStatus === 'active') {
+      showSuccess('¡Simulación exitosa! Riego automático activado')
+      console.log('✅ Riego activado correctamente')
+      console.log('🚰 Estado del riego:', evaluationResponse.data)
+      
+      // Actualizar estado local
+      automaticConfig.value = {
+        ...automaticConfig.value,
+        is_active: evaluationResponse.data.configActive
+      }
+      isWatering.value = evaluationResponse.data.pumpStatus === 'active'
+      
+      // NO RECARGAR - Actualizar estado automáticamente
+      // El estado se actualizará en la próxima verificación automática
+      setTimeout(() => {
+        checkAutomaticStatus()
+      }, 1000)
+    } else {
+      showWarning('Datos insertados correctamente pero las condiciones no activaron el riego')
+      console.log('⚠️ Datos insertados pero condiciones no cumplidas:')
+      console.log('📊 Última lectura:', evaluationResponse.data?.latestReading)
+      console.log('🚰 Estado:', evaluationResponse.data?.result)
+    }
+    
+  } catch (error) {
+    console.error('❌ Error en simulación:', error)
+    showError('Error al simular activación: ' + error.message)
+  }
+}
+
 // Funciones para obtener información desde la configuración guardada
 const getThresholdsFromConfig = () => {
-  if (!modeConfig.value || !modeConfig.value.thresholds) {
+  if (!automaticConfig.value) {
     return {
-      maxTemperature: 0,
-      minSoilHumidity: 0,
-      maxSoilHumidity: 0,
-      minAirHumidity: 0,
-      maxAirHumidity: 0
+      maxTemperature: selectedCrop.value?.temperature_max || 0,
+      minSoilHumidity: selectedCrop.value?.soil_humidity_min || 0,
+      maxSoilHumidity: selectedCrop.value?.soil_humidity_max || 0,
+      minAirHumidity: selectedCrop.value?.air_humidity_min || 0,
+      maxAirHumidity: selectedCrop.value?.air_humidity_max || 0
     }
   }
   
-  return modeConfig.value.thresholds
+  return {
+    maxTemperature: automaticConfig.value.temperature_max || selectedCrop.value?.temperature_max || 0,
+    minSoilHumidity: automaticConfig.value.soil_humidity_min || selectedCrop.value?.soil_humidity_min || 0,
+    maxSoilHumidity: automaticConfig.value.soil_humidity_max || selectedCrop.value?.soil_humidity_max || 0,
+    minAirHumidity: automaticConfig.value.air_humidity_min || selectedCrop.value?.air_humidity_min || 0,
+    maxAirHumidity: automaticConfig.value.air_humidity_max || selectedCrop.value?.air_humidity_max || 0
+  }
 }
 
 const getDurationFromConfig = () => {
-  if (!modeConfig.value || !modeConfig.value.duration) {
-    return 'No configurado'
-  }
-  
-  const minutes = modeConfig.value.duration.minutes || 0
-  const seconds = modeConfig.value.duration.seconds || 0
-  
-  if (minutes === 0 && seconds === 0) {
-    return 'No configurado'
-  }
-  
-  let result = ''
-  if (minutes > 0) {
-    result += `${minutes} min`
-  }
-  if (seconds > 0) {
-    result += `${result ? ' ' : ''}${seconds} seg`
-  }
-  
-  return result
+  // En modo automático no hay duración fija - se basa en sensores
+  return 'Automático (basado en sensores)'
 }
 
-// Simular actualizaciones de sensores en tiempo real
-onMounted(() => {
-  setInterval(() => {
-    // Simular variaciones pequeñas en los sensores
-    currentTemperature.value += (Math.random() - 0.5) * 0.5
-    currentSoilHumidity.value += (Math.random() - 0.5) * 2
-    currentAirHumidity.value += (Math.random() - 0.5) * 1.5
+// Lifecycle hooks
+onMounted(async () => {
+  try {
+    console.log('🚀 Inicializando página modo automático...')
     
-    // Mantener valores en rangos realistas
-    currentTemperature.value = Math.max(15, Math.min(40, currentTemperature.value))
-    currentSoilHumidity.value = Math.max(0, Math.min(100, currentSoilHumidity.value))
-    currentAirHumidity.value = Math.max(0, Math.min(100, currentAirHumidity.value))
+    // Cargar datos de stores si no están cargados
+    if (cropStore.crops.length === 0) {
+      await cropStore.fetchAllUserCrops(userStore.user.id)
+    }
+    if (deviceStore.devices.length === 0) {
+      await deviceStore.fetchUserDevice(userStore.user.id)
+    }
     
-    // Redondear para mostrar valores limpios
-    currentTemperature.value = Math.round(currentTemperature.value * 10) / 10
-    currentSoilHumidity.value = Math.round(currentSoilHumidity.value)
-    currentAirHumidity.value = Math.round(currentAirHumidity.value)
-  }, 3000)
-})
-
-// Watcher para asegurar que el tiempo restante se actualice
-watch(remainingTime, (newValue) => {
-  // Forzar la reactividad del tiempo restante
-  if (newValue) {
-    // Trigger reactivity
-    nextTick(() => {
-      // El tiempo se actualizará automáticamente
+    // Cargar umbrales desde el cultivo seleccionado
+    loadCropThresholds()
+    
+    // Verificar estado de configuración automática existente
+    await checkAutomaticStatus()
+    
+    // Configurar chequeo periódico cada 30 segundos para detectar cambios automáticos
+    const statusInterval = setInterval(async () => {
+      try {
+        await checkAutomaticStatus()
+      } catch (error) {
+        console.error('Error en chequeo periódico:', error)
+      }
+    }, 30000) // 30 segundos
+    
+    // Limpiar intervalo al desmontar
+    onUnmounted(() => {
+      if (statusInterval) {
+        clearInterval(statusInterval)
+      }
     })
+    
+    // Los datos de sensores se cargan automáticamente por el composable useSensorData
+    console.log('📊 Datos de sensores gestionados por composable')
+    
+    console.log('✅ Página modo automático inicializada')
+  } catch (error) {
+    console.error('❌ Error en onMounted:', error)
   }
 })
 
-// Watcher para asegurar que el estado se mantenga sincronizado
-watch(isAutomaticActive, (newValue) => {
-  console.log('isAutomaticActive cambió a:', newValue, 'activeMode:', activeMode.value)
-})
-
-// Watcher para monitorear el estado de riego
-watch(isWatering, (newValue) => {
-  console.log('isWatering cambió a:', newValue, 'isPaused:', isPaused.value)
-})
-
-watch(isPaused, (newValue) => {
-  console.log('isPaused cambió a:', newValue, 'isWatering:', isWatering.value)
-})
-
-// Watcher para monitorear cambios en modeConfig
-watch(modeConfig, (newValue) => {
-  console.log('modeConfig cambió a:', newValue)
-  if (newValue && Object.keys(newValue).length > 0) {
-    console.log('Configuración detectada - forzando reactividad')
-    nextTick(() => {
-      // Forzar actualización
-      isAutomaticActive.value = isAutomaticActive.value
-    })
-  }
-}, { deep: true })
-
-// Watcher para monitorear el estado del modal
-watch(showCancelModal, (newValue) => {
-  console.log('showCancelModal cambió a:', newValue)
-})
-
-// Watcher para monitorear el modal de confirmación
-watch(showConfirmModal, (newValue) => {
-  console.log('showConfirmModal cambió a:', newValue)
-  // Forzar la reactividad
-  if (!newValue) {
-    nextTick(() => {
-      console.log('Modal de confirmación cerrado - reactividad forzada')
-    })
-  }
-})
-
-// Watcher para monitorear cuando se activa el modo automático
-watch(isAutomaticActive, (newValue, oldValue) => {
-  console.log('isAutomaticActive cambió de', oldValue, 'a:', newValue, 'activeMode:', activeMode.value)
-  if (newValue) {
-    console.log('Modo automático activado - mostrando widget de configuración')
-    // Forzar la reactividad
-    nextTick(() => {
-      console.log('Reactividad forzada después de activar modo automático')
-      // Forzar una actualización adicional
-      isAutomaticActive.value = isAutomaticActive.value
-    })
+// Watcher para monitorear cambios en el cultivo seleccionado
+watch(selectedCrop, (newCrop) => {
+  if (newCrop) {
+    loadCropThresholds()
   }
 }, { immediate: true })
 
-// Limpiar intervalos al desmontar el componente
+// Watcher para monitorear cambios en automaticConfig
+watch(automaticConfig, (newConfig) => {
+  console.log('automaticConfig cambió:', !!newConfig)
+  if (newConfig) {
+    console.log('✅ Configuración automática activa detectada')
+  }
+}, { deep: true })
+
+// Watcher para monitorear el estado de riego
+watch(isWatering, (newValue) => {
+  console.log('isWatering cambió a:', newValue)
+})
+
+watch(isPaused, (newValue) => {
+  console.log('isPaused cambió a:', newValue)
+})
+
 onUnmounted(() => {
-  clearAllIntervals()
+  // El composable useSensorData maneja su propio cleanup
+  console.log('🧹 Componente automático desmontado')
 })
 
 // Meta del documento

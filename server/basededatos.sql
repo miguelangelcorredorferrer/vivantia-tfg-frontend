@@ -98,7 +98,7 @@ CREATE TABLE irrigation_configs (
   is_active BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW(),
   last_irrigation_at TIMESTAMP,
-  duration_minutes INTEGER NOT NULL, 
+  duration_minutes INTEGER, 
   UNIQUE(user_id, crop_id, mode_type) 
 );
 

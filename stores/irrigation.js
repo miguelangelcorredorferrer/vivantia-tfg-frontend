@@ -237,12 +237,40 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         await loadActivePumpActivation(config.id)
       }
       
-      // Si no hay configuración activa, buscar configuraciones con activaciones programadas pendientes
+      // Si no hay configuración activa, buscar configuraciones automáticas preparadas o programadas pendientes
       if (!foundActiveConfig) {
-        console.log('🔍 No hay configuración activa, buscando configuraciones con activaciones programadas pendientes...')
+        console.log('🔍 No hay configuración activa, buscando configuraciones automáticas preparadas o programadas pendientes...')
         
+        // NUEVO: Verificar configuraciones automáticas preparadas (is_active = false)
         try {
-          // Obtener todas las configuraciones del usuario
+          const automaticStatusResponse = await IrrigationAPI.getAutomaticConfigStatus(userStore.user.id)
+          
+          if (automaticStatusResponse.success && automaticStatusResponse.data) {
+            console.log('🤖 Configuración automática preparada encontrada:', automaticStatusResponse.data)
+            
+            // Crear objeto compatible con el store
+            const automaticConfig = {
+              id: automaticStatusResponse.data.config_id,
+              mode_type: 'automatic',
+              is_active: automaticStatusResponse.data.is_active,
+              crop_id: automaticStatusResponse.data.crop_id,
+              user_id: userStore.user.id
+            }
+            
+            irrigationConfig.value = automaticConfig
+            activeMode.value = 'automatic'
+            foundActiveConfig = true
+            
+            console.log('✅ Configuración automática preparada cargada en store - otros modos bloqueados')
+          }
+        } catch (automaticError) {
+          console.log('ℹ️ No hay configuración automática preparada:', automaticError.message)
+        }
+        
+        // Solo buscar configuraciones programadas si no encontramos automática preparada
+        if (!foundActiveConfig) {
+          try {
+            // Obtener todas las configuraciones del usuario
           const allConfigsResponse = await IrrigationAPI.getIrrigationConfigsByUser(userStore.user.id)
           
           if (allConfigsResponse.success && allConfigsResponse.data.length > 0) {
@@ -285,8 +313,9 @@ export const useIrrigationStore = defineStore('irrigation', () => {
               }
             }
           }
-        } catch (programmedError) {
-          console.error('Error buscando configuraciones programadas:', programmedError)
+          } catch (programmedError) {
+            console.error('Error buscando configuraciones programadas:', programmedError)
+          }
         }
       }
       

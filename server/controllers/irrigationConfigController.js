@@ -1,12 +1,15 @@
 import { pool } from '../config/db.js';
 import { IrrigationConfig, AutomaticConfig, ProgrammedConfig } from '../models/IrrigationConfig.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
-import { 
-  createProgrammedSavedAlert, 
-  createProgrammedReminderAlert, 
-  createProgrammedScheduleAlert, 
-  createProgrammedCancelledAlert 
+import {
+  createProgrammedSavedAlert,
+  createProgrammedReminderAlert,
+  createProgrammedScheduleAlert,
+  createProgrammedCancelledAlert,
+  createAutomaticConfigSavedAlert,
+  createAutomaticConfigCancelledAlert
 } from '../services/irrigationAlertService.js';
+import { evaluateAutomaticIrrigation, getAutomaticIrrigationStatus } from '../services/automaticIrrigationService.js';
 
 // Crear nueva configuración de riego
 const createIrrigationConfig = async (req, res) => {
@@ -1023,6 +1026,247 @@ const findProgrammedConfigByIrrigationId = async (irrigation_config_id) => {
   }
 };
 
+// ===== FUNCIONES ESPECÍFICAS PARA MODO AUTOMÁTICO =====
+
+// Crear configuración automática simplificada (sin duración)
+const createSimpleAutomaticConfig = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { user_id, crop_id } = req.body;
+
+    if (!user_id || !crop_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'User ID y crop ID son obligatorios'
+      });
+    }
+
+    // Verificar cultivo del usuario
+    const cropQuery = `SELECT * FROM crops WHERE id = $1 AND user_id = $2`;
+    const cropResult = await client.query(cropQuery, [crop_id, user_id]);
+    if (cropResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Cultivo no encontrado' });
+    }
+    const crop = cropResult.rows[0];
+
+    // Verificar dispositivo activo
+    const deviceQuery = `SELECT id FROM devices WHERE user_id = $1 AND is_active_communication = true LIMIT 1`;
+    const deviceResult = await client.query(deviceQuery, [user_id]);
+    if (deviceResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No hay dispositivo IoT activo. Activa la comunicación de un dispositivo primero.' 
+      });
+    }
+
+    // Cancelar activaciones de bomba activas para configuraciones automáticas existentes
+    const cancelPumpQuery = `
+      UPDATE pump_activations 
+      SET status = 'cancelled', ended_at = NOW()
+      WHERE irrigation_config_id IN (
+        SELECT id FROM irrigation_configs 
+        WHERE user_id = $1 AND mode_type = 'automatic' AND is_active = true
+      ) AND status IN ('active', 'paused')
+      RETURNING id
+    `;
+    const canceledPumps = await client.query(cancelPumpQuery, [user_id]);
+    
+    if (canceledPumps.rows.length > 0) {
+      console.log('🚰 Canceladas', canceledPumps.rows.length, 'activaciones de bomba activas');
+      
+      // Enviar comando OFF si había bomba activa
+      try {
+        const { sendDownlinkForConfig } = await import('../services/ttnService.js');
+        // Obtener la configuración para enviar OFF
+        const configQuery = `SELECT id FROM irrigation_configs WHERE user_id = $1 AND mode_type = 'automatic' AND is_active = true LIMIT 1`;
+        const configResult = await client.query(configQuery, [user_id]);
+        if (configResult.rows.length > 0) {
+          await sendDownlinkForConfig(configResult.rows[0].id, 'OFF');
+          console.log('✅ Comando OFF enviado al cancelar configuración previa');
+        }
+      } catch (downlinkError) {
+        console.warn('⚠️ Error enviando comando OFF (no crítico):', downlinkError.message);
+      }
+    }
+
+    // Eliminar configuraciones automáticas existentes para este usuario y cultivo
+    const deleteQuery = `
+      DELETE FROM irrigation_configs 
+      WHERE user_id = $1 AND crop_id = $2 AND mode_type = 'automatic'
+    `;
+    await client.query(deleteQuery, [user_id, crop_id]);
+    console.log('🧹 Configuraciones automáticas previas eliminadas para usuario', user_id, 'y cultivo', crop_id);
+
+    // Crear nueva configuración automática preparada pero inactiva (sin duration_minutes)
+    // Se activará automáticamente cuando se cumplan las condiciones de riego
+    const insertQuery = `
+      INSERT INTO irrigation_configs (user_id, crop_id, mode_type, is_active)
+      VALUES ($1, $2, 'automatic', false)
+      RETURNING *
+    `;
+    const insertResult = await client.query(insertQuery, [user_id, crop_id]);
+    const irrigationConfig = insertResult.rows[0];
+
+    await client.query('COMMIT');
+
+    // Crear alerta de configuración guardada
+    try {
+      await createAutomaticConfigSavedAlert(user_id, crop.name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de configuración automática:', alertError.message);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Configuración automática creada exitosamente',
+      data: {
+        ...irrigationConfig,
+        crop: {
+          id: crop.id,
+          name: crop.name,
+          soil_humidity_min: crop.soil_humidity_min,
+          soil_humidity_max: crop.soil_humidity_max,
+          air_humidity_min: crop.air_humidity_min,
+          air_humidity_max: crop.air_humidity_max,
+          temperature_max: crop.temperature_max
+        },
+        thresholds: {
+          soil_humidity_min: crop.soil_humidity_min,
+          soil_humidity_max: crop.soil_humidity_max,
+          air_humidity_min: crop.air_humidity_min,
+          air_humidity_max: crop.air_humidity_max,
+          temperature_max: crop.temperature_max
+        }
+      }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error creando configuración automática simple:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al crear configuración automática',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};
+
+// Obtener estado actual del modo automático para un usuario
+const getAutomaticConfigStatus = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    if (!user_id) {
+      return res.status(400).json({ success: false, message: 'User ID es obligatorio' });
+    }
+
+    const status = await getAutomaticIrrigationStatus(user_id);
+    if (!status) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay configuración automática activa',
+        data: null
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Estado del modo automático obtenido exitosamente',
+      data: status
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo estado automático:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener estado del modo automático',
+      error: error.message
+    });
+  }
+};
+
+// Cancelar configuración automática activa del usuario
+const cancelAutomaticConfig = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { user_id } = req.params;
+    if (!user_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'User ID es obligatorio' });
+    }
+
+    const configQuery = `
+      SELECT ic.id, c.name as crop_name, ic.is_active
+      FROM irrigation_configs ic
+      INNER JOIN crops c ON c.id = ic.crop_id
+      WHERE ic.user_id = $1 AND ic.mode_type = 'automatic'
+      ORDER BY ic.created_at DESC
+      LIMIT 1
+    `;
+    const cfg = await client.query(configQuery, [user_id]);
+    if (cfg.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'No hay configuración automática para cancelar' });
+    }
+
+    const configId = cfg.rows[0].id;
+
+    // Eliminar configuración automática
+    await client.query(`DELETE FROM irrigation_configs WHERE id = $1`, [configId]);
+    console.log('🗑️ [AUTO] Configuración automática eliminada:', configId);
+
+    // Cancelar activaciones de bomba activas/pausadas y enviar OFF
+    const pumpQuery = `
+      UPDATE pump_activations 
+      SET status = 'cancelled', ended_at = NOW()
+      WHERE irrigation_config_id = $1 AND status IN ('active','paused')
+      RETURNING id
+    `;
+    const pumpResult = await client.query(pumpQuery, [configId]);
+    
+    // Si había bomba activa, enviar comando OFF
+    if (pumpResult.rows.length > 0) {
+      try {
+        const { sendDownlinkForConfig } = await import('../services/ttnService.js');
+        await sendDownlinkForConfig(configId, 'OFF');
+        console.log('✅ [AUTO] Comando OFF enviado al cancelar configuración');
+      } catch (downlinkError) {
+        console.error('❌ [AUTO] Error enviando comando OFF:', downlinkError);
+      }
+    }
+
+    await client.query('COMMIT');
+
+    // Crear alerta de configuración cancelada
+    try {
+      await createAutomaticConfigCancelledAlert(user_id, cfg.rows[0].crop_name);
+    } catch (alertError) {
+      console.warn('Error al crear alerta de cancelación automática:', alertError.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Configuración automática cancelada exitosamente',
+      data: { configId, cropName: cfg.rows[0].crop_name }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error cancelando configuración automática:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Error al cancelar configuración automática', 
+      error: error.message 
+    });
+  } finally {
+    client.release();
+  }
+};
+
 // ===== FUNCIONES PRINCIPALES DE IRRIGATION CONFIG =====
 export {
   createIrrigationConfig,
@@ -1045,10 +1289,262 @@ export {
   updateManualConfig
 };
 
+// Función para evaluar automáticamente después de insertar datos de simulación
+const evaluateAutomaticIrrigationForUser = async (req, res) => {
+  try {
+    console.log('🚀 [API] Iniciando evaluateAutomaticIrrigationForUser');
+    const { userId } = req.params;
+    console.log('👤 [API] UserId recibido:', userId);
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de usuario requerido'
+      });
+    }
+    
+    // 1. Buscar dispositivo activo del usuario
+    console.log('🔍 [API] Buscando dispositivo activo...');
+    const deviceResult = await pool.query(
+      'SELECT id, device_name FROM devices WHERE user_id = $1 AND is_active_communication = true LIMIT 1',
+      [userId]
+    );
+    console.log('📱 [API] Dispositivos encontrados:', deviceResult.rows.length);
+    
+    if (deviceResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay dispositivo activo para este usuario'
+      });
+    }
+    
+    const device = deviceResult.rows[0];
+    console.log('✅ [API] Dispositivo activo:', device);
+    
+    // 2. Obtener la última lectura de sensores
+    console.log('📊 [API] Obteniendo última lectura...');
+    const latestResult = await pool.query(
+      'SELECT * FROM sensor_readings WHERE device_id = $1 ORDER BY received_at DESC LIMIT 1',
+      [device.id]
+    );
+    console.log('📈 [API] Lecturas encontradas:', latestResult.rows.length);
+    
+    if (latestResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay lecturas de sensores para este dispositivo'
+      });
+    }
+    
+    const latestReading = latestResult.rows[0];
+    console.log('📊 [API] Última lectura:', latestReading);
+    
+    // 3. Llamar a evaluateAutomaticIrrigation
+    console.log('🤖 [API] Iniciando evaluación automática...');
+    
+    const sensorData = {
+      temperature: latestReading.temperature,
+      air_humidity: latestReading.air_humidity,
+      soil_humidity: latestReading.soil_humidity,
+      device_id: device.id,
+      timestamp: latestReading.received_at
+    };
+    console.log('📊 [API] Datos de sensores para evaluación:', sensorData);
+    
+    try {
+      await evaluateAutomaticIrrigation(device.id, sensorData);
+      console.log('✅ [API] Evaluación automática completada sin errores');
+    } catch (evalError) {
+      console.error('❌ [API] Error en evaluateAutomaticIrrigation:', evalError.message);
+      console.error('❌ [API] Stack del error:', evalError.stack);
+      
+      // Retornar el error específico
+      return res.status(500).json({
+        success: false,
+        message: 'Error en la evaluación automática',
+        error: evalError.message,
+        stack: evalError.stack
+      });
+    }
+    
+    // 4. Verificar el resultado final
+    console.log('🔍 [API] Verificando resultado final...');
+    const statusResult = await pool.query(`
+      SELECT 
+        ic.is_active as config_active,
+        pa.status as pump_status,
+        pa.started_at as pump_started
+      FROM irrigation_configs ic
+      LEFT JOIN pump_activations pa ON pa.irrigation_config_id = ic.id 
+        AND pa.status IN ('active', 'paused')
+      WHERE ic.user_id = $1 AND ic.mode_type = 'automatic'
+      ORDER BY ic.created_at DESC, pa.created_at DESC
+      LIMIT 1
+    `, [userId]);
+    
+    const finalStatus = statusResult.rows[0] || {};
+    console.log('📋 [API] Estado final:', finalStatus);
+    
+    res.json({
+      success: true,
+      message: 'Evaluación automática completada',
+      data: {
+        device: {
+          id: device.id,
+          name: device.device_name
+        },
+        latestReading: {
+          temperature: latestReading.temperature,
+          air_humidity: latestReading.air_humidity,
+          soil_humidity: latestReading.soil_humidity,
+          received_at: latestReading.received_at
+        },
+        result: {
+          configActive: finalStatus.config_active || false,
+          pumpStatus: finalStatus.pump_status || 'inactive',
+          pumpStarted: finalStatus.pump_started || null,
+          irrigationActivated: finalStatus.config_active && finalStatus.pump_status === 'active'
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ [API] Error en evaluación automática:', error);
+    console.error('❌ [API] Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+};
+
+// Función simple para activar/desactivar bomba automática desde frontend
+const toggleAutomaticPump = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { action } = req.body; // 'activate' | 'deactivate'
+    
+    console.log(`🔄 [API] Acción de bomba automática: ${action} para usuario ${userId}`);
+    
+    if (!userId || !action) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de usuario y acción son requeridos'
+      });
+    }
+    
+    if (!['activate', 'deactivate'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Acción debe ser "activate" o "deactivate"'
+      });
+    }
+    
+    // 1. Buscar configuración automática del usuario
+    const configResult = await pool.query(`
+      SELECT ic.id, ic.is_active, d.id as device_id, d.device_name
+      FROM irrigation_configs ic
+      INNER JOIN crops c ON c.id = ic.crop_id
+      INNER JOIN devices d ON d.user_id = ic.user_id AND d.is_active_communication = true
+      WHERE ic.user_id = $1 AND ic.mode_type = 'automatic'
+      ORDER BY ic.created_at DESC
+      LIMIT 1
+    `, [userId]);
+    
+    if (configResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay configuración automática para este usuario'
+      });
+    }
+    
+    const config = configResult.rows[0];
+    
+    if (action === 'activate') {
+      // ACTIVAR riego automático
+      
+      // Marcar configuración como activa
+      await pool.query('UPDATE irrigation_configs SET is_active = true WHERE id = $1', [config.id]);
+      
+      // Crear pump_activation
+      const pumpResult = await pool.query(`
+        INSERT INTO pump_activations (irrigation_config_id, started_at, status, duration_minutes)
+        VALUES ($1, NOW(), 'active', NULL)
+        RETURNING id
+      `, [config.id]);
+      
+      // Enviar comando ON a TTN
+      const { sendDownlinkForConfig } = await import('../services/ttnService.js');
+      await sendDownlinkForConfig(config.id, 'ON');
+      
+      console.log('✅ [API] Riego automático ACTIVADO');
+      
+      res.json({
+        success: true,
+        message: 'Riego automático activado',
+        data: {
+          configActive: true,
+          pumpStatus: 'active',
+          pumpActivationId: pumpResult.rows[0].id
+        }
+      });
+      
+    } else {
+      // DESACTIVAR riego automático
+      
+      // Buscar pump_activation activa
+      const activePumpResult = await pool.query(`
+        SELECT id FROM pump_activations 
+        WHERE irrigation_config_id = $1 AND status = 'active'
+        ORDER BY started_at DESC LIMIT 1
+      `, [config.id]);
+      
+      if (activePumpResult.rows.length > 0) {
+        // Completar pump_activation
+        await pool.query(`
+          UPDATE pump_activations 
+          SET status = 'completed', ended_at = NOW() 
+          WHERE id = $1
+        `, [activePumpResult.rows[0].id]);
+        
+        // Enviar comando OFF a TTN
+        const { sendDownlinkForConfig } = await import('../services/ttnService.js');
+        await sendDownlinkForConfig(config.id, 'OFF');
+      }
+      
+      console.log('✅ [API] Riego automático DESACTIVADO');
+      
+      res.json({
+        success: true,
+        message: 'Riego automático desactivado',
+        data: {
+          configActive: true,
+          pumpStatus: 'completed'
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ [API] Error en toggleAutomaticPump:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};
+
 // ===== FUNCIONES DE AUTOMATIC CONFIG =====
 export {
   createAutomaticConfig,
-  findAutomaticConfigByIrrigationId
+  findAutomaticConfigByIrrigationId,
+  createSimpleAutomaticConfig,
+  getAutomaticConfigStatus,
+  cancelAutomaticConfig,
+  evaluateAutomaticIrrigationForUser,
+  toggleAutomaticPump
 };
 
 // ===== FUNCIONES DE PROGRAMMED CONFIG =====

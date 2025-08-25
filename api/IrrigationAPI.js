@@ -109,6 +109,75 @@ export default {
         })
     },
     
+    // ===== FUNCIONES ESPECÍFICAS PARA MODO AUTOMÁTICO =====
+    
+    // Crear configuración automática simplificada (sin duración)
+    createSimpleAutomaticConfig(data) {
+        return $fetch('/irrigation/automatic/simple', {
+            method: 'POST',
+            body: data,
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+
+    // Obtener estado del modo automático
+    async getAutomaticConfigStatus(userId) {
+        try {
+            return await $fetch(`/irrigation/automatic/status/${userId}`, {
+                method: 'GET',
+                baseURL: getApiUrl(),
+                headers: getAuthHeaders()
+            })
+        } catch (error) {
+            // Si es 404, devolver respuesta indicando que no hay configuración
+            if (error.status === 404 || error.statusCode === 404) {
+                return {
+                    success: false,
+                    message: 'No hay configuración automática activa',
+                    data: null,
+                    isNotFound: true
+                }
+            }
+            // Para otros errores, relanzar
+            throw error
+        }
+    },
+
+    // Cancelar configuración automática
+    async cancelAutomaticConfig(userId) {
+        try {
+            return await $fetch(`/irrigation/automatic/cancel/${userId}`, {
+                method: 'DELETE',
+                baseURL: getApiUrl(),
+                headers: getAuthHeaders()
+            })
+        } catch (error) {
+            // Si es 404, significa que no hay configuración para cancelar
+            if (error.status === 404 || error.statusCode === 404) {
+                return {
+                    success: false,
+                    message: 'No hay configuración automática activa para cancelar',
+                    data: null,
+                    isNotFound: true
+                }
+            }
+            // Para otros errores, relanzar
+            throw error
+        }
+    },
+
+    // Evaluar riego automático
+    async evaluateAutomaticIrrigation(userId) {
+        return await $fetch(`/irrigation/automatic/evaluate/${userId}`, {
+            method: 'POST',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+
+    // ===== FUNCIONES PARA MODO PROGRAMADO =====
+    
     // Rutas para configuraciones programadas
     createProgrammedConfig(data) {
         return $fetch('/irrigation/programmed', {
@@ -213,6 +282,25 @@ export default {
     getLastIrrigationDate(userId) {
         return $fetch(`/irrigation/user/${userId}/last-irrigation`, {
             method: 'GET',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+
+    // Evaluar automáticamente después de insertar datos
+    evaluateAutomaticIrrigation(userId) {
+        return $fetch(`/irrigation/automatic/evaluate/${userId}`, {
+            method: 'POST',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+
+    // Activar/desactivar bomba automática (método simple)
+    toggleAutomaticPump(userId, action) {
+        return $fetch(`/irrigation/automatic/toggle/${userId}`, {
+            method: 'POST',
+            body: { action },
             baseURL: getApiUrl(),
             headers: getAuthHeaders()
         })

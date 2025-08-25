@@ -1,12 +1,17 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import SensorAPI from '~/api/SensorAPI.js'
+import IrrigationAPI from '~/api/IrrigationAPI.js'
 import { useDeviceStore } from '~/stores/device'
 import { useUserStore } from '~/stores/user'
+import { useCropStore } from '~/stores/crop'
+import { useIrrigationStore } from '~/stores/irrigation'
 
 export function useSensorData() {
   // Stores
   const deviceStore = useDeviceStore()
   const userStore = useUserStore()
+  const cropStore = useCropStore()
+  const irrigationStore = useIrrigationStore()
 
   // Configuración de umbrales por cultivo
   const cropThresholds = ref({
@@ -126,11 +131,142 @@ export function useSensorData() {
   // Datos reales para usuarios autenticados
   const realDataPoints = ref([])
   
+  // Bandera para evitar ejecuciones múltiples de evaluación automática
+  const isEvaluatingAutomatic = ref(false)
+  
   // Función para obtener dispositivo activo
   const getActiveDevice = () => {
     return deviceStore.activeDevices?.find(device => device.isActive) || 
            deviceStore.devices?.find(device => device.is_active_communication) ||
            null
+  }
+
+  // Función para evaluar automáticamente las condiciones de riego
+  const evaluateAutomaticConditions = async () => {
+    if (userStore.isDemoMode) return
+    
+    // Solo evaluar si hay modo automático activo
+    if (irrigationStore.activeMode !== 'automatic') return
+    
+    // Evitar ejecuciones múltiples
+    if (isEvaluatingAutomatic.value) {
+      console.log('⏸️ [AUTO] Evaluación ya en progreso, saltando...')
+      return
+    }
+    
+    const selectedCrop = cropStore.crops.find(crop => crop.selected)
+    if (!selectedCrop) return
+    
+    const activeDevice = getActiveDevice()
+    if (!activeDevice) return
+    
+    // Bloquear evaluaciones múltiples
+    isEvaluatingAutomatic.value = true
+    
+    try {
+      // 🔍 Verificar si hay configuración automática preparada
+      let automaticConfig = null
+      try {
+        const configResponse = await IrrigationAPI.getAutomaticConfigStatus(userStore.user.id)
+        if (configResponse.success) {
+          automaticConfig = configResponse.data
+        }
+      } catch (configError) {
+        console.log('ℹ️ [AUTO] No hay configuración automática preparada')
+        isEvaluatingAutomatic.value = false // Desbloquear inmediatamente
+        return
+      }
+      
+      // Solo continuar si hay configuración
+      if (!automaticConfig) {
+        console.log('ℹ️ [AUTO] No hay configuración preparada')
+        isEvaluatingAutomatic.value = false // Desbloquear inmediatamente
+        return
+      }
+      
+      // Si ya está activa, solo evaluar para desactivar
+      const isCurrentlyActive = automaticConfig.is_active && automaticConfig.pump_status === 'active'
+      
+      // Obtener umbrales del cultivo seleccionado
+      const thresholds = {
+        maxTemperature: selectedCrop.temperature_max,
+        minSoilHumidity: selectedCrop.soil_humidity_min,
+        maxSoilHumidity: selectedCrop.soil_humidity_max,
+        minAirHumidity: selectedCrop.air_humidity_min,
+        maxAirHumidity: selectedCrop.air_humidity_max
+      }
+      
+      if (!isCurrentlyActive) {
+        // 🟢 EVALUAR ACTIVACIÓN (solo si NO está activo)
+        const tempHigh = currentTemperature.value > thresholds.maxTemperature
+        const soilLow = currentSoilHumidity.value <= thresholds.minSoilHumidity
+        const airLow = currentAirHumidity.value < thresholds.minAirHumidity
+        
+        const shouldActivate = tempHigh || soilLow || airLow
+        
+        console.log('🤖 [AUTO] Evaluando ACTIVACIÓN:', {
+          temp: `${currentTemperature.value}°C > ${thresholds.maxTemperature}°C = ${tempHigh}`,
+          soil: `${currentSoilHumidity.value}% <= ${thresholds.minSoilHumidity}% = ${soilLow}`,
+          air: `${currentAirHumidity.value}% < ${thresholds.minAirHumidity}% = ${airLow}`,
+          shouldActivate,
+          currentlyActive: false
+        })
+        
+        if (shouldActivate) {
+          console.log('🚨 [AUTO] ¡Condiciones de riego cumplidas! Activando riego automático...')
+          
+          try {
+            const response = await IrrigationAPI.toggleAutomaticPump(userStore.user.id, 'activate')
+            
+            if (response.success) {
+              console.log('✅ [AUTO] Riego automático ACTIVADO exitosamente')
+              // NO RECARGAR - Solo actualizar estado reactivo
+              // El estado se actualizará automáticamente en la próxima consulta
+            } else {
+              console.log('⚠️ [AUTO] Error en la activación:', response.message)
+            }
+          } catch (apiError) {
+            console.error('❌ [AUTO] Error llamando API de activación:', apiError)
+          }
+        }
+        
+      } else {
+        // 🔴 EVALUAR DESACTIVACIÓN (solo si SÍ está activo)
+        const soilOptimal = currentSoilHumidity.value >= thresholds.maxSoilHumidity
+        
+        console.log('🤖 [AUTO] Evaluando DESACTIVACIÓN:', {
+          soil: `${currentSoilHumidity.value}% >= ${thresholds.maxSoilHumidity}% = ${soilOptimal}`,
+          shouldDeactivate: soilOptimal,
+          currentlyActive: true
+        })
+        
+        if (soilOptimal) {
+          console.log('🔴 [AUTO] ¡Humedad óptima alcanzada! Desactivando riego automático...')
+          
+          try {
+            const response = await IrrigationAPI.toggleAutomaticPump(userStore.user.id, 'deactivate')
+            
+            if (response.success) {
+              console.log('✅ [AUTO] Riego automático DESACTIVADO exitosamente')
+              // NO RECARGAR - Solo actualizar estado reactivo
+              // El estado se actualizará automáticamente en la próxima consulta
+            } else {
+              console.log('⚠️ [AUTO] Error en la desactivación:', response.message)
+            }
+          } catch (apiError) {
+            console.error('❌ [AUTO] Error llamando API de desactivación:', apiError)
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error evaluando condiciones automáticas:', error)
+    } finally {
+      // Desbloquear evaluaciones después de un tiempo más corto
+      setTimeout(() => {
+        isEvaluatingAutomatic.value = false
+      }, 2000) // Esperar 2 segundos antes de permitir otra evaluación
+    }
   }
 
   // Función para generar temperatura realista
@@ -373,6 +509,9 @@ export function useSensorData() {
           }
           
           updateChartsWithRealData(realDataPoints.value)
+          
+          // 🤖 EVALUAR CONDICIONES AUTOMÁTICAS después de actualizar datos
+          await evaluateAutomaticConditions()
         }
       }
     } catch (error) {

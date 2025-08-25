@@ -1,5 +1,6 @@
 import { createSensorReading } from '../services/sensorReadingService.js'
 import DeviceValidationService from '../services/deviceValidationService.js'
+import { evaluateAutomaticIrrigation } from '../services/automaticIrrigationService.js'
 
 // Webhook TTN - Capturar datos de sensores
 const handleTTNUplink = async (req, res) => {
@@ -75,6 +76,22 @@ const handleTTNUplink = async (req, res) => {
     // Usar el servicio para guardar en PostgreSQL directamente
     const savedReading = await createSensorReading(sensorData);
     console.log('💾 Dato guardado en BD:', savedReading);
+
+    // 🤖 NUEVO: Evaluar riego automático después de guardar datos
+    try {
+      console.log('🤖 Iniciando evaluación de riego automático...');
+      await evaluateAutomaticIrrigation(validatedDevice.id, {
+        temperature: finalTemperature,
+        air_humidity: finalAirHumidity,
+        soil_humidity: finalSoilHumidity,
+        device_id: validatedDevice.id,
+        timestamp: savedReading.created_at
+      });
+      console.log('✅ Evaluación de riego automático completada');
+    } catch (autoError) {
+      console.error('❌ Error en evaluación automática (no crítico):', autoError);
+      // No interrumpir el flujo principal si falla la evaluación automática
+    }
     
     // Formatear datos para emitir a clientes (si usas Socket.IO)
     const newData = {

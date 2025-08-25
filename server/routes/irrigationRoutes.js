@@ -16,6 +16,11 @@ import {
   updateManualConfig,
   // Funciones de automatic config
   createAutomaticConfig,
+  createSimpleAutomaticConfig,
+  getAutomaticConfigStatus,
+  cancelAutomaticConfig,
+  evaluateAutomaticIrrigationForUser,
+  toggleAutomaticPump,
   // Funciones de programmed config
   createProgrammedConfig,
   cancelProgrammedConfig,
@@ -62,6 +67,9 @@ router.put('/manual/:id', updateManualConfig);
 
 // Rutas de configuración automática
 router.post('/automatic', createAutomaticConfig);
+router.post('/automatic/simple', createSimpleAutomaticConfig);
+router.get('/automatic/status/:user_id', getAutomaticConfigStatus);
+router.delete('/automatic/cancel/:user_id', cancelAutomaticConfig);
 
 // Rutas de configuración programada
 router.post('/programmed', createProgrammedConfig);
@@ -79,5 +87,9 @@ router.put('/pump-activation/:id/pause', pausePumpActivation);
 router.put('/pump-activation/:id/resume', resumePumpActivation);
 router.put('/pump-activation/:id/complete', completePumpActivation);
 router.get('/pump-activation/user/:user_id/history', getPumpActivationsByUser);
+
+// Ruta para evaluar automáticamente después de insertar datos de simulación  
+router.post('/automatic/evaluate/:userId', evaluateAutomaticIrrigationForUser);
+router.post('/automatic/toggle/:userId', toggleAutomaticPump);
 
 export default router;

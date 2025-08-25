@@ -72,6 +72,23 @@ export const useToastNotifications = () => {
     toast.error(`📡 Desconectado de la red IoT`)
   }
 
+  // Funciones genéricas para uso directo
+  const showSuccess = (message: string) => {
+    toast.success(message)
+  }
+
+  const showError = (message: string) => {
+    toast.error(message)
+  }
+
+  const showInfo = (message: string) => {
+    toast.info(message)
+  }
+
+  const showWarning = (message: string) => {
+    toast.warning(message)
+  }
+
   return {
     // Dispositivos
     deviceAdded,
@@ -93,6 +110,11 @@ export const useToastNotifications = () => {
     // Sistema
     systemConnected,
     systemDisconnected,
+    // Funciones genéricas
+    showSuccess,
+    showError,
+    showInfo,
+    showWarning,
     // Toast directo para casos especiales
     toast
   }

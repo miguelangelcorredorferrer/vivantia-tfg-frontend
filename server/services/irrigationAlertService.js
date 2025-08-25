@@ -130,3 +130,59 @@ export const createProgrammedCancelledAlert = async (user_id, cropName, wasActiv
   
   return await createIrrigationAlert(user_id, 'programmed_cancelled', title, message, 'warning');
 };
+
+// ===== ALERTAS ESPECÍFICAS PARA MODO AUTOMÁTICO =====
+
+// Crear alerta de umbral de cultivo superado
+export const createCropThresholdAlert = async (user_id, cropName, thresholdType, currentValue, thresholdValue) => {
+  const title = `Umbral de ${thresholdType} superado`;
+  let message = '';
+  
+  switch (thresholdType) {
+    case 'temperatura':
+      message = `La temperatura actual (${currentValue}°C) ha superado el umbral máximo de ${cropName} (${thresholdValue}°C).`;
+      break;
+    case 'humedad_suelo_baja':
+      message = `La humedad del suelo (${currentValue}%) está por debajo del mínimo requerido para ${cropName} (${thresholdValue}%).`;
+      break;
+    case 'humedad_aire_baja':
+      message = `La humedad del aire (${currentValue}%) está por debajo del mínimo para ${cropName} (${thresholdValue}%).`;
+      break;
+    default:
+      message = `Se ha detectado una condición de umbral para ${cropName}.`;
+  }
+  
+  return await createIrrigationAlert(user_id, 'temperature_high', title, message, 'warning');
+};
+
+// Crear alerta de riego automático iniciado
+export const createAutomaticIrrigationStartedAlert = async (user_id, cropName, sensorDetails) => {
+  const title = 'Riego automático iniciado';
+  const message = `El sistema ha iniciado el riego automático para ${cropName} basado en las condiciones detectadas: ${sensorDetails}`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_started', title, message, 'success');
+};
+
+// Crear alerta de riego automático detenido
+export const createAutomaticIrrigationStoppedAlert = async (user_id, cropName, reason) => {
+  const title = 'Riego automático finalizado';
+  const message = `El riego automático de ${cropName} ha finalizado. ${reason}`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_stopped', title, message, 'info');
+};
+
+// Crear alerta de configuración automática guardada
+export const createAutomaticConfigSavedAlert = async (user_id, cropName) => {
+  const title = 'Configuración automática guardada';
+  const message = `El modo automático ha sido configurado para ${cropName}. El sistema monitoreará los sensores automáticamente.`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_config_saved', title, message, 'success');
+};
+
+// Crear alerta de configuración automática cancelada
+export const createAutomaticConfigCancelledAlert = async (user_id, cropName) => {
+  const title = 'Configuración automática cancelada';
+  const message = `La configuración automática de ${cropName} ha sido cancelada. El monitoreo automático se ha desactivado.`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_cancelled', title, message, 'warning');
+};
