@@ -68,7 +68,7 @@
       </div>
 
       <!-- Widget de estado programado cuando está activo (solo cuando está configurado pero no regando ni pausado) -->
-      <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isProgrammedWaiting" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+      <div v-if="irrigationStore.isProgrammedActive && !irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <!-- Debug info -->
         <div class="text-xs text-gray-500 mb-2">
           Debug: activeMode={{ irrigationStore.activeMode }}, isProgrammedActive={{ irrigationStore.isProgrammedActive }}, isProgrammedWaiting={{ irrigationStore.isProgrammedWaiting }}, pump_status={{ irrigationStore.activePumpActivation?.status }}, hasActiveMode={{ irrigationStore.hasActiveMode }}, timestamp={{ Date.now() }}
@@ -1088,6 +1088,15 @@ const saveScheduledWatering = async () => {
   if (success) {
     showSuccess('Riego programado configurado exitosamente')
     
+    // Pequeño delay para asegurar que el estado se actualice
+    setTimeout(async () => {
+      await irrigationStore.loadActiveConfiguration()
+      // Iniciar monitoreo inmediatamente después de guardar
+      if (irrigationStore.isProgrammedActive) {
+        startStatusMonitoring()
+      }
+    }, 500)
+    
     // Redirigir a la página principal después de un breve delay
     setTimeout(() => {
       router.push('/modo')
@@ -1114,26 +1123,33 @@ const goBack = () => {
 }
 
 const cancelProgrammedMode = async () => {
-  console.log('cancelProgrammedMode llamado')
+  console.log('🟡 cancelProgrammedMode llamado')
   try {
     // Cerrar el modal inmediatamente
     showCancelModal.value = false
     
+    console.log('🔄 Llamando a irrigationStore.cancelActiveMode()...')
     // Cancelar el modo activo usando el store
     const success = await irrigationStore.cancelActiveMode()
     
+    console.log('📊 Resultado cancelActiveMode:', success)
+    
     if (success) {
+      console.log('✅ Configuración cancelada exitosamente')
       showSuccess('Configuración programada cancelada')
       
       // Redirigir a la página principal después de un breve delay
       setTimeout(() => {
         router.push('/modo')
       }, 1500)
+    } else {
+      console.log('❌ cancelActiveMode retornó false')
+      showError('No se pudo cancelar la configuración')
     }
     
   } catch (error) {
-    console.error('Error al cancelar configuración:', error)
-    showError('Error al cancelar la configuración')
+    console.error('❌ Error al cancelar configuración:', error)
+    showError('Error al cancelar la configuración: ' + error.message)
   }
 }
 
@@ -1282,6 +1298,15 @@ onMounted(async () => {
     // Cargar configuración activa de riego
     await irrigationStore.loadActiveConfiguration()
     console.log('✅ Configuración activa cargada')
+    
+    // Pequeño delay para permitir que la reactividad se propague
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Iniciar monitoreo inmediatamente si hay actividad programada
+    if (irrigationStore.isProgrammedActive || irrigationStore.isWatering || irrigationStore.isPaused) {
+      console.log('🚀 [ONMOUNTED] Detectada actividad programada, iniciando monitoreo inmediato')
+      startStatusMonitoring()
+    }
   } catch (error) {
     console.error('❌ Error en onMounted:', error)
     showError('Error al cargar la configuración: ' + error.message)
@@ -1313,8 +1338,81 @@ watch(() => irrigationStore.isWatering, (newValue) => {
   console.log('🔄 isWatering cambió a:', newValue)
 })
 
+// Sistema de monitoreo para mantener el modal activo
+let statusMonitoringInterval = null
+
+const startStatusMonitoring = () => {
+  if (statusMonitoringInterval) {
+    clearInterval(statusMonitoringInterval)
+  }
+  
+  // Actualizar inmediatamente
+  irrigationStore.loadActiveConfiguration()
+  
+  statusMonitoringInterval = setInterval(async () => {
+    if (irrigationStore.irrigationConfig?.id) {
+      await irrigationStore.loadActiveConfiguration()
+      
+      // Debug: Estado después de cargar configuración
+      console.log('🔍 [PROGRAMMED-MONITOR] Estado actual:', {
+        activeMode: irrigationStore.activeMode,
+        isProgrammedActive: irrigationStore.isProgrammedActive,
+        isProgrammedWaiting: irrigationStore.isProgrammedWaiting,
+        isWatering: irrigationStore.isWatering,
+        isPaused: irrigationStore.isPaused,
+        pumpStatus: irrigationStore.activePumpActivation?.status,
+        hasActiveMode: irrigationStore.hasActiveMode,
+        irrigationConfigId: irrigationStore.irrigationConfig?.id
+      })
+    }
+  }, 3000) // Cada 3 segundos
+  
+  console.log('✅ [PROGRAMMED] Monitoreo de estado iniciado')
+}
+
+const stopStatusMonitoring = () => {
+  if (statusMonitoringInterval) {
+    clearInterval(statusMonitoringInterval)
+    statusMonitoringInterval = null
+    console.log('🛑 [PROGRAMMED] Monitoreo de estado detenido')
+  }
+}
+
+// Watcher para iniciar/detener monitoreo según el estado
+watch(() => irrigationStore.isProgrammedActive, (newValue, oldValue) => {
+  console.log('🔄 isProgrammedActive cambió:', { oldValue, newValue, activeMode: irrigationStore.activeMode })
+  if (newValue) {
+    console.log('🚀 [WATCHER] Iniciando monitoreo por isProgrammedActive')
+    startStatusMonitoring()
+  } else {
+    console.log('🛑 [WATCHER] Deteniendo monitoreo por isProgrammedActive')
+    stopStatusMonitoring()
+  }
+}, { immediate: true })
+
+// Watcher adicional para activeMode programado
+watch(() => irrigationStore.activeMode, (newMode, oldMode) => {
+  console.log('🔄 activeMode cambió:', { oldMode, newMode })
+  if (newMode === 'programmed') {
+    console.log('🚀 [WATCHER] Iniciando monitoreo por activeMode programmed')
+    startStatusMonitoring()
+  } else if (oldMode === 'programmed' && newMode !== 'programmed') {
+    console.log('🛑 [WATCHER] Deteniendo monitoreo por activeMode ya no programmed')
+    stopStatusMonitoring()
+  }
+}, { immediate: true })
+
+// Watcher para estado de riego (regando/pausado)
+watch(() => irrigationStore.isWatering, (newValue) => {
+  console.log('🔄 isWatering cambió a:', newValue)
+  if (newValue || irrigationStore.isPaused) {
+    startStatusMonitoring()
+  }
+}, { immediate: true })
+
 // Limpiar al desmontar el componente
 onUnmounted(() => {
+  stopStatusMonitoring()
   irrigationStore.cleanup()
 })
 

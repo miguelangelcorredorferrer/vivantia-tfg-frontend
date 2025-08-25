@@ -100,31 +100,43 @@ const confirmConfiguration = () => {
 const startManualWatering = async () => {
   showConfirmModal.value = false
   
-  // Configuración para el riego manual
-  const config = {
-    duration_minutes: duration.value.minutes + (duration.value.seconds / 60),
-    begin_notification: options.value.notifyStart,
-    final_notification: options.value.notifyEnd
-  }
-  
-  console.log('Configuración enviada:', config)
-  
-  // Verificar si existe configuración previa
-  const existingConfig = await irrigationStore.findManualConfigByUserAndCrop(
-    userStore.user.id, 
-    cropStore.currentCrop.id
-  )
-  
-  let message = 'Riego manual iniciado exitosamente'
-  if (existingConfig) {
-    message = 'Configuración actualizada y riego manual iniciado exitosamente'
-  }
-  
-  // Activar el modo manual usando el store
-  const success = await irrigationStore.startManualIrrigation(config)
-  
-  if (success) {
-    showSuccess(message)
+  try {
+    // Configuración para el riego manual
+    const config = {
+      duration_minutes: duration.value.minutes + (duration.value.seconds / 60),
+      begin_notification: options.value.notifyStart,
+      final_notification: options.value.notifyEnd
+    }
+    
+    console.log('🚀 [MANUAL] Iniciando riego con configuración:', config)
+    
+    // Activar el modo manual usando el store
+    const success = await irrigationStore.startManualIrrigation(config)
+    
+    if (success) {
+      console.log('✅ [MANUAL] Riego iniciado exitosamente')
+      
+      // Recargar configuración para asegurar estado correcto
+      await irrigationStore.loadActiveConfiguration()
+      
+      // Iniciar monitoreo de estado
+      startStatusMonitoring()
+      
+      // Las alertas las maneja el backend automáticamente
+      console.log('✅ Riego manual iniciado exitosamente')
+      
+      console.log('📊 [MANUAL] Estado después de iniciar:', {
+        hasActiveMode: irrigationStore.hasActiveMode,
+        isManualActive: irrigationStore.isManualActive,
+        isWatering: irrigationStore.isWatering,
+        activeMode: irrigationStore.activeMode
+      })
+    } else {
+      showError('Error al iniciar el riego manual')
+    }
+  } catch (error) {
+    console.error('❌ [MANUAL] Error en startManualWatering:', error)
+    showError('Error al iniciar el riego manual')
   }
 }
 
@@ -140,31 +152,63 @@ const confirmCancelModal = async () => {
   // Cerrar el modal inmediatamente
   showCancelModal.value = false
   
-  // Ejecutar la cancelación
-  const success = await irrigationStore.cancelActiveMode()
-  if (success) {
-    showSuccess('Riego manual cancelado')
+  try {
+    // Ejecutar la cancelación
+    const success = await irrigationStore.cancelActiveMode()
+    if (success) {
+      console.log('✅ [MANUAL] Riego cancelado exitosamente')
+      // No mostrar toast - las alertas las maneja el backend
+    } else {
+      showError('Error al cancelar el riego')
+    }
+  } catch (error) {
+    console.error('❌ [MANUAL] Error cancelando riego:', error)
+    showError('Error al cancelar el riego')
   }
 }
 
 const cancelManualWatering = async () => {
-  const success = await irrigationStore.cancelActiveMode()
-  if (success) {
-    showSuccess('Riego manual cancelado')
+  try {
+    const success = await irrigationStore.cancelActiveMode()
+    if (success) {
+      console.log('✅ [MANUAL] Configuración cancelada exitosamente')
+      // No mostrar toast - las alertas las maneja el backend
+    } else {
+      showError('Error al cancelar la configuración')
+    }
+  } catch (error) {
+    console.error('❌ [MANUAL] Error cancelando configuración:', error)
+    showError('Error al cancelar la configuración')
   }
 }
 
 const pauseIrrigation = async () => {
-  const success = await irrigationStore.pauseIrrigation()
-  if (success) {
-    showSuccess('Riego pausado')
+  try {
+    const success = await irrigationStore.pauseIrrigation()
+    if (success) {
+      console.log('✅ [MANUAL] Riego pausado exitosamente')
+      // No mostrar toast - las alertas las maneja el backend
+    } else {
+      showError('Error al pausar el riego')
+    }
+  } catch (error) {
+    console.error('❌ [MANUAL] Error pausando riego:', error)
+    showError('Error al pausar el riego')
   }
 }
 
 const resumeIrrigation = async () => {
-  const success = await irrigationStore.resumeIrrigation()
-  if (success) {
-    showSuccess('Riego reanudado')
+  try {
+    const success = await irrigationStore.resumeIrrigation()
+    if (success) {
+      console.log('✅ [MANUAL] Riego reanudado exitosamente')
+      // No mostrar toast - las alertas las maneja el backend
+    } else {
+      showError('Error al reanudar el riego')
+    }
+  } catch (error) {
+    console.error('❌ [MANUAL] Error reanudando riego:', error)
+    showError('Error al reanudar el riego')
   }
 }
 
@@ -172,26 +216,97 @@ const goBack = () => {
   router.push('/modo')
 }
 
+// Variable para intervalo de monitoreo
+let statusInterval = null
+
+// Función para monitorear estado
+const startStatusMonitoring = () => {
+  if (statusInterval) {
+    clearInterval(statusInterval)
+  }
+  
+  // Función de actualización inmediata
+  const updateStatus = async () => {
+    try {
+      await irrigationStore.loadActiveConfiguration()
+    } catch (error) {
+      console.error('🔄 [MANUAL] Error actualizando estado:', error)
+    }
+  }
+  
+  // Llamada inmediata
+  updateStatus()
+  
+  // Verificar estado cada 3 segundos
+  statusInterval = setInterval(async () => {
+    console.log('🔄 [MANUAL] Actualizando estado periódico...')
+    await updateStatus()
+  }, 3000)
+}
+
+const stopStatusMonitoring = () => {
+  if (statusInterval) {
+    clearInterval(statusInterval)
+    statusInterval = null
+  }
+}
+
 // Cargar configuración activa al montar
 onMounted(async () => {
+  console.log('🎯 [MANUAL] Componente montado')
   await irrigationStore.loadActiveConfiguration()
+  
+  // Iniciar monitoreo inmediatamente si hay actividad manual
+  if (irrigationStore.isManualActive || irrigationStore.isWatering || irrigationStore.activeMode === 'manual') {
+    console.log('🔄 [MANUAL] Iniciando monitoreo por actividad detectada')
+    startStatusMonitoring()
+  }
+  
+  // Pequeño delay para permitir propagación reactiva
+  await new Promise(resolve => setTimeout(resolve, 100))
 })
 
 // Watchers para asegurar reactividad
 watch(() => irrigationStore.hasActiveMode, (newValue) => {
-  console.log('🔄 hasActiveMode cambió a:', newValue)
+  console.log('🔄 [MANUAL] hasActiveMode cambió a:', newValue)
 })
 
 watch(() => irrigationStore.isManualActive, (newValue) => {
-  console.log('🔄 isManualActive cambió a:', newValue)
-})
+  console.log('🔄 [MANUAL] isManualActive cambió a:', newValue)
+  
+  // Iniciar/detener monitoreo según el estado
+  if (newValue || irrigationStore.isWatering) {
+    startStatusMonitoring()
+  } else if (!newValue) {
+    stopStatusMonitoring()
+  }
+}, { immediate: true })
 
 watch(() => irrigationStore.isWatering, (newValue) => {
-  console.log('🔄 isWatering cambió a:', newValue)
-})
+  console.log('🔄 [MANUAL] isWatering cambió a:', newValue)
+  
+  // Controlar monitoreo según estado de riego
+  if (newValue || irrigationStore.isManualActive) {
+    startStatusMonitoring()
+  } else if (!newValue) {
+    stopStatusMonitoring()
+  }
+}, { immediate: true })
+
+watch(() => irrigationStore.activeMode, (newValue) => {
+  console.log('🔄 [MANUAL] activeMode cambió a:', newValue)
+  
+  if (newValue === 'manual') {
+    startStatusMonitoring()
+  } else if (newValue !== 'manual') {
+    stopStatusMonitoring()
+  }
+}, { immediate: true })
 
 // Limpiar al desmontar el componente
 onUnmounted(() => {
+  console.log('🎯 [MANUAL] Componente desmontado - limpiando recursos')
+  stopStatusMonitoring()
   irrigationStore.cleanup()
 })
 

@@ -5,7 +5,12 @@ import {
   createManualStartedAlert, 
   createEmergencyStopAlert, 
   createManualCancelledAlert,
-  createProgrammedScheduleAlert 
+  createProgrammedScheduleAlert,
+  createIrrigationStartedAlert,
+  createIrrigationEndedAlert,
+  createIrrigationCancelledAlert,
+  createIrrigationPausedAlert,
+  createIrrigationResumedAlert
 } from '../services/irrigationAlertService.js';
 
 // Modelo para PumpActivation
@@ -123,13 +128,19 @@ const createPumpActivation = async (req, res) => {
       console.error('[DOWNLINK][ON] Error:', e?.message || e);
     }
 
-    // Crear alerta de riego iniciado
+    // Crear alerta de riego iniciado (irrigation_started)
     try {
       if (configData) {
-        await createManualStartedAlert(configData.user_id, configData.crop_name || 'Cultivo', duration_minutes);
+        await createIrrigationStartedAlert(
+          configData.user_id,
+          configData.mode_type || 'manual',
+          configData.crop_name || 'Cultivo',
+          duration_minutes
+        );
+        console.log(`✅ Alerta irrigation_started creada para usuario ${configData.user_id}`);
       }
     } catch (alertError) {
-      console.warn('Error al crear alerta de riego iniciado:', alertError.message);
+      console.warn('Error al crear alerta irrigation_started:', alertError.message);
     }
 
     res.status(201).json({
@@ -245,28 +256,41 @@ const updatePumpActivationStatus = async (req, res) => {
     // Enviar OFF si se cancela/completa, no enviar nada para otros estados
     if (status === 'completed' || status === 'cancelled') {
       try {
+        console.log('🚨 [PUMP-TRACKING] Enviando OFF desde updatePumpActivationStatus:', {
+          pumpId: id,
+          status: status,
+          irrigationConfigId: currentActivation.irrigation_config_id
+        })
         const r = await sendDownlinkForConfig(currentActivation.irrigation_config_id, 'OFF');
         console.log('[DOWNLINK][OFF] OK:', r);
       } catch (e) {
         console.error('[DOWNLINK][OFF] Error:', e?.message || e);
       }
 
-      // Crear alerta según el estado
+      // Crear alertas generales según el estado
       try {
         if (configData) {
           if (status === 'cancelled') {
-            if (currentActivation.status === 'active') {
-              // Era un riego activo que se canceló - parada de emergencia
-              await createEmergencyStopAlert(configData.user_id, configData.crop_name || 'Cultivo');
-            } else {
-              // Era un riego pausado que se canceló
-              await createManualCancelledAlert(configData.user_id, configData.crop_name || 'Cultivo');
-            }
+            // Alerta irrigation_cancelled genérica
+            await createIrrigationCancelledAlert(
+              configData.user_id,
+              configData.mode_type || 'manual',
+              configData.crop_name || 'Cultivo'
+            );
+            console.log(`✅ Alerta irrigation_cancelled creada para usuario ${configData.user_id}`);
+          } else if (status === 'completed') {
+            // Alerta irrigation_ended cuando se completa
+            await createIrrigationEndedAlert(
+              configData.user_id,
+              configData.mode_type || 'manual',
+              configData.crop_name || 'Cultivo',
+              true // wasCompleted = true
+            );
+            console.log(`✅ Alerta irrigation_ended creada para usuario ${configData.user_id}`);
           }
-          // Para 'completed' no necesitamos alerta específica, ya se envió cuando inició
         }
       } catch (alertError) {
-        console.warn('Error al crear alerta de riego:', alertError.message);
+        console.warn('Error al crear alerta:', alertError.message);
       }
     }
     // Enviar ON cuando se pasa a 'active' desde un estado programado/inactivo
@@ -337,10 +361,37 @@ const pausePumpActivation = async (req, res) => {
 
     // Enviar OFF al pausar
     try {
+      console.log('🚨 [PUMP-TRACKING] Enviando OFF desde pausePumpActivation:', {
+        pumpId: id,
+        irrigationConfigId: activation.irrigation_config_id
+      })
       const r = await sendDownlinkForConfig(activation.irrigation_config_id, 'OFF');
       console.log('[DOWNLINK][OFF][pause] OK:', r);
     } catch (e) {
       console.error('[DOWNLINK][OFF][pause] Error:', e?.message || e);
+    }
+
+    // Crear alerta de riego pausado (irrigation_paused)
+    try {
+      const configQuery = `
+        SELECT ic.user_id, ic.mode_type, c.name as crop_name
+        FROM irrigation_configs ic
+        LEFT JOIN crops c ON ic.crop_id = c.id
+        WHERE ic.id = $1
+      `;
+      const configResult = await pool.query(configQuery, [activation.irrigation_config_id]);
+      const configData = configResult.rows[0];
+      
+      if (configData) {
+        await createIrrigationPausedAlert(
+          configData.user_id,
+          configData.mode_type || 'manual',
+          configData.crop_name || 'Cultivo'
+        );
+        console.log(`✅ Alerta irrigation_paused creada para usuario ${configData.user_id}`);
+      }
+    } catch (alertError) {
+      console.warn('Error al crear alerta irrigation_paused:', alertError.message);
     }
 
     res.status(200).json({
@@ -382,6 +433,29 @@ const resumePumpActivation = async (req, res) => {
       console.log('[DOWNLINK][ON][resume] OK:', r);
     } catch (e) {
       console.error('[DOWNLINK][ON][resume] Error:', e?.message || e);
+    }
+
+    // Crear alerta de riego reanudado (irrigation_resumed)
+    try {
+      const configQuery = `
+        SELECT ic.user_id, ic.mode_type, c.name as crop_name
+        FROM irrigation_configs ic
+        LEFT JOIN crops c ON ic.crop_id = c.id
+        WHERE ic.id = $1
+      `;
+      const configResult = await pool.query(configQuery, [activation.irrigation_config_id]);
+      const configData = configResult.rows[0];
+      
+      if (configData) {
+        await createIrrigationResumedAlert(
+          configData.user_id,
+          configData.mode_type || 'manual',
+          configData.crop_name || 'Cultivo'
+        );
+        console.log(`✅ Alerta irrigation_resumed creada para usuario ${configData.user_id}`);
+      }
+    } catch (alertError) {
+      console.warn('Error al crear alerta irrigation_resumed:', alertError.message);
     }
 
     res.status(200).json({

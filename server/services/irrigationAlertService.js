@@ -48,6 +48,54 @@ export const createManualCancelledAlert = async (user_id, cropName) => {
   return await createIrrigationAlert(user_id, 'manual_cancelled', title, message, 'info');
 };
 
+// ===== ALERTAS GENERALES DE RIEGO =====
+
+// Crear alerta de riego iniciado (genérica para manual y programado)
+export const createIrrigationStartedAlert = async (user_id, mode, cropName, durationMinutes) => {
+  const modeText = mode === 'manual' ? 'manual' : 'programado';
+  const title = `Riego ${modeText} iniciado`;
+  const message = `Se ha iniciado el riego ${modeText} para ${cropName} con una duración de ${durationMinutes} minutos.`;
+  
+  return await createIrrigationAlert(user_id, 'irrigation_started', title, message, 'info');
+};
+
+// Crear alerta de riego pausado
+export const createIrrigationPausedAlert = async (user_id, mode, cropName) => {
+  const modeText = mode === 'manual' ? 'manual' : 'programado';
+  const title = `Riego ${modeText} pausado`;
+  const message = `El riego ${modeText} de ${cropName} ha sido pausado. Puedes reanudarlo cuando desees.`;
+  
+  return await createIrrigationAlert(user_id, 'irrigation_paused', title, message, 'warning');
+};
+
+// Crear alerta de riego reanudado
+export const createIrrigationResumedAlert = async (user_id, mode, cropName) => {
+  const modeText = mode === 'manual' ? 'manual' : 'programado';
+  const title = `Riego ${modeText} reanudado`;
+  const message = `El riego ${modeText} de ${cropName} ha sido reanudado y continuará hasta completarse.`;
+  
+  return await createIrrigationAlert(user_id, 'irrigation_resumed', title, message, 'info');
+};
+
+// Crear alerta de riego terminado/completado
+export const createIrrigationEndedAlert = async (user_id, mode, cropName, wasCompleted = true) => {
+  const modeText = mode === 'manual' ? 'manual' : 'programado';
+  const actionText = wasCompleted ? 'completado exitosamente' : 'terminado';
+  const title = `Riego ${modeText} ${actionText}`;
+  const message = `El riego ${modeText} de ${cropName} ha ${actionText}. La bomba se ha detenido.`;
+  
+  return await createIrrigationAlert(user_id, 'irrigation_ended', title, message, 'success');
+};
+
+// Crear alerta de riego cancelado
+export const createIrrigationCancelledAlert = async (user_id, mode, cropName) => {
+  const modeText = mode === 'manual' ? 'manual' : 'programado';
+  const title = `Riego ${modeText} cancelado`;
+  const message = `El riego ${modeText} de ${cropName} ha sido cancelado antes de completarse.`;
+  
+  return await createIrrigationAlert(user_id, 'irrigation_cancelled', title, message, 'warning');
+};
+
 // Crear alerta de riego completado
 export const createIrrigationCompletedAlert = async (user_id, cropName, modeType) => {
   const title = 'Riego completado exitosamente';
@@ -176,7 +224,7 @@ export const createAutomaticConfigSavedAlert = async (user_id, cropName) => {
   const title = 'Configuración automática guardada';
   const message = `El modo automático ha sido configurado para ${cropName}. El sistema monitoreará los sensores automáticamente.`;
   
-  return await createIrrigationAlert(user_id, 'automatic_config_saved', title, message, 'success');
+  return await createIrrigationAlert(user_id, 'automatic_saved', title, message, 'success');
 };
 
 // Crear alerta de configuración automática cancelada
@@ -186,3 +234,48 @@ export const createAutomaticConfigCancelledAlert = async (user_id, cropName) => 
   
   return await createIrrigationAlert(user_id, 'automatic_cancelled', title, message, 'warning');
 };
+
+// ===== NUEVAS ALERTAS DE ACTIVACIÓN POR UMBRALES =====
+
+// Crear alerta de activación por temperatura alta
+export const createAutomaticActivatedTemperatureAlert = async (user_id, cropName, temperature, maxTemp) => {
+  const title = 'Riego activado por temperatura alta';
+  const message = `El riego automático se ha activado para ${cropName} porque la temperatura (${temperature}°C) superó el límite máximo (${maxTemp}°C).`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_activated_temperature', title, message, 'warning');
+};
+
+// Crear alerta de activación por humedad del suelo baja
+export const createAutomaticActivatedSoilHumidityAlert = async (user_id, cropName, soilHumidity, minHumidity) => {
+  const title = 'Riego activado por baja humedad del suelo';
+  const message = `El riego automático se ha activado para ${cropName} porque la humedad del suelo (${soilHumidity}%) está por debajo del mínimo requerido (${minHumidity}%).`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_activated_soil_humidity', title, message, 'warning');
+};
+
+// Crear alerta de activación por humedad del aire baja
+export const createAutomaticActivatedAirHumidityAlert = async (user_id, cropName, airHumidity, minAirHumidity) => {
+  const title = 'Riego activado por baja humedad ambiental';
+  const message = `El riego automático se ha activado para ${cropName} porque la humedad ambiental (${airHumidity}%) está por debajo del mínimo requerido (${minAirHumidity}%).`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_activated_air_humidity', title, message, 'warning');
+};
+
+// ===== NUEVAS ALERTAS DE DESACTIVACIÓN =====
+
+// Crear alerta de desactivación por condiciones óptimas
+export const createAutomaticDeactivatedOptimalAlert = async (user_id, cropName, sensorDetails) => {
+  const title = 'Riego desactivado - condiciones óptimas';
+  const message = `El riego automático para ${cropName} se ha desactivado porque todas las condiciones están en rango óptimo. Valores actuales: ${sensorDetails}`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_deactivated_optimal_conditions', title, message, 'success');
+};
+
+// Crear alerta de desactivación por humedad óptima del suelo
+export const createAutomaticDeactivatedSoilOptimalAlert = async (user_id, cropName, soilHumidity, maxHumidity) => {
+  const title = 'Riego desactivado - humedad del suelo óptima';
+  const message = `El riego automático para ${cropName} se ha desactivado porque la humedad del suelo (${soilHumidity}%) ha alcanzado el nivel óptimo (máximo: ${maxHumidity}%).`;
+  
+  return await createIrrigationAlert(user_id, 'automatic_deactivated_soil_optimal', title, message, 'success');
+};
+

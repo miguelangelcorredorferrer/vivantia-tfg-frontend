@@ -73,12 +73,15 @@ export const sendDownlinkForConfig = async (irrigationConfigId, command, port = 
     }]
   };
 
-  console.log('[TTN][SEND] Enviando downlink:', {
+  // 🚨 TRACKING: Stack trace para debugging triple OFF
+  const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown'
+  console.log('🚨 [TTN-TRACKING] Enviando downlink:', {
     command,
     commandValue,
     payload,
     f_port: port,
-    to: `${ttn_app_id}/${enddevice_id}`
+    to: `${ttn_app_id}/${enddevice_id}`,
+    caller: caller
   });
 
   try {

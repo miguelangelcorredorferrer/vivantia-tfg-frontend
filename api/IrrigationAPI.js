@@ -194,6 +194,13 @@ export default {
             headers: getAuthHeaders()
         })
     },
+    deleteProgrammedSettings(irrigationConfigId) {
+        return $fetch(`/irrigation/programmed/${irrigationConfigId}/settings`, {
+            method: 'DELETE',
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
     cancelProgrammedIrrigation(irrigationConfigId) {
         return $fetch(`/irrigation/programmed/${irrigationConfigId}/cancel-irrigation`, {
             method: 'DELETE',

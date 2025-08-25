@@ -738,6 +738,63 @@ const cancelProgrammedConfig = async (req, res) => {
   }
 };
 
+// Eliminar solo programmed_settings (deshacer configuración, mantener irrigation_configs)
+const deleteProgrammedSettings = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { irrigation_config_id } = req.params;
+
+    await client.query('BEGIN');
+
+    // 1. Eliminar pump_activations programadas (sin cambiar a cancelled)
+    const deletePumpActivationsQuery = `
+      DELETE FROM pump_activations 
+      WHERE irrigation_config_id = $1 AND status = 'programmed'
+      RETURNING *
+    `;
+    await client.query(deletePumpActivationsQuery, [irrigation_config_id]);
+
+    // 2. Eliminar configuración programada específica
+    const deleteProgrammedSettingsQuery = `
+      DELETE FROM programmed_settings 
+      WHERE config_id = $1
+      RETURNING *
+    `;
+    const deleteResult = await client.query(deleteProgrammedSettingsQuery, [irrigation_config_id]);
+
+    if (deleteResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró configuración programada para eliminar'
+      });
+    }
+
+    await client.query('COMMIT');
+
+    console.log('✅ [PROGRAMMED] Configuración programada eliminada (irrigation_configs conservado):', {
+      configId: irrigation_config_id,
+      deletedSettings: deleteResult.rows[0]
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Configuración programada eliminada exitosamente (sin comando TTN)',
+      data: deleteResult.rows[0]
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error eliminando configuración programada:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar configuración programada',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};
+
 // Cancelar SOLO el riego programado activo (mantener configuración para futuros riegos)
 const cancelProgrammedIrrigation = async (req, res) => {
   const client = await pool.connect();
@@ -1475,9 +1532,8 @@ const toggleAutomaticPump = async (req, res) => {
         RETURNING id
       `, [config.id]);
       
-      // Enviar comando ON a TTN
-      const { sendDownlinkForConfig } = await import('../services/ttnService.js');
-      await sendDownlinkForConfig(config.id, 'ON');
+      // NOTA: El comando ON se envía automáticamente desde el backend cuando se evalúan los sensores
+      // No enviar desde aquí para evitar duplicados
       
       console.log('✅ [API] Riego automático ACTIVADO');
       
@@ -1552,6 +1608,7 @@ export {
   createProgrammedConfig,
   cancelProgrammedConfig,
   cancelProgrammedIrrigation,
+  deleteProgrammedSettings,
   updateNextExecution,
   updateProgrammedExecution,
   findProgrammedConfigByIrrigationId

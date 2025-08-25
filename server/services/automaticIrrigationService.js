@@ -6,14 +6,33 @@ import {
   createAutomaticIrrigationStartedAlert,
   createAutomaticIrrigationStoppedAlert,
   createAutomaticConfigSavedAlert,
-  createAutomaticConfigCancelledAlert
+  createAutomaticConfigCancelledAlert,
+  createAutomaticActivatedTemperatureAlert,
+  createAutomaticActivatedSoilHumidityAlert,
+  createAutomaticActivatedAirHumidityAlert,
+  createAutomaticDeactivatedOptimalAlert,
+  createAutomaticDeactivatedSoilOptimalAlert,
+  createIrrigationStartedAlert,
+  createIrrigationEndedAlert
 } from './irrigationAlertService.js';
 
 /**
  * Evalúa si debe activar o desactivar el riego automático basado en datos de sensores
  * Se ejecuta cada vez que llegan nuevos datos del TTN webhook
  */
+// Mapa para evitar evaluaciones múltiples simultáneas por dispositivo
+const evaluationLocks = new Map();
+
 const evaluateAutomaticIrrigation = async (deviceId, sensorData) => {
+  // Prevenir evaluaciones múltiples simultáneas para el mismo dispositivo
+  const lockKey = `device_${deviceId}`;
+  if (evaluationLocks.has(lockKey)) {
+    console.log('⏸️ [AUTO] Evaluación ya en progreso para dispositivo:', deviceId);
+    return;
+  }
+  
+  evaluationLocks.set(lockKey, true);
+  
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -77,6 +96,20 @@ const evaluateAutomaticIrrigation = async (deviceId, sensorData) => {
       // 🟢 ACTIVAR RIEGO
       console.log('🟢 [AUTO] Activando riego automático');
       
+      // Verificar que no hay otra bomba activa para esta configuración (protección extra)
+      const doubleCheckQuery = `
+        SELECT id FROM pump_activations 
+        WHERE irrigation_config_id = $1 AND status IN ('active', 'paused')
+        LIMIT 1
+      `;
+      const doubleCheck = await client.query(doubleCheckQuery, [config.config_id]);
+      
+      if (doubleCheck.rows.length > 0) {
+        console.log('⚠️ [AUTO] Ya hay una bomba activa para esta configuración - evitando duplicado');
+        await client.query('COMMIT');
+        return;
+      }
+      
       // Marcar la configuración como activa
       await client.query(
         `UPDATE irrigation_configs SET is_active = true WHERE id = $1`,
@@ -92,16 +125,47 @@ const evaluateAutomaticIrrigation = async (deviceId, sensorData) => {
       `;
       const pumpActivationResult = await client.query(insertPumpQuery, [config.config_id]);
       
-      // NOTA: El comando ON se envía desde el frontend (toggleAutomaticPump)
-      // para evitar comandos duplicados. No enviar desde aquí.
-      console.log('ℹ️ [AUTO] Comando ON será enviado por el frontend');
+      // Enviar comando ON para activar la bomba
+      try {
+        console.log(`🚀 [AUTO] ENVIANDO COMANDO ON para config ${config.config_id}, usuario ${config.user_id}, cultivo ${config.crop_name}`);
+        await sendDownlinkForConfig(config.config_id, 'ON');
+        console.log('✅ [AUTO] Comando ON enviado exitosamente desde backend');
+      } catch (downlinkError) {
+        console.error('❌ [AUTO] Error enviando comando ON:', downlinkError);
+      }
       
-      // Crear alerta
-      await createAutomaticIrrigationStartedAlert(
+      // Crear alertas específicas según la condición que se cumplió
+      const { temperature, soil_humidity, air_humidity } = sensorData;
+      const temperatureHigh = temperature > config.temperature_max;
+      const soilHumidityLow = soil_humidity <= config.soil_humidity_min;
+      const airHumidityLow = air_humidity < config.air_humidity_min;
+      
+      // Crear alerta general de riego iniciado
+      await createIrrigationStartedAlert(
         config.user_id, 
-        config.crop_name,
-        `Temp: ${sensorData.temperature}°C, Hum.Suelo: ${sensorData.soil_humidity}%`
+        config.crop_name, 
+        'automático',
+        `Temp: ${temperature}°C, Hum.Suelo: ${soil_humidity}%, Hum.Aire: ${air_humidity}%`
       );
+      
+      // Crear alertas específicas por cada umbral que se cumplió
+      if (temperatureHigh) {
+        await createAutomaticActivatedTemperatureAlert(
+          config.user_id, config.crop_name, temperature, config.temperature_max
+        );
+      }
+      
+      if (soilHumidityLow) {
+        await createAutomaticActivatedSoilHumidityAlert(
+          config.user_id, config.crop_name, soil_humidity, config.soil_humidity_min
+        );
+      }
+      
+      if (airHumidityLow) {
+        await createAutomaticActivatedAirHumidityAlert(
+          config.user_id, config.crop_name, air_humidity, config.air_humidity_min
+        );
+      }
       
     } else if (activePump && activePump.status === 'active' && shouldDeactivate) {
       // 🔴 DESACTIVAR RIEGO
@@ -123,11 +187,22 @@ const evaluateAutomaticIrrigation = async (deviceId, sensorData) => {
         console.error('❌ [AUTO] Error enviando comando OFF:', downlinkError);
       }
       
-      // Crear alerta
-      await createAutomaticIrrigationStoppedAlert(
+      // Crear alertas de desactivación
+      const { temperature, soil_humidity, air_humidity } = sensorData;
+      
+      // Alerta general de riego finalizado
+      await createIrrigationEndedAlert(
         config.user_id,
         config.crop_name,
-        `Humedad objetivo alcanzada: ${sensorData.soil_humidity}%`
+        'automático',
+        Math.round((new Date() - new Date(activePump.started_at)) / 60000) // duración en minutos
+      );
+      
+      // Alerta específica de desactivación por condiciones óptimas
+      await createAutomaticDeactivatedOptimalAlert(
+        config.user_id,
+        config.crop_name,
+        `Temp: ${temperature}°C, Hum.Suelo: ${soil_humidity}%, Hum.Aire: ${air_humidity}%`
       );
       
       // Actualizar última fecha de riego
@@ -135,6 +210,23 @@ const evaluateAutomaticIrrigation = async (deviceId, sensorData) => {
         'UPDATE irrigation_configs SET last_irrigation_at = NOW() WHERE id = $1',
         [config.config_id]
       );
+      
+      // Cancelar configuración automática para desbloquear otros modos
+      try {
+        // Eliminar automatic_settings (mantener irrigation_configs para historial)
+        await client.query(`DELETE FROM automatic_settings WHERE config_id = $1`, [config.config_id]);
+        
+        // Desactivar irrigation_config
+        await client.query(`UPDATE irrigation_configs SET is_active = false WHERE id = $1`, [config.config_id]);
+        
+        console.log('🗑️ [AUTO] Configuración automática cancelada - otros modos desbloqueados');
+        
+        // Crear alerta de configuración cancelada
+        await createAutomaticConfigCancelledAlert(config.user_id, config.crop_name);
+        
+      } catch (cancelError) {
+        console.error('❌ [AUTO] Error cancelando configuración automática:', cancelError);
+      }
     }
 
     await client.query('COMMIT');
@@ -146,6 +238,8 @@ const evaluateAutomaticIrrigation = async (deviceId, sensorData) => {
     throw error;
   } finally {
     client.release();
+    // Liberar el lock para permitir futuras evaluaciones
+    evaluationLocks.delete(lockKey);
   }
 };
 
@@ -186,20 +280,28 @@ const evaluateActivationConditions = (sensorData, config) => {
 const evaluateDeactivationConditions = (sensorData, config) => {
   const { temperature, soil_humidity, air_humidity } = sensorData;
   
-  // Condiciones para desactivar riego:
-  // 1. Humedad del suelo alcanza el máximo (condición principal)
-  const soilHumidityOptimal = soil_humidity >= config.soil_humidity_max;
+  // Condiciones para desactivar riego (misma lógica que frontend):
+  // 1. Temperatura OK (no supera el máximo)
+  const temperatureOk = temperature <= config.temperature_max;
   
-  // 2. Temperatura vuelve a nivel aceptable (opcional)
-  const temperatureNormal = temperature <= config.temperature_max;
+  // 2. Humedad del suelo en rango óptimo
+  const soilHumidityOk = soil_humidity >= config.soil_humidity_min && 
+                         soil_humidity <= config.soil_humidity_max;
+  
+  // 3. Humedad del aire OK (supera el mínimo)
+  const airHumidityOk = air_humidity >= config.air_humidity_min;
   
   console.log('🔍 [AUTO] Condiciones de desactivación:', {
-    soilHumidityOptimal: `${soil_humidity}% >= ${config.soil_humidity_max}% = ${soilHumidityOptimal}`,
-    temperatureNormal: `${temperature}°C <= ${config.temperature_max}°C = ${temperatureNormal}`
+    temperatureOk: `${temperature}°C <= ${config.temperature_max}°C = ${temperatureOk}`,
+    soilHumidityOk: `${soil_humidity}% (${config.soil_humidity_min}%-${config.soil_humidity_max}%) = ${soilHumidityOk}`,
+    airHumidityOk: `${air_humidity}% >= ${config.air_humidity_min}% = ${airHumidityOk}`
   });
   
-  // Desactivar principalmente cuando la humedad del suelo es óptima
-  return soilHumidityOptimal;
+  // Desactivar cuando TODAS las condiciones están OK (igual que frontend)
+  const shouldDeactivate = temperatureOk && soilHumidityOk && airHumidityOk;
+  console.log(`🎯 [AUTO] shouldDeactivate = ${shouldDeactivate}`);
+  
+  return shouldDeactivate;
 };
 
 /**

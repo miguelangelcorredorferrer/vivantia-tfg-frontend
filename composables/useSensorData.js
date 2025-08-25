@@ -213,21 +213,10 @@ export function useSensorData() {
         })
         
         if (shouldActivate) {
-          console.log('🚨 [AUTO] ¡Condiciones de riego cumplidas! Activando riego automático...')
-          
-          try {
-            const response = await IrrigationAPI.toggleAutomaticPump(userStore.user.id, 'activate')
-            
-            if (response.success) {
-              console.log('✅ [AUTO] Riego automático ACTIVADO exitosamente')
-              // NO RECARGAR - Solo actualizar estado reactivo
-              // El estado se actualizará automáticamente en la próxima consulta
-            } else {
-              console.log('⚠️ [AUTO] Error en la activación:', response.message)
-            }
-          } catch (apiError) {
-            console.error('❌ [AUTO] Error llamando API de activación:', apiError)
-          }
+          console.log('🚨 [AUTO] ¡Condiciones de riego cumplidas detectadas!')
+          console.log('ℹ️ [AUTO] La activación será manejada por el backend automático vía TTN webhook')
+          // NOTA: No enviamos comando desde frontend para evitar duplicados
+          // El backend automático se encarga de ambos ON y OFF cuando llegan datos via webhook
         }
         
       } else {
@@ -250,29 +239,10 @@ export function useSensorData() {
         })
         
         if (shouldDeactivate) {
-          console.log('🔴 [AUTO] ¡Todas las condiciones son óptimas! Desactivando y cancelando configuración automática...')
-          
-          try {
-            // 1. Desactivar el riego
-            const deactivateResponse = await IrrigationAPI.toggleAutomaticPump(userStore.user.id, 'deactivate')
-            
-            if (deactivateResponse.success) {
-              console.log('✅ [AUTO] Riego automático DESACTIVADO exitosamente')
-              
-              // 2. Cancelar completamente la configuración automática para permitir otros modos
-              try {
-                await IrrigationAPI.cancelAutomaticConfig(userStore.user.id)
-                console.log('✅ [AUTO] Configuración automática CANCELADA - otros modos desbloqueados')
-              } catch (cancelError) {
-                console.error('❌ [AUTO] Error cancelando configuración:', cancelError)
-              }
-              
-            } else {
-              console.log('⚠️ [AUTO] Error en la desactivación:', deactivateResponse.message)
-            }
-          } catch (apiError) {
-            console.error('❌ [AUTO] Error llamando API de desactivación:', apiError)
-          }
+          console.log('🔴 [AUTO] ¡Todas las condiciones son óptimas detectadas!')
+          console.log('ℹ️ [AUTO] La desactivación será manejada por el backend automático vía TTN webhook')
+          // NOTA: El backend automático se encarga de la desactivación cuando llegan datos via webhook
+          // Solo mantenemos la cancelación de configuración como respaldo si fuera necesario
         }
       }
       

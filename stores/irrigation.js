@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import IrrigationAPI from '~/api/IrrigationAPI'
 import { useUserStore } from './user'
 import { useCropStore } from './crop'
-import { useToastNotifications } from '~/composables/useToastNotifications'
+// Las notificaciones se manejan via alertas de base de datos, no toasts
 
 export const useIrrigationStore = defineStore('irrigation', () => {
   // Estado
@@ -25,14 +25,7 @@ export const useIrrigationStore = defineStore('irrigation', () => {
   const userStore = useUserStore()
   const cropStore = useCropStore()
   
-  // Toast notifications (inicializado en métodos)
-  let toastNotifications = null
-  const initToast = () => {
-    if (!toastNotifications) {
-      toastNotifications = useToastNotifications()
-    }
-    return toastNotifications
-  }
+  // Las notificaciones se manejan via alertas de base de datos
 
   // Computeds
   const hasActiveMode = computed(() => activeMode.value !== null)
@@ -77,6 +70,9 @@ export const useIrrigationStore = defineStore('irrigation', () => {
     }
   })
 
+  // Variable para controlar auto-completado (evitar múltiples ejecuciones)
+  const autoCompletionTriggered = ref(false)
+
   // Tiempo restante calculado en tiempo real
   const remainingTime = computed(() => {
     if (!activePumpActivation.value || !isWatering.value) {
@@ -86,16 +82,73 @@ export const useIrrigationStore = defineStore('irrigation', () => {
     const startTime = new Date(activePumpActivation.value.started_at)
     const now = new Date()
     const elapsedSeconds = Math.floor((now - startTime) / 1000)
-    const totalSeconds = activePumpActivation.value.duration_minutes * 60
+    const durationMinutes = parseFloat(activePumpActivation.value.duration_minutes) || 0
+    const totalSeconds = durationMinutes * 60
     const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds)
 
-    if (remainingSeconds <= 0) {
-      return null
+    // 🚨 AUTO-COMPLETAR cuando llega a 0 (solo una vez por activación)
+    if (remainingSeconds <= 0 && 
+        activePumpActivation.value.status === 'active' && 
+        !autoCompletionTriggered.value) {
+      
+      console.log('🚨 TIEMPO AGOTADO - Auto-completando riego (ID:', activePumpActivation.value.id, ')')
+      autoCompletionTriggered.value = true
+      
+      // Guardar ID antes de ejecutar para logging
+      const activationId = activePumpActivation.value.id
+      
+      // Ejecutar inmediatamente con protección adicional
+      completeIrrigation().then(() => {
+        console.log('✅ Auto-completado ejecutado exitosamente para ID:', activationId)
+      }).catch((error) => {
+        console.error('❌ Error en auto-completado:', error)
+        // NO reintentar automáticamente para evitar loops
+      })
     }
 
     const minutes = Math.floor(remainingSeconds / 60)
     const seconds = remainingSeconds % 60
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  })
+
+  // Watcher adicional para forzar reactividad del remainingTime
+  let timeUpdateInterval = null
+  
+  const startTimeUpdates = () => {
+    if (timeUpdateInterval) clearInterval(timeUpdateInterval)
+    
+    timeUpdateInterval = setInterval(() => {
+      if (activePumpActivation.value && isWatering.value) {
+        // Forzar re-evaluación del computed accediendo a él
+        const currentTime = remainingTime.value
+        
+        // Debug
+        if (currentTime === '0:00' && activePumpActivation.value.status === 'active') {
+          console.log('⏰ Detectado 0:00 con bomba activa')
+        }
+      } else {
+        // Detener updates si no hay riego activo
+        if (timeUpdateInterval) {
+          clearInterval(timeUpdateInterval)
+          timeUpdateInterval = null
+        }
+      }
+    }, 1000) // Cada segundo
+  }
+  
+  const stopTimeUpdates = () => {
+    if (timeUpdateInterval) {
+      clearInterval(timeUpdateInterval)
+      timeUpdateInterval = null
+    }
+  }
+
+  // Watcher para reiniciar autoCompletionTriggered cuando cambie la activación
+  watch(() => activePumpActivation.value?.id, (newId, oldId) => {
+    if (newId !== oldId) {
+      console.log('🔄 Nueva activación detectada - reiniciando autoCompletionTriggered')
+      autoCompletionTriggered.value = false
+    }
   })
 
   // Último riego formateado
@@ -468,13 +521,17 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       // 6. Iniciar monitoreo de estado
       startStatusMonitoring()
 
+      // 7. Iniciar updates de tiempo para auto-completado
+      autoCompletionTriggered.value = false
+      startTimeUpdates()
+
       console.log('✅ Riego manual iniciado exitosamente')
-      initToast().toast.success('Riego iniciado: El riego manual se ha iniciado correctamente')
+      // Las notificaciones se manejan via alertas de base de datos
       return true
     } catch (err) {
       error.value = err.message
       console.error('❌ Error en startManualIrrigation:', err)
-      initToast().toast.error('Error: ' + err.message)
+      // Los errores se manejan via respuestas API, no toasts
       return false
     } finally {
       isLoading.value = false
@@ -537,7 +594,7 @@ export const useIrrigationStore = defineStore('irrigation', () => {
 
         console.log('✅ Estado local actualizado - NO llamando loadActiveConfiguration para evitar conflictos')
         
-        initToast().toast.success('Riego programado: Configuración guardada exitosamente')
+        // Las notificaciones se manejan via alertas de base de datos
         return true
       } else {
         throw new Error(response.message || 'Error al crear configuración programada')
@@ -545,7 +602,7 @@ export const useIrrigationStore = defineStore('irrigation', () => {
     } catch (err) {
       error.value = err.message
       console.error('❌ Error iniciando riego programado:', err)
-      initToast().toast.error('Error: ' + err.message)
+      // Los errores se manejan via respuestas API, no toasts
       return false
     } finally {
       isLoading.value = false
@@ -675,9 +732,13 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         startStatusMonitoring()
         console.log('✅ Monitoreo iniciado')
         
-        // PASO 4: Mostrar notificación
-        initToast().toast.success('Riego iniciado: El riego programado se ha iniciado')
-        console.log('✅ Notificación mostrada')
+        // PASO 4: Iniciar updates de tiempo para auto-completado
+        autoCompletionTriggered.value = false
+        startTimeUpdates()
+        console.log('✅ Updates de tiempo iniciados')
+        
+        // Las notificaciones se manejan via alertas de base de datos
+        console.log('✅ Activación completada - alerta creada en BD')
         
         console.log('🎉 RIEGO PROGRAMADO ACTIVADO EXITOSAMENTE')
         
@@ -688,7 +749,7 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       
     } catch (err) {
       console.error('❌ ERROR ACTIVANDO RIEGO PROGRAMADO:', err)
-      initToast().toast.error(`Error: ${err.message}`)
+      // Los errores se manejan via alertas o respuestas API, no toasts
     }
   }
 
@@ -817,12 +878,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       if (response.success) {
         activePumpActivation.value = response.data
         stopStatusMonitoring()
-        initToast().toast.info('Riego pausado: El riego se ha pausado correctamente')
+        // Las notificaciones se manejan via alertas de base de datos
         return true
       }
     } catch (err) {
       error.value = err.message
-      initToast().toast.error('Error: ' + err.message)
+      // Los errores se manejan via respuestas API, no toasts
       return false
     }
   }
@@ -838,12 +899,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       if (response.success) {
         activePumpActivation.value = response.data
         startStatusMonitoring()
-        initToast().toast.success('Riego reanudado: El riego se ha reanudado correctamente')
+        // Las notificaciones se manejan via alertas de base de datos
         return true
       }
     } catch (err) {
       error.value = err.message
-      initToast().toast.error('Error: ' + err.message)
+      // Los errores se manejan via respuestas API, no toasts
       return false
     }
   }
@@ -857,6 +918,16 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       }
 
       console.log('🔄 Completando riego...')
+      
+      // PREVENIR MÚLTIPLES LLAMADAS - revisar si ya está en proceso
+      if (activePumpActivation.value.status === 'completed') {
+        console.log('⚠️ El riego ya está completado, ignorando llamada duplicada')
+        return true
+      }
+      
+      // Detener updates de tiempo INMEDIATAMENTE
+      stopTimeUpdates()
+      autoCompletionTriggered.value = false
 
       // Actualizar estado de la activación de bomba
       const response = await IrrigationAPI.updatePumpActivationStatus(activePumpActivation.value.id, {
@@ -907,12 +978,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       await loadActiveConfiguration()
 
       console.log('✅ Riego completado exitosamente')
-              initToast().toast.success('Riego completado: El riego se ha completado correctamente')
+              // Las notificaciones se manejan via alertas de base de datos
       return true
     } catch (err) {
       error.value = err.message
       console.error('❌ Error en completeIrrigation:', err)
-      initToast().toast.error('Error: ' + err.message)
+      // Los errores se manejan via respuestas API, no toasts
       return false
     }
   }
@@ -945,40 +1016,36 @@ export const useIrrigationStore = defineStore('irrigation', () => {
             throw new Error('Error al cancelar riego programado')
           }
           console.log('✅ Riego programado cancelado (configuración mantenida)')
-          initToast().toast.info('Riego cancelado: El riego activo ha sido cancelado. La configuración se mantiene para futuros riegos.')
+          // Las notificaciones se manejan via alertas de base de datos
         } else {
           console.log('🔄 Cancelando configuración programada (SIN eliminar tupla)')
           // Solo desactivar la configuración, NO eliminar la tupla programmed_configs
           // Esto preserva la configuración para daily, custom, y once
           
-          // 1. Cancelar pump_activations si están en estado 'programmed'
-          if (activePumpActivation.value?.id && activePumpActivation.value.status === 'programmed') {
-            console.log('🔄 Cancelando pump_activation en estado programmed')
-            const pumpResponse = await IrrigationAPI.updatePumpActivationStatus(activePumpActivation.value.id, {
-              status: 'cancelled'
-            })
-            if (!pumpResponse.success) {
-              throw new Error('Error cancelando pump activation')
+          // 1. NO cancelar pump_activations programadas (evita envío de OFF innecesario)
+          // Solo desactivamos la configuración, las pump_activations programadas se limpiarán automáticamente
+          
+          // 2. Eliminar programmed_settings (deshacer configuración)
+          if (irrigationConfig.value?.id) {
+            console.log('🔄 Eliminando configuración programada específica')
+            const deleteResponse = await IrrigationAPI.deleteProgrammedSettings(irrigationConfig.value.id)
+            if (!deleteResponse.success) {
+              throw new Error('Error al eliminar configuración programada')
             }
-            console.log('✅ Pump activation cancelada')
+            console.log('✅ Configuración programada eliminada')
           }
           
-          // 2. Desactivar configuración de riego (is_active = false)
+          // 3. Desactivar configuración de riego (is_active = false)
           if (irrigationConfig.value?.id) {
             console.log('🔄 Desactivando configuración de riego')
             const response = await IrrigationAPI.deactivateIrrigationConfig(irrigationConfig.value.id)
             if (!response.success) {
               throw new Error('Error al desactivar configuración programada')
             }
-            console.log('✅ Configuración programada desactivada (tupla conservada)')
+            console.log('✅ Configuración programada desactivada (tupla irrigation_configs conservada)')
           }
           
-          // NOTA: NO eliminamos programmed_configs para preservar:
-          // - daily: configuración para futuros riegos
-          // - custom: días pendientes  
-          // - once: registro histórico
-          
-          initToast().toast.info('Configuración cancelada: La configuración se ha desactivado pero se mantiene para futuras activaciones')
+          // Las notificaciones se manejan via alertas de base de datos
         }
       } else {
         // Para otros modos (manual, automático)
@@ -1024,7 +1091,7 @@ export const useIrrigationStore = defineStore('irrigation', () => {
           console.log('✅ Configuración de riego desactivada')
         }
         
-        initToast().toast.info('Configuración cancelada: Se ha cancelado la configuración de riego')
+        // Las notificaciones se manejan via alertas de base de datos
       }
 
       // 3. Limpiar estado local
@@ -1041,7 +1108,7 @@ export const useIrrigationStore = defineStore('irrigation', () => {
     } catch (err) {
       error.value = err.message
       console.error('❌ Error en cancelActiveMode:', err)
-      initToast().toast.error('Error: ' + err.message)
+      // Los errores se manejan via respuestas API, no toasts
       return false
     } finally {
       isLoading.value = false
@@ -1060,19 +1127,30 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         if (activePumpActivation.value && 
             activePumpActivation.value.status === 'active') {
           
-          // Verificar si el tiempo se agotó
-          const shouldComplete = 
-            remainingTime.value === null || 
-            remainingTime.value === '0:00' ||
-            (activePumpActivation.value.started_at && 
-             activePumpActivation.value.duration_minutes &&
-             (new Date() - new Date(activePumpActivation.value.started_at)) >= 
-             (activePumpActivation.value.duration_minutes * 60 * 1000))
+          // Calcular tiempo transcurrido
+          const startTime = new Date(activePumpActivation.value.started_at)
+          const now = new Date()
+          const elapsedMinutes = (now - startTime) / (1000 * 60)
+          const durationMinutes = parseFloat(activePumpActivation.value.duration_minutes) || 0
           
-          if (shouldComplete) {
-            console.log('⏰ Tiempo agotado, completando riego automáticamente')
-            await completeIrrigation()
+          // Debug: Verificar datos de la activación
+          if (!activePumpActivation.value.started_at || !activePumpActivation.value.duration_minutes) {
+            console.warn('⚠️ [MONITOR] Datos incompletos:', {
+              started_at: activePumpActivation.value.started_at,
+              duration_minutes: activePumpActivation.value.duration_minutes,
+              activationData: activePumpActivation.value
+            })
           }
+          
+          console.log('⏱️ [MONITOR] Estado del riego:', {
+            elapsed: elapsedMinutes.toFixed(2),
+            duration: durationMinutes,
+            remainingTime: remainingTime.value,
+            status: activePumpActivation.value.status
+          })
+          
+          // 🚨 NOTA: Auto-completado se maneja SOLO desde remainingTime computed
+          // NO hacer auto-completado aquí para evitar duplicados
         }
       }
     }, 5000) // Cada 5 segundos
@@ -1189,6 +1267,8 @@ export const useIrrigationStore = defineStore('irrigation', () => {
     cancelActiveMode,
     findManualConfigByUserAndCrop,
     getModeDescription,
+    startTimeUpdates,
+    stopTimeUpdates,
     cleanup
   }
 }) 

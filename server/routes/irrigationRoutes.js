@@ -25,6 +25,7 @@ import {
   createProgrammedConfig,
   cancelProgrammedConfig,
   cancelProgrammedIrrigation,
+  deleteProgrammedSettings,
   updateNextExecution,
   updateProgrammedExecution
 } from '../controllers/irrigationConfigController.js';
@@ -75,6 +76,7 @@ router.delete('/automatic/cancel/:user_id', cancelAutomaticConfig);
 router.post('/programmed', createProgrammedConfig);
 router.delete('/programmed/:irrigation_config_id/cancel', cancelProgrammedConfig);
 router.delete('/programmed/:irrigation_config_id/cancel-irrigation', cancelProgrammedIrrigation);
+router.delete('/programmed/:irrigation_config_id/settings', deleteProgrammedSettings);
 router.put('/programmed/:id/next-execution', updateNextExecution);
 router.put('/programmed/:id/execution', updateProgrammedExecution);
 

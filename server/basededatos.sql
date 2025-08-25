@@ -27,10 +27,12 @@ CREATE TYPE alert_subtype AS ENUM (
   
   -- Irrigation alerts
   'manual_started', 'emergency_stop', 'manual_cancelled', 'programmed_saved',
-  'programmed_reminder', 'programmed_schedule', 'programmed_cancelled', 'automatic_saved'
+  'programmed_reminder', 'programmed_schedule', 'programmed_cancelled', 'automatic_saved',
+  'automatic_activated_temperature', 'automatic_activated_soil_humidity', 'automatic_activated_air_humidity',
+  'automatic_deactivated_optimal_conditions', 'automatic_deactivated_soil_optimal', 'automatic_cancelled',
+  'irrigation_started', 'irrigation_ended', 'irrigation_cancelled', 'irrigation_paused', 'irrigation_resumed'
 );
 
-ALTER TABLE crops DROP CONSTRAINT crops_user_id_key;
 
 
 
@@ -61,8 +63,7 @@ CREATE TABLE crops (
   temperature_max DECIMAL(5,2), 
   session VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW(),
-  selected BOOLEAN DEFAULT FALSE, 
-  UNIQUE(user_id) 
+  selected BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE devices ( 

@@ -1072,6 +1072,9 @@ onMounted(async () => {
     // Cargar umbrales desde el cultivo seleccionado
     loadCropThresholds()
     
+    // CRÍTICO: Cargar configuración activa para establecer activeMode
+    await irrigationStore.loadActiveConfiguration()
+    
     // Verificar estado de configuración automática existente
     await checkAutomaticStatus()
     
@@ -1115,16 +1118,59 @@ watch(automaticConfig, (newConfig) => {
   }
 }, { deep: true })
 
-// Watcher para monitorear el estado de riego
+// Sistema de monitoreo para mantener el modal activo
+let statusMonitoringInterval = null
+
+const startStatusMonitoring = () => {
+  if (statusMonitoringInterval) {
+    clearInterval(statusMonitoringInterval)
+  }
+  
+  // Actualizar inmediatamente
+  irrigationStore.loadActiveConfiguration()
+  
+  statusMonitoringInterval = setInterval(async () => {
+    if (irrigationStore.irrigationConfig?.id) {
+      await irrigationStore.loadActiveConfiguration()
+    }
+  }, 3000) // Cada 3 segundos
+  
+  console.log('✅ [AUTO] Monitoreo de estado iniciado')
+}
+
+const stopStatusMonitoring = () => {
+  if (statusMonitoringInterval) {
+    clearInterval(statusMonitoringInterval)
+    statusMonitoringInterval = null
+    console.log('🛑 [AUTO] Monitoreo de estado detenido')
+  }
+}
+
+// Watcher para monitorear el estado de riego y gestionar el monitoreo
 watch(isWatering, (newValue) => {
   console.log('isWatering cambió a:', newValue)
-})
+  if (newValue) {
+    startStatusMonitoring()
+  } else {
+    stopStatusMonitoring()
+  }
+}, { immediate: true })
 
 watch(isPaused, (newValue) => {
   console.log('isPaused cambió a:', newValue)
 })
 
+// Watcher para activeMode automático
+watch(() => irrigationStore.activeMode, (newMode) => {
+  if (newMode === 'automatic' && isWatering.value) {
+    startStatusMonitoring()
+  } else if (newMode !== 'automatic') {
+    stopStatusMonitoring()
+  }
+}, { immediate: true })
+
 onUnmounted(() => {
+  stopStatusMonitoring()
   // El composable useSensorData maneja su propio cleanup
   console.log('🧹 Componente automático desmontado')
 })
