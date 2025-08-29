@@ -2,9 +2,6 @@ import { pool } from '../config/db.js';
 import { handleNotFoundError, handleBadRequestError, handleInternalServerError, handleSuccessResponse } from '../utils/index.js';
 import { sendDownlinkForConfig } from '../services/ttnService.js';
 import { 
-  createManualStartedAlert, 
-  createEmergencyStopAlert, 
-  createManualCancelledAlert,
   createProgrammedScheduleAlert,
   createIrrigationStartedAlert,
   createIrrigationEndedAlert,

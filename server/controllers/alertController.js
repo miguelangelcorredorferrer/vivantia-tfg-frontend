@@ -336,84 +336,8 @@ const createCropAddedAlert = async (user_id, cropName) => {
 };
 
 // ==================== ALERTAS DE RIEGO ====================
-
-// Crear alerta de riego manual iniciado
-const createManualStartedAlert = async (user_id, duration, cropName) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'irrigation',
-      'manual_started',
-      'info',
-      'Riego manual iniciado',
-      `Riego manual iniciado por ${duration} minutos para el cultivo "${cropName}".`,
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de riego manual iniciado: ${error.message}`);
-  }
-};
-
-// Crear alerta de parada de emergencia
-const createEmergencyStopAlert = async (user_id) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'irrigation',
-      'emergency_stop',
-      'warning',
-      'Parada de emergencia',
-      'El riego ha sido detenido por una parada de emergencia.',
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de parada de emergencia: ${error.message}`);
-  }
-};
-
-// Crear alerta de riego manual cancelado
-const createManualCancelledAlert = async (user_id) => {
-  try {
-    const query = `
-      INSERT INTO alerts (user_id, alert_type, alert_subtype, severity, title, message, is_resolved)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      user_id,
-      'irrigation',
-      'manual_cancelled',
-      'info',
-      'Riego cancelado',
-      'El riego manual ha sido cancelado por el usuario.',
-      false
-    ];
-    
-    const result = await pool.query(query, values);
-    return new Alert(result.rows[0]);
-  } catch (error) {
-    throw new Error(`Error al crear alerta de riego cancelado: ${error.message}`);
-  }
-};
+// NOTA: Las alertas de riego ahora se manejan en irrigationAlertService.js
+// Estas funciones se mantienen aquí solo por compatibilidad con código legacy
 
 // Crear alerta de riego programado guardado
 const createProgrammedSavedAlert = async (user_id, scheduleInfo) => {
@@ -541,10 +465,7 @@ export {
   createCropEditedAlert,
   createCropDeletedAlert,
   createCropAddedAlert,
-  // Alertas de riego (usadas por pumpActivationController e irrigationConfigController)
-  createManualStartedAlert,
-  createEmergencyStopAlert,
-  createManualCancelledAlert,
+  // Alertas de riego programado y automático (legacy - considerar migrar a irrigationAlertService)
   createProgrammedSavedAlert,
   createProgrammedScheduleAlert,
   createProgrammedCancelledAlert,

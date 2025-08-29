@@ -27,7 +27,13 @@ import {
   cancelProgrammedIrrigation,
   deleteProgrammedSettings,
   updateNextExecution,
-  updateProgrammedExecution
+  updateProgrammedExecution,
+  // Funciones de alertas de riego
+  createIrrigationStartedAlertEndpoint,
+  createIrrigationEndedAlertEndpoint,
+  createIrrigationCancelledAlertEndpoint,
+  createIrrigationPausedAlertEndpoint,
+  createIrrigationResumedAlertEndpoint
 } from '../controllers/irrigationConfigController.js';
 
 import {
@@ -93,5 +99,12 @@ router.get('/pump-activation/user/:user_id/history', getPumpActivationsByUser);
 // Ruta para evaluar automáticamente después de insertar datos de simulación  
 router.post('/automatic/evaluate/:userId', evaluateAutomaticIrrigationForUser);
 router.post('/automatic/toggle/:userId', toggleAutomaticPump);
+
+// Rutas de alertas de riego
+router.post('/alerts/started', createIrrigationStartedAlertEndpoint);
+router.post('/alerts/ended', createIrrigationEndedAlertEndpoint);
+router.post('/alerts/cancelled', createIrrigationCancelledAlertEndpoint);
+router.post('/alerts/paused', createIrrigationPausedAlertEndpoint);
+router.post('/alerts/resumed', createIrrigationResumedAlertEndpoint);
 
 export default router;

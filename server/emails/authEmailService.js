@@ -15,7 +15,7 @@ export async function sendEmailVerification({ name, email, token }) {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Vivantia - Confirma tu cuenta</title>
+        <title>Vivantia - Confirme su cuenta</title>
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -139,23 +139,23 @@ export async function sendEmailVerification({ name, email, token }) {
             <div class="content">
                 <h2>¡Bienvenido/a, ${name}!</h2>
                 <p>
-                    Gracias por unirte a <strong>Vivantia</strong>, la plataforma de riego inteligente 
+                    Gracias por unirte a <strong>Vivantia</strong>, la plataforma IoT de gestión de riego inteligente 
                     que te ayudará a cuidar tus cultivos de manera eficiente y sostenible.
                 </p>
                 
                 <div class="features">
-                    <h3>🌱 Con Vivantia podrás:</h3>
+                    <h3>Con Vivantia podrás:</h3>
                     <ul>
-                        <li>Monitorear la humedad y temperatura de tus cultivos en tiempo real</li>
-                        <li>Programar riegos automáticos inteligentes</li>
-                        <li>Recibir alertas y notificaciones personalizadas</li>
-                        <li>Optimizar el uso del agua y mejorar tus cosechas</li>
+                        <li>Monitorear la humedad y temperatura ambiental y humedad del suelo de tus cultivos en tiempo real</li>
+                        <li>Programar y automatizar el riego de sus cultivos</li>
+                        <li>Recibir alertas y notificaciones sobre el uso de agua y el estado de tus cultivos</li>
+                        <li>Optimizar el uso del agua y mejorar sus cosechas</li>
                     </ul>
                 </div>
                 
                 <p>
-                    Para comenzar a disfrutar de todas estas funciones, 
-                    necesitas confirmar tu cuenta haciendo clic en el botón de abajo:
+                    Para comenzar a utilizar el sistema de gestión de riego inteligente, 
+                    necesita confirmar su cuenta haciendo clic en el botón de abajo:
                 </p>
                 
                 <div class="btn-container">
@@ -173,10 +173,6 @@ export async function sendEmailVerification({ name, email, token }) {
             <div class="footer">
                 <p>
                     <strong>Vivantia</strong> - Tecnología sostenible para el futuro de la agricultura
-                </p>
-                <p>
-                    ¿Necesitas ayuda? Visita nuestro 
-                    <a href="${process.env.FRONTEND_URL}/soporte">centro de soporte</a>
                 </p>
             </div>
         </div>
@@ -335,8 +331,8 @@ export async function sendEmailPasswordReset({ name, email, token }) {
                     Hola <strong>${name}</strong>,
                 </p>
                 <p>
-                    Hemos recibido una solicitud para reestablecer la contraseña de tu cuenta en Vivantia. 
-                    Si fuiste tú quien lo solicitó, puedes crear una nueva contraseña haciendo clic en el botón de abajo.
+                    Hemos recibido una solicitud para reestablecer la contraseña de su cuenta en Vivantia. 
+                    Si fue usted quien la solicitó, puede crear una nueva contraseña haciendo clic en el botón de abajo.
                 </p>
                 
                 <div class="btn-container">
@@ -357,18 +353,14 @@ export async function sendEmailPasswordReset({ name, email, token }) {
                 
                 <div class="warning-note">
                     <strong>⚠️ ¿No solicitaste este cambio?</strong><br>
-                    Si no fuiste tú quien solicitó reestablecer la contraseña, puedes ignorar este email. 
-                    Tu cuenta permanece segura y no se realizarán cambios.
+                    Si no fue usted quien solicitó reestablecer la contraseña, puedes ignorar este email. 
+                    Su cuenta permanece segura y no se realizarán cambios.
                 </div>
             </div>
             
             <div class="footer">
                 <p>
                     <strong>Vivantia</strong> - Tecnología sostenible para el futuro de la agricultura
-                </p>
-                <p>
-                    ¿Necesitas ayuda? Contacta nuestro 
-                    <a href="${process.env.FRONTEND_URL}/soporte">equipo de soporte</a>
                 </p>
             </div>
         </div>

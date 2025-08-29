@@ -40,13 +40,6 @@ export const createEmergencyStopAlert = async (user_id, cropName) => {
   return await createIrrigationAlert(user_id, 'emergency_stop', title, message, 'warning');
 };
 
-// Crear alerta de riego manual cancelado
-export const createManualCancelledAlert = async (user_id, cropName) => {
-  const title = 'Riego manual cancelado';
-  const message = `El riego manual de ${cropName} ha sido cancelado antes de completarse.`;
-  
-  return await createIrrigationAlert(user_id, 'manual_cancelled', title, message, 'info');
-};
 
 // ===== ALERTAS GENERALES DE RIEGO =====
 
@@ -163,7 +156,7 @@ export const createProgrammedReminderAlert = async (user_id, cropName, minutesUn
 
 // Crear alerta de riego programado iniciado automáticamente
 export const createProgrammedScheduleAlert = async (user_id, cropName, durationMinutes) => {
-  const title = '🌱 Riego programado iniciado';
+  const title = 'Riego programado iniciado';
   const message = `Se ha iniciado automáticamente el riego programado de ${cropName} con duración de ${durationMinutes} minutos.`;
   
   return await createIrrigationAlert(user_id, 'programmed_schedule', title, message, 'info');

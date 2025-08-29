@@ -5,9 +5,13 @@ import {
   createProgrammedSavedAlert,
   createProgrammedReminderAlert,
   createProgrammedScheduleAlert,
-  createProgrammedCancelledAlert,
   createAutomaticConfigSavedAlert,
-  createAutomaticConfigCancelledAlert
+  createAutomaticConfigCancelledAlert,
+  createIrrigationStartedAlert,
+  createIrrigationEndedAlert,
+  createIrrigationCancelledAlert,
+  createIrrigationPausedAlert,
+  createIrrigationResumedAlert
 } from '../services/irrigationAlertService.js';
 import { evaluateAutomaticIrrigation, getAutomaticIrrigationStatus } from '../services/automaticIrrigationService.js';
 
@@ -698,24 +702,8 @@ const cancelProgrammedConfig = async (req, res) => {
 
     await client.query('COMMIT');
 
-    // Crear alerta de configuración programada cancelada
-    try {
-      // Obtener información del usuario y cultivo
-      const userCropQuery = `
-        SELECT ic.user_id, c.name as crop_name
-        FROM irrigation_configs ic
-        LEFT JOIN crops c ON ic.crop_id = c.id
-        WHERE ic.id = $1
-      `;
-      const userCropResult = await client.query(userCropQuery, [irrigation_config_id]);
-      const userData = userCropResult.rows[0];
-      
-      if (userData) {
-        await createProgrammedCancelledAlert(userData.user_id, userData.crop_name || 'Cultivo');
-      }
-    } catch (alertError) {
-      console.warn('Error al crear alerta de configuración cancelada:', alertError.message);
-    }
+    // NOTA: La alerta de configuración cancelada se crea automáticamente en pumpActivationController
+    // cuando se actualiza el estado de pump_activations a 'cancelled'
 
     res.status(200).json({
       success: true,
@@ -843,25 +831,8 @@ const cancelProgrammedIrrigation = async (req, res) => {
 
     // NOTA: NO eliminamos programmed_settings para mantener configuración futura
 
-    // Crear alerta de riego programado cancelado
-    try {
-      // Obtener información del usuario y cultivo
-      const infoQuery = `
-        SELECT ic.user_id, c.name as crop_name
-        FROM irrigation_configs ic
-        LEFT JOIN crops c ON ic.crop_id = c.id
-        WHERE ic.id = $1
-      `;
-      const infoResult = await client.query(infoQuery, [irrigation_config_id]);
-      
-      if (infoResult.rows.length > 0) {
-        const { user_id, crop_name } = infoResult.rows[0];
-        const wasActive = pumpResult.rows.length > 0; // Había riego activo
-        await createProgrammedCancelledAlert(user_id, crop_name || 'Cultivo', wasActive);
-      }
-    } catch (alertError) {
-      console.warn('Error al crear alerta de cancelación programada:', alertError.message);
-    }
+    // NOTA: La alerta de cancelación se crea automáticamente en pumpActivationController
+    // cuando se actualiza el estado de pump_activations a 'cancelled'
 
     await client.query('COMMIT');
 
@@ -1611,5 +1582,117 @@ export {
   deleteProgrammedSettings,
   updateNextExecution,
   updateProgrammedExecution,
-  findProgrammedConfigByIrrigationId
+  findProgrammedConfigByIrrigationId,
+  // Alertas de riego
+  createIrrigationStartedAlertEndpoint,
+  createIrrigationEndedAlertEndpoint,
+  createIrrigationCancelledAlertEndpoint,
+  createIrrigationPausedAlertEndpoint,
+  createIrrigationResumedAlertEndpoint
+};
+
+// Endpoints para alertas de riego
+const createIrrigationStartedAlertEndpoint = async (req, res) => {
+  try {
+    const { user_id, mode, crop_name, duration_minutes } = req.body;
+    
+    const alert = await createIrrigationStartedAlert(user_id, mode, crop_name, duration_minutes);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Alerta de riego iniciado creada exitosamente',
+      data: alert
+    });
+  } catch (error) {
+    console.error('Error creando alerta de riego iniciado:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al crear alerta de riego iniciado',
+      error: error.message
+    });
+  }
+};
+
+const createIrrigationEndedAlertEndpoint = async (req, res) => {
+  try {
+    const { user_id, mode, crop_name, was_completed = true } = req.body;
+    
+    const alert = await createIrrigationEndedAlert(user_id, mode, crop_name, was_completed);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Alerta de riego terminado creada exitosamente',
+      data: alert
+    });
+  } catch (error) {
+    console.error('Error creando alerta de riego terminado:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al crear alerta de riego terminado',
+      error: error.message
+    });
+  }
+};
+
+const createIrrigationCancelledAlertEndpoint = async (req, res) => {
+  try {
+    const { user_id, mode, crop_name } = req.body;
+    
+    const alert = await createIrrigationCancelledAlert(user_id, mode, crop_name);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Alerta de riego cancelado creada exitosamente',
+      data: alert
+    });
+  } catch (error) {
+    console.error('Error creando alerta de riego cancelado:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al crear alerta de riego cancelado',
+      error: error.message
+    });
+  }
+};
+
+const createIrrigationPausedAlertEndpoint = async (req, res) => {
+  try {
+    const { user_id, mode, crop_name } = req.body;
+    
+    const alert = await createIrrigationPausedAlert(user_id, mode, crop_name);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Alerta de riego pausado creada exitosamente',
+      data: alert
+    });
+  } catch (error) {
+    console.error('Error creando alerta de riego pausado:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al crear alerta de riego pausado',
+      error: error.message
+    });
+  }
+};
+
+const createIrrigationResumedAlertEndpoint = async (req, res) => {
+  try {
+    const { user_id, mode, crop_name } = req.body;
+    
+    const alert = await createIrrigationResumedAlert(user_id, mode, crop_name);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Alerta de riego reanudado creada exitosamente',
+      data: alert
+    });
+  } catch (error) {
+    console.error('Error creando alerta de riego reanudado:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al crear alerta de riego reanudado',
+      error: error.message
+    });
+  }
 };
