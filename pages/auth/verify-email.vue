@@ -39,7 +39,7 @@ const goToLogin = () => {
             <h3 class="text-lg font-semibold text-gray-900 mb-2">¡Revisa tu email!</h3>
             <p class="text-gray-600 text-sm leading-relaxed">
               Hemos enviado un enlace de verificación a tu correo electrónico. 
-              Haz clic en el enlace para verificar tu cuenta y poder acceder a Vivantia IoT Solutions.
+              Haz clic en el enlace para verificar tu cuenta y poder acceder a Vivantia.
             </p>
           </div>
         </div>
@@ -68,7 +68,7 @@ const goToLogin = () => {
       <!-- Footer -->
       <div class="text-center mt-8">
         <p class="text-sm text-gray-400">
-          © 2024 Vivantia IoT Solutions. Todos los derechos reservados.
+          © 2025 Vivantia - Sistema IoT para la gestión inteligente de riego.
         </p>
       </div>
     </div>

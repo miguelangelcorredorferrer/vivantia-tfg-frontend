@@ -457,6 +457,7 @@ import NotesIcon from './NotesIcon.vue'
 import UserIcon from './UserIcon.vue'
 import DeviceIcon from './DeviceIcon.vue'
 import WateringIcon from './WateringIcon.vue'
+import WaterDropIcon from './WaterDropIcon.vue'
 
 // Exportar los nuevos iconos como componentes Vue
 export {
@@ -486,7 +487,8 @@ export {
   NotesIcon,
   UserIcon,
   DeviceIcon,
-  WateringIcon
+  WateringIcon,
+  WaterDropIcon
 }
 
 // Exportar AlertsIcon como alias

@@ -72,6 +72,10 @@ export const useIrrigationStore = defineStore('irrigation', () => {
 
   // Variable para controlar auto-completado (evitar múltiples ejecuciones)
   const autoCompletionTriggered = ref(false)
+  
+  // CRÍTICO: Flag para deshabilitar completamente auto-completado por tiempo
+  // Se activa cuando se detecta modo automático para evitar OFF erróneos
+  const disableTimeBasedCompletion = ref(false)
 
   // Tiempo restante calculado en tiempo real
   const remainingTime = computed(() => {
@@ -79,19 +83,60 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       return null
     }
 
+    // CRÍTICO: Para modo automático, NO mostrar tiempo restante ni auto-completar
+    // El riego automático se basa en sensores, no en duración fija
+    // VERIFICAR ESTO ANTES QUE NADA para evitar cálculos innecesarios
+    if (activeMode.value === 'automatic') {
+      return 'Automático (basado en sensores)'
+    }
+
+    // SEGUNDA VERIFICACIÓN: Si no hay activeMode definido pero activePumpActivation
+    // tiene duration_minutes = 0, probablemente es automático
+    const durationMinutes = parseFloat(activePumpActivation.value.duration_minutes) || 0
+    if (durationMinutes === 0) {
+      console.log('⚠️ [SAFEGUARD] duration_minutes = 0 detectado, probablemente modo automático')
+      return 'Automático (basado en sensores)'
+    }
+
+    // TERCERA VERIFICACIÓN: Si activeMode no está definido, NO calcular tiempo
+    // Esto evita cálculos erróneos durante la navegación
+    if (!activeMode.value) {
+      console.log('⚠️ [SAFEGUARD] activeMode no definido, saltando cálculo de tiempo')
+      return 'Cargando...'
+    }
+
     const startTime = new Date(activePumpActivation.value.started_at)
     const now = new Date()
     const elapsedSeconds = Math.floor((now - startTime) / 1000)
-    const durationMinutes = parseFloat(activePumpActivation.value.duration_minutes) || 0
     const totalSeconds = durationMinutes * 60
     const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds)
 
     // 🚨 AUTO-COMPLETAR cuando llega a 0 (solo una vez por activación)
+    // CUÁDRUPLE VERIFICACIÓN: SOLO para modos manual y programado
     if (remainingSeconds <= 0 && 
         activePumpActivation.value.status === 'active' && 
-        !autoCompletionTriggered.value) {
+        !autoCompletionTriggered.value &&
+        !disableTimeBasedCompletion.value &&
+        activeMode.value !== 'automatic' &&
+        activeMode.value !== undefined &&
+        durationMinutes > 0) {
+      
+      // SAFEGUARD ADICIONAL: Verificar que el riego lleva tiempo ejecutándose
+      // Para evitar auto-completado inmediato en navegación
+      const runningTimeMinutes = (now - startTime) / (1000 * 60)
+      if (runningTimeMinutes < 0.5) { // Menos de 30 segundos
+        console.log('⚠️ [SAFEGUARD] Riego muy reciente, saltando auto-completado:', runningTimeMinutes.toFixed(2), 'min')
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`
+      }
       
       console.log('🚨 TIEMPO AGOTADO - Auto-completando riego (ID:', activePumpActivation.value.id, ')')
+      console.log('🔍 [DEBUG] Contexto auto-completado:', {
+        activeMode: activeMode.value,
+        durationMinutes: durationMinutes,
+        remainingSeconds: remainingSeconds,
+        status: activePumpActivation.value.status,
+        autoCompletionTriggered: autoCompletionTriggered.value
+      })
       autoCompletionTriggered.value = true
       
       // Guardar ID antes de ejecutar para logging
@@ -116,6 +161,13 @@ export const useIrrigationStore = defineStore('irrigation', () => {
   
   const startTimeUpdates = () => {
     if (timeUpdateInterval) clearInterval(timeUpdateInterval)
+    
+    // CRÍTICO: NO iniciar updates de tiempo para modo automático
+    // El modo automático no usa duración fija, se basa en sensores
+    if (activeMode.value === 'automatic') {
+      console.log('ℹ️ Modo automático detectado - NO iniciando updates de tiempo')
+      return
+    }
     
     timeUpdateInterval = setInterval(() => {
       if (activePumpActivation.value && isWatering.value) {
@@ -145,9 +197,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
 
   // Watcher para reiniciar autoCompletionTriggered cuando cambie la activación
   watch(() => activePumpActivation.value?.id, (newId, oldId) => {
-    if (newId !== oldId) {
+    // CRÍTICO: Solo resetear si realmente es una NUEVA activación, no la misma recargada
+    if (newId !== oldId && newId !== undefined && oldId !== undefined) {
       console.log('🔄 Nueva activación detectada - reiniciando autoCompletionTriggered')
       autoCompletionTriggered.value = false
+    } else if (newId !== oldId) {
+      console.log('ℹ️ [SKIP] Cambio de activación ignorado (carga inicial o similar):', { newId, oldId })
     }
   })
 
@@ -281,6 +336,15 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         const config = response.data[0] // Solo puede haber una activa
         irrigationConfig.value = config
         activeMode.value = config.mode_type
+        
+        // CRÍTICO: Desactivar flag para modos manual y programado
+        // Solo mantener activo para modo automático
+        if (config.mode_type === 'automatic') {
+          disableTimeBasedCompletion.value = true
+        } else {
+          disableTimeBasedCompletion.value = false
+        }
+        
         foundActiveConfig = true
 
         // Cargar configuración específica
@@ -312,6 +376,8 @@ export const useIrrigationStore = defineStore('irrigation', () => {
             
             irrigationConfig.value = automaticConfig
             activeMode.value = 'automatic'
+            // CRÍTICO: Activar flag para deshabilitar auto-completado por tiempo
+            disableTimeBasedCompletion.value = true
             foundActiveConfig = true
             
             console.log('✅ Configuración automática preparada cargada en store - otros modos bloqueados')
@@ -515,8 +581,13 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       
       console.log('✅ Activación de bomba creada:', pumpResponse.data.id)
 
-      // 5. Cargar configuración activa
+      
+
+      // 6. Cargar configuración activa
       await loadActiveConfiguration()
+      
+      // CRÍTICO: Asegurar que el flag esté desactivado para modo manual
+      disableTimeBasedCompletion.value = false
       
       // 6. Iniciar monitoreo de estado
       startStatusMonitoring()
@@ -562,6 +633,8 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         specificConfig.value = response.data.programmedConfig
         activePumpActivation.value = response.data.pumpActivation
         activeMode.value = 'programmed'
+        // Desactivar flag para permitir auto-completado por tiempo en modo programado
+        disableTimeBasedCompletion.value = false
 
         // Calcular tiempo hasta la activación y configurar countdown
         const scheduledTime = new Date(config.start_datetime)
@@ -737,8 +810,7 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         startTimeUpdates()
         console.log('✅ Updates de tiempo iniciados')
         
-        // Las notificaciones se manejan via alertas de base de datos
-        console.log('✅ Activación completada - alerta creada en BD')
+        
         
         console.log('🎉 RIEGO PROGRAMADO ACTIVADO EXITOSAMENTE')
         
@@ -878,7 +950,10 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       if (response.success) {
         activePumpActivation.value = response.data
         stopStatusMonitoring()
-        // Las notificaciones se manejan via alertas de base de datos
+        
+        // NOTA: La alerta de riego pausado se crea automáticamente en pumpActivationController
+        console.log('✅ Riego pausado - la alerta se creará automáticamente en el backend')
+        
         return true
       }
     } catch (err) {
@@ -899,7 +974,10 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       if (response.success) {
         activePumpActivation.value = response.data
         startStatusMonitoring()
-        // Las notificaciones se manejan via alertas de base de datos
+        
+        // NOTA: La alerta de riego reanudado se crea automáticamente en pumpActivationController
+        console.log('✅ Riego reanudado - la alerta se creará automáticamente en el backend')
+        
         return true
       }
     } catch (err) {
@@ -970,6 +1048,10 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         console.log('✅ Próxima ejecución programada')
       }
 
+      // NOTA: La alerta de riego completado se crea automáticamente en pumpActivationController
+      // cuando se actualiza el estado de pump_activations a 'completed'
+      console.log('✅ Riego completado - la alerta se creará automáticamente en el backend')
+
       // Limpiar estado local
       resetState()
       stopStatusMonitoring()
@@ -978,7 +1060,6 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       await loadActiveConfiguration()
 
       console.log('✅ Riego completado exitosamente')
-              // Las notificaciones se manejan via alertas de base de datos
       return true
     } catch (err) {
       error.value = err.message
@@ -1015,8 +1096,12 @@ export const useIrrigationStore = defineStore('irrigation', () => {
           if (!response.success) {
             throw new Error('Error al cancelar riego programado')
           }
+          
+          // NOTA: La alerta de riego cancelado se crea automáticamente en pumpActivationController
+          // cuando cancelProgrammedIrrigation actualiza pump_activations a 'cancelled'
+          console.log('✅ Riego programado cancelado - la alerta se creará automáticamente en el backend')
+          
           console.log('✅ Riego programado cancelado (configuración mantenida)')
-          // Las notificaciones se manejan via alertas de base de datos
         } else {
           console.log('🔄 Cancelando configuración programada (SIN eliminar tupla)')
           // Solo desactivar la configuración, NO eliminar la tupla programmed_configs
@@ -1065,6 +1150,10 @@ export const useIrrigationStore = defineStore('irrigation', () => {
           
           console.log('✅ Activación de bomba cancelada')
           
+          // NOTA: La alerta de riego cancelado se crea automáticamente en pumpActivationController
+          // cuando se actualiza el estado de pump_activations a 'cancelled'
+          console.log('✅ Riego cancelado - la alerta se creará automáticamente en el backend')
+          
           // IMPORTANTE: Actualizar last_irrigation_at cuando se cancela un riego activo
           if (irrigationConfig.value?.id) {
             console.log('🔄 Actualizando last_irrigation_at (riego cancelado)')
@@ -1100,8 +1189,17 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       
 
 
-      // 4. Recargar configuración activa para verificar que no hay ninguna activa
+      // 4. Pequeño delay para asegurar que los cambios se propaguen en el backend
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // 5. Recargar configuración activa para verificar que no hay ninguna activa
       await loadActiveConfiguration()
+
+      // 6. Verificar que efectivamente se limpió el estado
+      if (activeMode.value !== null) {
+        console.warn('⚠️ El estado no se limpió correctamente, forzando limpieza manual')
+        resetState()
+      }
 
       console.log('✅ Modo activo cancelado exitosamente')
       return true
@@ -1221,6 +1319,9 @@ export const useIrrigationStore = defineStore('irrigation', () => {
     activePumpActivation.value = null
     lastCompletedConfig.value = null
     error.value = null
+    // Resetear flags de control
+    autoCompletionTriggered.value = false
+    disableTimeBasedCompletion.value = false
   }
 
   // Limpiar al cerrar

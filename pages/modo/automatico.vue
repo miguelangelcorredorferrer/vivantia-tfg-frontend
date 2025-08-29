@@ -5,10 +5,7 @@
     <div class="max-w-2xl mx-auto">
       <!-- Widget de estado automático cuando está configurado pero no activo -->
       <div v-if="automaticConfig && !automaticConfig.is_active" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <!-- Debug info -->
-        <div class="text-xs text-gray-500 mb-2">
-          Debug: automaticConfig={{ !!automaticConfig }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}
-        </div>
+
         <h2 class="text-xl font-bold text-white mb-6">Modo Automático Configurado</h2>
         
         <div class="text-center space-y-6">
@@ -56,19 +53,6 @@
             </div>
           </div>
           
-          <!-- Botón de prueba para simular activación -->
-          <div class="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-4">
-            <h4 class="font-semibold text-yellow-300 mb-2">Prueba de Funcionamiento</h4>
-            <p class="text-sm text-yellow-200 mb-3">
-              Usa este botón para simular que se cumplen las condiciones y activar el riego automático
-            </p>
-            <button
-              @click="triggerAutomaticWatering"
-              class="w-full px-4 py-2 bg-yellow-600 text-white font-medium rounded-lg hover:bg-yellow-700 transition-colors"
-            >
-              🔧 Simular Activación Automática
-            </button>
-          </div>
           
           <!-- Botón de deshacer configuración -->
           <button
@@ -82,17 +66,14 @@
 
       <!-- Widget de riego activo cuando está regando -->
       <div v-if="automaticConfig?.is_active && isWatering && !isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <!-- Debug info -->
-        <div class="text-xs text-gray-500 mb-2">
-          Debug: isAutomaticActive={{ isAutomaticActive }}, isWatering={{ isWatering }}, isPaused={{ isPaused }}, modeConfig={{ !!modeConfig }}
-        </div>
+
         <h2 class="text-xl font-bold text-white mb-6">Riego Automático Activo</h2>
         
         <div class="text-center space-y-6">
           <!-- Estado visual -->
           <div class="flex justify-center">
             <div class="w-24 h-24 bg-purple-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-              <CheckIcon />
+              <WaterDropIcon />
             </div>
           </div>
           
@@ -199,10 +180,10 @@
         <div class="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4">
           <h3 class="font-semibold text-purple-300 mb-2">¿Cómo funciona el modo automático?</h3>
           <ul class="text-sm text-purple-200 space-y-1">
-            <li>• Monitorea temperatura y humedad en tiempo real</li>
+            <li>• Monitorea parámetros de temperatura y humedad en tiempo real</li>
             <li>• Activa el riego cuando se cumplen los umbrales configurados</li>
-            <li>• Evita el riego excesivo con configuración inteligente</li>
-            <li>• Ideal para un cuidado óptimo y eficiente del cultivo</li>
+            <li>• Evita el desperdicio de agua</li>
+            <li>• Ideal para una gestión inteligente del cultivo</li>
           </ul>
         </div>
         
@@ -226,7 +207,7 @@
           <div class="bg-gradient-to-br from-red-900/30 to-orange-900/30 p-4 rounded-lg border border-red-700/50">
             <div class="flex items-center justify-between mb-2">
               <h3 class="font-medium text-red-300">Temperatura</h3>
-              <ThermometerIcon />
+              <ThermometerIcon class="text-gray-300" />
             </div>
             <p class="text-3xl font-bold text-red-200">{{ currentTemperature.toFixed(1) }}°C</p>
             <p class="text-sm text-red-300 mt-1">{{ getTemperatureStatus() }}</p>
@@ -234,20 +215,20 @@
 
           <!-- Humedad del Suelo -->
           <div class="bg-gradient-to-br from-blue-900/30 to-blue-800/30 p-4 rounded-lg border border-blue-700/50">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="font-medium text-blue-300">Humedad Suelo</h3>
-              <HumidityIcon />
-            </div>
+                      <div class="flex items-center justify-between mb-2">
+            <h3 class="font-medium text-blue-300">Humedad Suelo</h3>
+            <HumidityIcon class="text-gray-300" />
+          </div>
             <p class="text-3xl font-bold text-blue-200">{{ currentSoilHumidity.toFixed(1) }}%</p>
             <p class="text-sm text-blue-300 mt-1">{{ getSoilHumidityStatus() }}</p>
           </div>
           
           <!-- Humedad del Aire -->
           <div class="bg-gradient-to-br from-cyan-900/30 to-teal-900/30 p-4 rounded-lg border border-cyan-700/50">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="font-medium text-cyan-300">Humedad Aire</h3>
-              <HumidityIcon />
-            </div>
+                      <div class="flex items-center justify-between mb-2">
+            <h3 class="font-medium text-cyan-300">Humedad Aire</h3>
+            <HumidityIcon class="text-gray-300" />
+          </div>
             <p class="text-3xl font-bold text-cyan-200">{{ currentAirHumidity.toFixed(1) }}%</p>
             <p class="text-sm text-cyan-300 mt-1">{{ getAirHumidityStatus() }}</p>
           </div>
@@ -555,7 +536,8 @@ import {
   AutomaticConfirmIcon,
   CheckIcon,
   PauseIcon,
-  WarningIcon
+  WarningIcon,
+  WaterDropIcon
 } from '~/assets/icons'
 
 // Stores
@@ -1117,6 +1099,20 @@ watch(automaticConfig, (newConfig) => {
     console.log('✅ Configuración automática activa detectada')
   }
 }, { deep: true })
+
+// Watcher para detectar activación automática de riego (sin intervención del usuario)
+watch(() => irrigationStore.isWatering, (newValue, oldValue) => {
+  // Solo mostrar toast si cambió de false a true (activación)
+  if (!oldValue && newValue && irrigationStore.activeMode === 'automatic') {
+    console.log('🤖 [AUTO] Riego activado automáticamente detectado')
+    showInfo('🤖 Riego automático activado por condiciones ambientales')
+  }
+  // Solo mostrar toast si cambió de true a false (desactivación)
+  else if (oldValue && !newValue && irrigationStore.activeMode === 'automatic') {
+    console.log('🤖 [AUTO] Riego desactivado automáticamente detectado')
+    showSuccess('✅ Riego automático desactivado - condiciones óptimas alcanzadas')
+  }
+}, { immediate: false }) // No ejecutar en el primer render
 
 // Sistema de monitoreo para mantener el modal activo
 let statusMonitoringInterval = null

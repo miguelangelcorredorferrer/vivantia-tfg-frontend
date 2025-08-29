@@ -103,40 +103,23 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
-  const deleteUser = async (userId, force = false) => {
+  const deleteUser = async (userId) => {
     try {
       isLoading.value = true
       error.value = null
       
-      const response = await UserAPI.delete(userId, force)
+      await UserAPI.delete(userId, true) // Siempre force = true para eliminar directamente
       
-      if (response.success) {
-        // Remover usuario de la lista local
-        const index = users.value.findIndex(user => user.id === userId)
-        if (index !== -1) {
-          users.value.splice(index, 1)
-        }
-        
-        console.log('✅ AdminStore: Usuario eliminado exitosamente')
-        return { success: true, message: response.message }
+      // Remover usuario de la lista local
+      const index = users.value.findIndex(user => user.id === userId)
+      if (index !== -1) {
+        users.value.splice(index, 1)
       }
       
-      throw new Error(response.message || 'Error al eliminar usuario')
+      console.log('✅ AdminStore: Usuario eliminado exitosamente')
+      return true
     } catch (err) {
       console.error('❌ AdminStore: Error eliminando usuario:', err)
-      
-      // Si el error es un 409 (conflicto), significa que requiere confirmación
-      if (err.status === 409 || err.statusCode === 409) {
-        return {
-          success: false,
-          requiresConfirmation: true,
-          user: err.data?.user || null,
-          stats: err.data?.stats || {},
-          totalRelatedData: err.data?.totalRelatedData || 0,
-          message: err.data?.message || 'El usuario tiene datos relacionados'
-        }
-      }
-      
       error.value = 'Error al eliminar usuario'
       throw err
     } finally {

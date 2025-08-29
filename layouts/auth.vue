@@ -21,7 +21,7 @@ const authRoutes = [
           Vivantia IoT
         </h1>
       </div>
-      <p class="text-lg lg:text-2xl text-gray-300">Sistema Inteligente de Automatización de Riego</p>
+      <p class="text-lg lg:text-2xl text-gray-300">Sistema IoT para la gestión inteligente de riego</p>
     </div>
 
     <!-- Contenido principal centrado -->
@@ -67,7 +67,7 @@ const authRoutes = [
                 </svg>
               </div>
               <h3 class="text-white font-bold text-lg mb-2 text-center">Automatización</h3>
-              <p class="text-gray-300 text-sm text-center">Riego inteligente basado en datos del cultivo y condiciones ambientales</p>
+              <p class="text-gray-300 text-sm text-center"> Gestión del riego inteligente basado en datos del cultivo y condiciones ambientales</p>
             </div>
             
             <!-- Widget 3: Eficiencia -->
@@ -89,7 +89,7 @@ const authRoutes = [
                 </svg>
               </div>
               <h3 class="text-white font-bold text-lg mb-2 text-center">IoT Avanzado</h3>
-              <p class="text-gray-300 text-sm text-center">Conectividad TTN y comunicación bidireccional con dispositivos IoT</p>
+              <p class="text-gray-300 text-sm text-center">Conectividad LoRaWAN y comunicación bidireccional con dispositivos IoT hacia TTN</p>
             </div>
           </div>
         </div>

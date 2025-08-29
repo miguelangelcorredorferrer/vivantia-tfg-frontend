@@ -3,6 +3,7 @@ import { useSensorData } from '~/composables/useSensorData.js'
 import { useCropStore } from '~/stores/crop'
 import { useDeviceStore } from '~/stores/device'
 import { useUserStore } from '~/stores/user'
+import { useIrrigationStore } from '~/stores/irrigation'
 import { thermometerIcon, humidityIcon } from '~/assets/icons'
 import WorkingTemperatureChart from '~/components/Charts/WorkingTemperatureChart.vue'
 import WorkingHumidityChart from '~/components/Charts/WorkingHumidityChart.vue'
@@ -24,6 +25,7 @@ definePageMeta({
 const cropStore = useCropStore()
 const deviceStore = useDeviceStore()
 const userStore = useUserStore()
+const irrigationStore = useIrrigationStore()
 
 // Estados para datos demo
 const demoCurrentReading = ref(null)
@@ -365,6 +367,36 @@ const formattedAirHumidity = computed(() => {
   return realFormattedAirHumidity.value
 })
 
+// Estado dinámico de la bomba de riego
+const pumpStatus = computed(() => {
+  if (userStore.isDemoMode) {
+    // En modo demo, mostrar estado fijo
+    return {
+      status: 'Inactiva',
+      iconBg: 'bg-gray-500/20',
+      iconColor: 'text-gray-400',
+      valueColor: 'text-gray-400'
+    }
+  }
+  
+  // En modo real, usar datos del store de irrigación
+  if (irrigationStore.isWatering) {
+    return {
+      status: irrigationStore.isPaused ? 'Pausada' : 'Activa',
+      iconBg: irrigationStore.isPaused ? 'bg-yellow-500/20' : 'bg-green-500/20',
+      iconColor: irrigationStore.isPaused ? 'text-yellow-400' : 'text-green-400',
+      valueColor: irrigationStore.isPaused ? 'text-yellow-400' : 'text-green-400'
+    }
+  } else {
+    return {
+      status: 'Inactiva',
+      iconBg: 'bg-gray-500/20',
+      iconColor: 'text-gray-400',
+      valueColor: 'text-gray-400'
+    }
+  }
+})
+
 // Datos de dispositivo y cultivo para demo
 const currentDevice = computed(() => {
   if (userStore.isDemoMode) {
@@ -447,6 +479,14 @@ onMounted(async () => {
         }
         
         console.log('✅ Datos del dashboard cargados - Cultivos:', cropStore.crops.length, 'Dispositivos:', deviceStore.devices.length)
+        
+        // Cargar configuración activa de riego para mostrar estado de bomba
+        try {
+          await irrigationStore.loadActiveConfiguration()
+          console.log('✅ Configuración de riego cargada - Estado bomba:', irrigationStore.isWatering)
+        } catch (irrigationError) {
+          console.log('ℹ️ No hay configuración de riego activa')
+        }
       }
     }
   } catch (error) {
@@ -581,11 +621,11 @@ const handleExitDemo = () => {
       <!-- Estado de la bomba -->
       <InfoCard 
         icon-name="heroicons:beaker"
-        icon-bg-class="bg-blue-500/20"
-        icon-color-class="text-blue-400"
+        :icon-bg-class="pumpStatus.iconBg"
+        :icon-color-class="pumpStatus.iconColor"
         label="Bomba de riego"
-        value="Activa"
-        value-color-class="text-blue-400"
+        :value="pumpStatus.status"
+        :value-color-class="pumpStatus.valueColor"
       />
     </div>
 

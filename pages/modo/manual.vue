@@ -15,7 +15,8 @@ import {
   CheckIcon,
   PauseIcon,
   ManualConfirmIcon,
-  WarningIcon
+  WarningIcon,
+  WaterDropIcon
 } from '~/assets/icons'
 
 // Store de irrigation
@@ -116,13 +117,15 @@ const startManualWatering = async () => {
     if (success) {
       console.log('✅ [MANUAL] Riego iniciado exitosamente')
       
+      // Toast de feedback inmediato para el usuario
+      showSuccess(`🚿 Riego manual iniciado por ${Math.floor(config.duration_minutes)} minutos`)
+      
       // Recargar configuración para asegurar estado correcto
       await irrigationStore.loadActiveConfiguration()
       
       // Iniciar monitoreo de estado
       startStatusMonitoring()
       
-      // Las alertas las maneja el backend automáticamente
       console.log('✅ Riego manual iniciado exitosamente')
       
       console.log('📊 [MANUAL] Estado después de iniciar:', {
@@ -157,7 +160,7 @@ const confirmCancelModal = async () => {
     const success = await irrigationStore.cancelActiveMode()
     if (success) {
       console.log('✅ [MANUAL] Riego cancelado exitosamente')
-      // No mostrar toast - las alertas las maneja el backend
+      showSuccess('🛑 Riego cancelado exitosamente')
     } else {
       showError('Error al cancelar el riego')
     }
@@ -187,7 +190,7 @@ const pauseIrrigation = async () => {
     const success = await irrigationStore.pauseIrrigation()
     if (success) {
       console.log('✅ [MANUAL] Riego pausado exitosamente')
-      // No mostrar toast - las alertas las maneja el backend
+      showSuccess('⏸️ Riego pausado exitosamente')
     } else {
       showError('Error al pausar el riego')
     }
@@ -202,7 +205,7 @@ const resumeIrrigation = async () => {
     const success = await irrigationStore.resumeIrrigation()
     if (success) {
       console.log('✅ [MANUAL] Riego reanudado exitosamente')
-      // No mostrar toast - las alertas las maneja el backend
+      showSuccess('▶️ Riego reanudado exitosamente')
     } else {
       showError('Error al reanudar el riego')
     }
@@ -339,7 +342,6 @@ useHead({
           <ul class="text-sm text-blue-300 space-y-1">
             <li>• Activa la bomba inmediatamente al confirmar</li>
             <li>• Configura la duración exacta del riego</li>
-            <li>• Control total sobre el proceso</li>
             <li>• Ideal para riegos puntuales o de emergencia</li>
           </ul>
         </div>
@@ -365,7 +367,7 @@ useHead({
               irrigationStore.isPaused ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
             ]">
               <PauseIcon v-if="irrigationStore.isPaused" />
-              <CheckIcon v-else />
+              <WaterDropIcon v-else />
             </div>
           </div>
           

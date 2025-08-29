@@ -69,10 +69,7 @@
 
       <!-- Widget de estado programado cuando está activo (solo cuando está configurado pero no regando ni pausado) -->
       <div v-if="irrigationStore.isProgrammedActive && !irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <!-- Debug info -->
-        <div class="text-xs text-gray-500 mb-2">
-          Debug: activeMode={{ irrigationStore.activeMode }}, isProgrammedActive={{ irrigationStore.isProgrammedActive }}, isProgrammedWaiting={{ irrigationStore.isProgrammedWaiting }}, pump_status={{ irrigationStore.activePumpActivation?.status }}, hasActiveMode={{ irrigationStore.hasActiveMode }}, timestamp={{ Date.now() }}
-        </div>
+        
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Configurado</h2>
         
         <div class="text-center space-y-6">
@@ -118,17 +115,14 @@
 
       <!-- Widget de riego activo cuando está regando -->
       <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <!-- Debug info -->
-        <div class="text-xs text-gray-500 mb-2">
-          Debug: isProgrammedActive={{ irrigationStore.isProgrammedActive }}, isWatering={{ irrigationStore.isWatering }}, isPaused={{ irrigationStore.isPaused }}
-        </div>
+
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Activo</h2>
         
         <div class="text-center space-y-6">
           <!-- Estado visual -->
           <div class="flex justify-center">
             <div class="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-              <CheckIcon />
+              <WaterDropIcon />
             </div>
           </div>
           
@@ -170,10 +164,7 @@
 
       <!-- Widget de riego pausado -->
       <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <!-- Debug info -->
-        <div class="text-xs text-gray-500 mb-2">
-          Debug: isProgrammedActive={{ irrigationStore.isProgrammedActive }}, isWatering={{ irrigationStore.isWatering }}, isPaused={{ irrigationStore.isPaused }}
-        </div>
+
         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Pausado</h2>
         
         <div class="text-center space-y-6">
@@ -747,7 +738,8 @@ import {
   ChevronLeftIcon,
   ChevronRightSmallIcon,
   ConfirmIcon,
-  WarningIcon
+  WarningIcon,
+  WaterDropIcon
 } from '~/assets/icons'
 
 // Store de irrigation
@@ -1138,10 +1130,18 @@ const cancelProgrammedMode = async () => {
       console.log('✅ Configuración cancelada exitosamente')
       showSuccess('Configuración programada cancelada')
       
-      // Redirigir a la página principal después de un breve delay
-      setTimeout(() => {
-        router.push('/modo')
-      }, 1500)
+      // Forzar recarga del estado después de un pequeño delay
+      setTimeout(async () => {
+        console.log('🔄 Forzando recarga del estado después de cancelación')
+        await irrigationStore.loadActiveConfiguration()
+        
+        // Si aún hay configuración activa, detener monitoreo y limpiar estado
+        if (irrigationStore.isProgrammedActive) {
+          console.warn('⚠️ El estado aún muestra configuración activa, forzando limpieza')
+          stopStatusMonitoring()
+          await irrigationStore.loadActiveConfiguration()
+        }
+      }, 500)
     } else {
       console.log('❌ cancelActiveMode retornó false')
       showError('No se pudo cancelar la configuración')

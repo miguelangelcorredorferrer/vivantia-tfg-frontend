@@ -3,7 +3,6 @@
     <!-- Panel de información superior -->
     <div class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 mb-8 hover:bg-gray-900/80 transition-colors">
       <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
-        <DashboardIcon />
         Estado del Sistema de Riego
       </h2>
       
@@ -22,7 +21,7 @@
         <div class="bg-gray-600/60 border border-blue-500/30 p-4 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-blue-400">Dispositivo Activo</h3>
-            <DeviceIcon />
+            <DeviceIcon class="text-gray-300" />
           </div>
           <p class="text-2xl font-bold text-white">{{ activeDeviceName || '-' }}</p>
         </div>
@@ -31,7 +30,7 @@
         <div class="bg-gray-600/60 border border-green-500/30 p-4 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-medium text-green-400">Cultivo en Riego</h3>
-            <PlantIcon />
+            <PlantIcon class="text-gray-300" />
           </div>
           <p class="text-2xl font-bold text-white">{{ selectedCropName || '-' }}</p>
         </div>
@@ -105,7 +104,7 @@
         <div class="bg-gray-600/60 border border-cyan-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <p class="text-sm text-gray-400">Caudal en Curso</p>
-            <FlowIcon />
+            <FlowIcon class="text-gray-300" />
           </div>
           <p class="font-semibold text-white">{{ irrigationStore.isWatering ? flowRate + ' L/min' : '-' }}</p>
         </div>
@@ -114,7 +113,7 @@
         <div class="bg-gray-600/60 border border-red-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <p class="text-sm text-gray-400">Temperatura Actual</p>
-            <ThermometerIcon />
+            <ThermometerIcon class="text-gray-300" />
           </div>
           <p class="font-semibold text-white">{{ currentTemperature || '-' }}</p>
           <p class="text-xs text-red-300">{{ currentTemperature ? '°C' : '' }}</p>
@@ -124,7 +123,7 @@
         <div class="bg-gray-600/60 border border-blue-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <p class="text-sm text-gray-400">Humedad Suelo</p>
-            <HumidityIcon />
+            <HumidityIcon class="text-gray-300" />
           </div>
           <p class="font-semibold text-white">{{ currentSoilHumidity || '-' }}</p>
           <p class="text-xs text-blue-300">{{ currentSoilHumidity ? '%' : '' }}</p>
@@ -134,7 +133,7 @@
         <div class="bg-gray-600/60 border border-cyan-500/30 p-3 rounded-lg hover:bg-gray-600/80 transition-colors">
           <div class="flex items-center justify-between mb-2">
             <p class="text-sm text-gray-400">Humedad Aire</p>
-            <HumidityIcon />
+            <HumidityIcon class="text-gray-300" />
           </div>
           <p class="font-semibold text-white">{{ currentAirHumidity || '-' }}</p>
           <p class="text-xs text-cyan-300">{{ currentAirHumidity ? '%' : '' }}</p>
@@ -472,6 +471,15 @@ watch(irrigationStore.activeMode, (newValue) => {
   })
 })
 
+// Watcher para forzar reactividad cuando cambie el estado de modos disponibles
+watch(irrigationStore.hasActiveMode, (newValue) => {
+  console.log('hasActiveMode cambió a:', newValue, 'activeMode:', irrigationStore.activeMode)
+  // Forzar actualización de la UI
+  nextTick(() => {
+    // Trigger reactivity
+  })
+})
+
 // Watcher para monitorear cambios en el estado de pausa
 watch(irrigationStore.isPaused, (newValue) => {
   console.log('isPaused cambió a:', newValue, 'isWatering:', irrigationStore.isWatering)
@@ -589,6 +597,9 @@ onMounted(async () => {
     
     // Cargar configuración activa de riego
     await irrigationStore.loadActiveConfiguration()
+    
+    // Forzar reactividad después de cargar configuración
+    await nextTick()
     
     if (userStore.isDemoMode) {
       // Modo demo: no necesitamos cargar datos reales

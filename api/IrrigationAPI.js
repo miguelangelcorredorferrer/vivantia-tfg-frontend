@@ -216,6 +216,48 @@ export default {
             headers: getAuthHeaders()
         })
     },
+
+    // Alertas de riego
+    createIrrigationStartedAlert(userId, mode, cropName, durationMinutes) {
+        return $fetch('/irrigation/alerts/started', {
+            method: 'POST',
+            body: { user_id: userId, mode, crop_name: cropName, duration_minutes: durationMinutes },
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    createIrrigationEndedAlert(userId, mode, cropName, wasCompleted = true) {
+        return $fetch('/irrigation/alerts/ended', {
+            method: 'POST',
+            body: { user_id: userId, mode, crop_name: cropName, was_completed: wasCompleted },
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    createIrrigationCancelledAlert(userId, mode, cropName) {
+        return $fetch('/irrigation/alerts/cancelled', {
+            method: 'POST',
+            body: { user_id: userId, mode, crop_name: cropName },
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    createIrrigationPausedAlert(userId, mode, cropName) {
+        return $fetch('/irrigation/alerts/paused', {
+            method: 'POST',
+            body: { user_id: userId, mode, crop_name: cropName },
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
+    createIrrigationResumedAlert(userId, mode, cropName) {
+        return $fetch('/irrigation/alerts/resumed', {
+            method: 'POST',
+            body: { user_id: userId, mode, crop_name: cropName },
+            baseURL: getApiUrl(),
+            headers: getAuthHeaders()
+        })
+    },
     updateProgrammedExecution(id, data) {
         return $fetch(`/irrigation/programmed/${id}/execution`, {
             method: 'PUT',

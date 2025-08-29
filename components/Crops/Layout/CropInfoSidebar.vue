@@ -7,7 +7,7 @@
         <div class="space-y-3">
           <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
             <p class="text-xs text-blue-300">
-              <strong>Humedad:</strong> La humedad mínima debe ser menor que la máxima. Valores típicos entre 40-90%.
+              <strong>Humedad:</strong> Tenga en cuenta que hay 2 tipos de humedad, la humedad del suelo y la humedad del aire o ambiental.
             </p>
           </div>
           <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
@@ -25,7 +25,7 @@
 
       <!-- Categorías disponibles -->
       <div class="border-t border-gray-600 pt-4">
-        <h4 class="text-sm font-medium text-white mb-3">Categorías Disponibles</h4>
+        <h4 class="text-sm font-medium text-white mb-3">Categorías actualmente registradas en el sistema</h4>
         <div class="space-y-1">
           <div v-for="category in availableCategories" :key="category" class="text-xs text-gray-400">
             • {{ category }}
