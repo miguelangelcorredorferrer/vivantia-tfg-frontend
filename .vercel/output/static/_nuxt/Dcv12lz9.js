@@ -1,0 +1,1 @@
+import{af as o,u as i,f as a}from"./Z3C1zjOC.js";const n=o(async(r,s)=>{const e=i();if(!e.isAuthenticated)return a("/auth/login");if(!e.isAdmin)return console.log("❌ Admin middleware: Usuario sin permisos de admin"),a("/dashboard");console.log("✅ Admin middleware: Acceso autorizado para admin")});export{n as default};

@@ -1,9 +1,10 @@
-import Toast, { POSITION } from "vue-toastification"
+// Importación compatible con CommonJS para Vercel
+import Toast from "vue-toastification"
 import "vue-toastification/dist/index.css"
 
 export default defineNuxtPlugin((nuxtApp): { provide: { toast: any } } => {
   const options = {
-    position: POSITION.TOP_RIGHT,
+    position: "top-right", // Usar string en lugar de POSITION.TOP_RIGHT
     timeout: 4000,
     closeOnClick: true,
     pauseOnFocusLoss: true,
