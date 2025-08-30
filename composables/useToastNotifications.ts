@@ -1,36 +1,27 @@
-// Composable completamente seguro para SSR
+// Composable que funciona tanto en cliente como en servidor
 export const useToastNotifications = () => {
-  // Función de fallback que nunca falla
-  const createSafeToast = () => ({
-    success: (msg: string) => {
-      if (process.client) console.log('SUCCESS:', msg)
-    },
-    error: (msg: string) => {
-      if (process.client) console.log('ERROR:', msg)
-    },
-    info: (msg: string) => {
-      if (process.client) console.log('INFO:', msg)
-    },
-    warning: (msg: string) => {
-      if (process.client) console.log('WARNING:', msg)
-    }
+  // Función de fallback para SSR
+  const createFallbackToast = () => ({
+    success: (msg: string) => console.log('SUCCESS:', msg),
+    error: (msg: string) => console.log('ERROR:', msg),
+    info: (msg: string) => console.log('INFO:', msg),
+    warning: (msg: string) => console.log('WARNING:', msg)
   })
 
-  // Obtener toast de forma completamente segura
-  let toast = createSafeToast()
-  
-  // Solo intentar obtener el toast real en el cliente
-  if (process.client) {
+  // Obtener toast de forma segura
+  const getToast = () => {
     try {
-      const nuxtApp = useNuxtApp()
-      if (nuxtApp && nuxtApp.$toast) {
-        toast = nuxtApp.$toast
+      if (process.client) {
+        const { $toast } = useNuxtApp()
+        return $toast || createFallbackToast()
       }
+      return createFallbackToast()
     } catch (error) {
-      // Si algo falla, usar el fallback
-      console.warn('Toast not available, using fallback')
+      return createFallbackToast()
     }
   }
+
+  const toast = getToast()
 
   // Notificaciones para dispositivos
   const deviceAdded = (deviceName: string) => {
@@ -58,7 +49,7 @@ export const useToastNotifications = () => {
     toast.error(`❌ No se pudo copiar el AppKey`)
   }
 
-  // Notificaciones para operaciones de cultivos
+  // Notificaciones para operaciones de cultivos (futuras)
   const cropSelected = (cropName: string) => {
     toast.success(`🌱 Cultivo "${cropName}" seleccionado para monitoreo`)
   }
@@ -101,7 +92,7 @@ export const useToastNotifications = () => {
     toast.success(`✅ Cultivo "${cropName}" editado correctamente`)
   }
 
-  // Notificaciones para sensores
+  // Notificaciones para sensores (futuras)
   const sensorAlert = (sensorType: string, value: number, threshold: number) => {
     if (sensorType === 'humidity' && value < threshold) {
       toast.warning(`🌵 Alerta: Humedad baja detectada (${value}% < ${threshold}%)`)

@@ -12,7 +12,7 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/fonts',
-    //'@nuxt/icon',
+    '@nuxt/icon',
     '@nuxt/image',
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt'
