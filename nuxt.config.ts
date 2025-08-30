@@ -51,10 +51,6 @@ export default defineNuxtConfig({
     // Evitar errores 404 de builds/meta
     experimental: {
       wasm: true
-    },
-    // Configuración para manejar builds/meta
-    routeRules: {
-      '/_nuxt/builds/meta/**': { redirect: '/' }
     }
   },
 
