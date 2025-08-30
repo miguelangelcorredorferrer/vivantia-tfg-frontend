@@ -5,6 +5,9 @@ import Alert from '../models/Alert.js';
  * Servicio para manejar alertas relacionadas con riego
  */
 
+// Cache para evitar alertas duplicadas en 5 segundos
+const alertCache = new Map();
+
 // Función auxiliar para crear alertas de riego
 const createIrrigationAlert = async (user_id, alert_subtype, title, message, severity = 'info') => {
   try {
@@ -72,6 +75,19 @@ export const createIrrigationResumedAlert = async (user_id, mode, cropName) => {
 
 // Crear alerta de riego terminado/completado
 export const createIrrigationEndedAlert = async (user_id, mode, cropName, wasCompleted = true) => {
+  // Cache para evitar alertas duplicadas en 5 segundos
+  const cacheKey = `${user_id}_irrigation_ended_${mode}_${cropName}`;
+  const now = Date.now();
+  const lastCreated = alertCache.get(cacheKey);
+  
+  if (lastCreated && (now - lastCreated) < 5000) {
+    console.log('🚨 [ALERT-CACHE] Ignorando alerta irrigation_ended duplicada enviada hace', Math.round((now - lastCreated) / 1000), 'segundos');
+    return null; // Retornar null para indicar que se ignoró
+  }
+  
+  alertCache.set(cacheKey, now);
+  console.log('🚨 [ALERT-CACHE] Alerta irrigation_ended creada, cache actualizado');
+  
   const modeText = mode === 'manual' ? 'manual' : 'programado';
   const actionText = wasCompleted ? 'completado exitosamente' : 'terminado';
   const title = `Riego ${modeText} ${actionText}`;

@@ -42,6 +42,24 @@ export const useToastNotifications = () => {
     toast.warning(`🚰 Riego detenido desde "${deviceName}"`)
   }
 
+  const irrigationCompleted = (mode: string, cropName?: string) => {
+    const cropText = cropName ? ` para "${cropName}"` : ''
+    
+    switch (mode) {
+      case 'manual':
+        toast.success(`✅ Riego manual completado${cropText}`)
+        break
+      case 'automatic':
+        toast.success(`🤖 Riego automático completado${cropText}`)
+        break
+      case 'programmed':
+        toast.success(`⏰ Riego programado completado${cropText}`)
+        break
+      default:
+        toast.success(`✅ Riego completado${cropText}`)
+    }
+  }
+
   const cropDeleted = (cropName: string) => {
     toast.error(`🗑️ Cultivo "${cropName}" eliminado`)
   }
@@ -105,6 +123,7 @@ export const useToastNotifications = () => {
     cropUpdated,
     irrigationStarted,
     irrigationStopped,
+    irrigationCompleted,
     // Sensores
     sensorAlert,
     // Sistema

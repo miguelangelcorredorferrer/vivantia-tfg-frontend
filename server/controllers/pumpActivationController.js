@@ -256,7 +256,9 @@ const updatePumpActivationStatus = async (req, res) => {
         console.log('🚨 [PUMP-TRACKING] Enviando OFF desde updatePumpActivationStatus:', {
           pumpId: id,
           status: status,
-          irrigationConfigId: currentActivation.irrigation_config_id
+          irrigationConfigId: currentActivation.irrigation_config_id,
+          timestamp: new Date().toISOString(),
+          stack: new Error().stack
         })
         const r = await sendDownlinkForConfig(currentActivation.irrigation_config_id, 'OFF');
         console.log('[DOWNLINK][OFF] OK:', r);
@@ -277,13 +279,18 @@ const updatePumpActivationStatus = async (req, res) => {
             console.log(`✅ Alerta irrigation_cancelled creada para usuario ${configData.user_id}`);
           } else if (status === 'completed') {
             // Alerta irrigation_ended cuando se completa
-            await createIrrigationEndedAlert(
+            const alert = await createIrrigationEndedAlert(
               configData.user_id,
               configData.mode_type || 'manual',
               configData.crop_name || 'Cultivo',
               true // wasCompleted = true
             );
-            console.log(`✅ Alerta irrigation_ended creada para usuario ${configData.user_id}`);
+            
+            if (alert) {
+              console.log(`✅ Alerta irrigation_ended creada para usuario ${configData.user_id}`);
+            } else {
+              console.log(`ℹ️ Alerta irrigation_ended ignorada (duplicada) para usuario ${configData.user_id}`);
+            }
           }
         }
       } catch (alertError) {
@@ -360,7 +367,9 @@ const pausePumpActivation = async (req, res) => {
     try {
       console.log('🚨 [PUMP-TRACKING] Enviando OFF desde pausePumpActivation:', {
         pumpId: id,
-        irrigationConfigId: activation.irrigation_config_id
+        irrigationConfigId: activation.irrigation_config_id,
+        timestamp: new Date().toISOString(),
+        stack: new Error().stack
       })
       const r = await sendDownlinkForConfig(activation.irrigation_config_id, 'OFF');
       console.log('[DOWNLINK][OFF][pause] OK:', r);
@@ -502,13 +511,8 @@ const completePumpActivation = async (req, res) => {
 
     const activation = new PumpActivation(result.rows[0]);
 
-    // Enviar OFF al completar
-    try {
-      const r = await sendDownlinkForConfig(activation.irrigation_config_id, 'OFF');
-      console.log('[DOWNLINK][OFF][complete] OK:', r);
-    } catch (e) {
-      console.error('[DOWNLINK][OFF][complete] Error:', e?.message || e);
-    }
+    // NOTA: El OFF se envía desde updatePumpActivationStatus cuando se actualiza a 'completed'
+    // Esta función solo actualiza el estado, no envía comandos
 
     res.status(200).json({
       success: true,

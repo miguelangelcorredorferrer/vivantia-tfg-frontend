@@ -30,6 +30,9 @@ const getActiveDeviceForConfig = async (irrigationConfigId) => {
   }
 };
 
+// Cache para evitar envíos duplicados de OFF
+const offCommandCache = new Map();
+
 // Enviar comando downlink a TTN
 export const sendDownlinkForConfig = async (irrigationConfigId, command, port = 3) => {
   const device = await getActiveDeviceForConfig(irrigationConfigId);
@@ -75,6 +78,29 @@ export const sendDownlinkForConfig = async (irrigationConfigId, command, port = 
 
   // 🚨 TRACKING: Stack trace para debugging triple OFF
   const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown'
+  
+  // Cache para evitar envíos duplicados de OFF en 5 segundos
+  if (command === 'OFF') {
+    const cacheKey = `${irrigationConfigId}_OFF`;
+    const now = Date.now();
+    const lastSent = offCommandCache.get(cacheKey);
+    
+    if (lastSent && (now - lastSent) < 5000) {
+      console.log('🚨 [TTN-CACHE] Ignorando OFF duplicado enviado hace', Math.round((now - lastSent) / 1000), 'segundos');
+      return {
+        success: true,
+        command,
+        device: enddevice_id,
+        app: ttn_app_id,
+        region: ttn_region,
+        cached: true
+      };
+    }
+    
+    offCommandCache.set(cacheKey, now);
+    console.log('🚨 [TTN-CACHE] OFF enviado, cache actualizado');
+  }
+  
   console.log('🚨 [TTN-TRACKING] Enviando downlink:', {
     command,
     commandValue,

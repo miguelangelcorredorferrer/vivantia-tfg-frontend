@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import IrrigationAPI from '~/api/IrrigationAPI'
 import { useUserStore } from './user'
 import { useCropStore } from './crop'
-// Las notificaciones se manejan via alertas de base de datos, no toasts
+import { useToastNotifications } from '~/composables/useToastNotifications'
 
 export const useIrrigationStore = defineStore('irrigation', () => {
   // Estado
@@ -25,7 +25,8 @@ export const useIrrigationStore = defineStore('irrigation', () => {
   const userStore = useUserStore()
   const cropStore = useCropStore()
   
-  // Las notificaciones se manejan via alertas de base de datos
+  // Composable para notificaciones toast
+  const { irrigationCompleted } = useToastNotifications()
 
   // Computeds
   const hasActiveMode = computed(() => activeMode.value !== null)
@@ -203,6 +204,18 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       autoCompletionTriggered.value = false
     } else if (newId !== oldId) {
       console.log('ℹ️ [SKIP] Cambio de activación ignorado (carga inicial o similar):', { newId, oldId })
+    }
+  })
+
+  // Watcher para detectar cuando un riego se completa (especialmente para automático)
+  watch(() => activePumpActivation.value?.status, (newStatus, oldStatus) => {
+    // Detectar cuando un riego pasa de 'active' a 'completed'
+    if (oldStatus === 'active' && newStatus === 'completed') {
+      console.log('🎉 Riego completado detectado por watcher')
+      
+      // Mostrar toast de riego completado
+      const cropName = cropStore.selectedCrop?.name || 'Cultivo'
+      irrigationCompleted(activeMode.value, cropName)
     }
   })
 
@@ -995,7 +1008,10 @@ export const useIrrigationStore = defineStore('irrigation', () => {
         return false
       }
 
-      console.log('🔄 Completando riego...')
+      console.log('🔄 Completando riego...', {
+        timestamp: new Date().toISOString(),
+        stack: new Error().stack
+      })
       
       // PREVENIR MÚLTIPLES LLAMADAS - revisar si ya está en proceso
       if (activePumpActivation.value.status === 'completed') {
@@ -1060,6 +1076,9 @@ export const useIrrigationStore = defineStore('irrigation', () => {
       await loadActiveConfiguration()
 
       console.log('✅ Riego completado exitosamente')
+      
+
+      
       return true
     } catch (err) {
       error.value = err.message
