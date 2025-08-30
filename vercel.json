@@ -8,5 +8,16 @@
       "source": "/_nuxt/builds/meta/:path*",
       "destination": "/"
     }
+  ],
+  "headers": [
+    {
+      "source": "/_nuxt/builds/meta/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
   ]
 }

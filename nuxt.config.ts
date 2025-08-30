@@ -2,6 +2,10 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: false },
+  // Deshabilitar completamente los metadatos de build en producción
+  experimental: {
+    payloadExtraction: false
+  },
 
   runtimeConfig: {
     public: {
@@ -51,6 +55,19 @@ export default defineNuxtConfig({
     // Evitar errores 404 de builds/meta
     experimental: {
       wasm: true
+    },
+    // Deshabilitar metadatos de build
+    storage: {
+      'builds:meta': {
+        driver: 'memory'
+      }
+    },
+    // Configuración específica para evitar builds/meta
+    routeRules: {
+      '/_nuxt/builds/meta/**': { 
+        headers: { 'cache-control': 'no-cache' },
+        redirect: '/'
+      }
     }
   },
 
