@@ -34,8 +34,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
       console.warn('⚠️ No hay cultivo seleccionado, redirigiendo a cultivos')
       
       // Usar useToastNotifications para mostrar el mensaje
-      const { toast } = useToastNotifications()
-      toast.warning('Debes seleccionar un cultivo antes de acceder a los modos de riego')
+      try {
+        const { toast } = useToastNotifications()
+        toast.warning('Debes seleccionar un cultivo antes de acceder a los modos de riego')
+      } catch (error) {
+        console.warn('Toast not available:', error)
+      }
       
       return navigateTo('/cultivos')
     }

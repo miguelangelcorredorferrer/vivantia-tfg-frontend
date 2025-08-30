@@ -31,9 +31,13 @@ export default defineNuxtRouteMiddleware((to, from) => {
     
     // Mostrar notificación de acceso bloqueado
     if (process.client) {
-      // Usar el composable de toast si está disponible
-      const { toast } = useToastNotifications()
-      toast.warning('Esta funcionalidad no está disponible en modo demo')
+      try {
+        // Usar el composable de toast si está disponible
+        const { toast } = useToastNotifications()
+        toast.warning('Esta funcionalidad no está disponible en modo demo')
+      } catch (error) {
+        console.warn('Toast not available:', error)
+      }
     }
     
     // Redirigir al dashboard

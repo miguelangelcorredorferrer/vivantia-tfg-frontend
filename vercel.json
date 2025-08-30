@@ -2,18 +2,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".vercel/output",
   "framework": "nuxtjs",
-  "installCommand": "npm install",
-  "rewrites": [
-    {
-      "source": "/_nuxt/builds/meta/:path*",
-      "destination": "/"
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/_nuxt/builds/meta/:path*",
-      "destination": "/",
-      "permanent": false
-    }
-  ]
+  "installCommand": "npm install"
 }
