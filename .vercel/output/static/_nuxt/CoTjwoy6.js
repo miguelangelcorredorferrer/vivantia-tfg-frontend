@@ -1,1 +1,0 @@
-import{af as o,u as r,f as d}from"./Z3C1zjOC.js";const t=o(async(i,a)=>{const e=r();if(i.path==="/dashboard"){if(e.isDemoMode){console.log("🎭 Admin redirect: Modo demo activo, no redirigir");return}if(e.isAuthenticated&&e.isAdmin)return console.log("🔄 Admin redirect: Redirigiendo admin del dashboard a gestión de usuarios"),d("/admin/usuarios")}});export{t as default};
