@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV === 'development' },
 
   runtimeConfig: {
     public: {
@@ -12,7 +12,6 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/fonts',
-    '@nuxt/icon',
     '@nuxt/image',
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt'
@@ -48,7 +47,11 @@ export default defineNuxtConfig({
 
   // Configuración para Vercel
   nitro: {
-    preset: 'vercel'
+    preset: 'vercel',
+    // Evitar errores 404 de builds/meta
+    experimental: {
+      wasm: true
+    }
   },
 
   // Ignorar la carpeta server para evitar conflictos con Nuxt
