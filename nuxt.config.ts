@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
-  devtools: { enabled: process.env.NODE_ENV === 'development' },
+  devtools: { enabled: false },
 
   runtimeConfig: {
     public: {
@@ -55,6 +55,12 @@ export default defineNuxtConfig({
     // Configuración específica para evitar errores de build meta
     routeRules: {
       '/_nuxt/builds/meta/**': { redirect: '/404' }
+    },
+    // Deshabilitar metadatos de build en producción
+    storage: {
+      'builds:meta': {
+        driver: 'memory'
+      }
     }
   },
 

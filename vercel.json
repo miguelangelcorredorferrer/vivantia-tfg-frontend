@@ -6,7 +6,14 @@
   "rewrites": [
     {
       "source": "/_nuxt/builds/meta/:path*",
-      "destination": "/404"
+      "destination": "/"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/_nuxt/builds/meta/:path*",
+      "destination": "/",
+      "permanent": false
     }
   ]
 }
