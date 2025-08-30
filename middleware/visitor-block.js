@@ -29,14 +29,11 @@ export default defineNuxtRouteMiddleware((to, from) => {
   if (!isRouteAllowed) {
     console.log('🚫 Visitor block: Acceso bloqueado a', to.path, 'para visitante')
     
-    // Mostrar notificación de acceso bloqueado solo en cliente
+    // Mostrar notificación de acceso bloqueado
     if (process.client) {
-      try {
-        const { toast } = useToastNotifications()
-        toast.warning('Esta funcionalidad no está disponible en modo demo')
-      } catch (error) {
-        console.warn('Toast not available:', error)
-      }
+      // Usar el composable de toast si está disponible
+      const { toast } = useToastNotifications()
+      toast.warning('Esta funcionalidad no está disponible en modo demo')
     }
     
     // Redirigir al dashboard
