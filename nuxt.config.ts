@@ -36,7 +36,19 @@ export default defineNuxtConfig({
           additionalData: '@use "@/assets/scss/_variables.scss" as *;'
         }
       }
+    },
+    // Configuración para mejorar compatibilidad con CommonJS
+    optimizeDeps: {
+      include: ['vue-toastification']
+    },
+    ssr: {
+      noExternal: ['vue-toastification']
     }
+  },
+
+  // Configuración para Vercel
+  nitro: {
+    preset: 'vercel'
   },
 
   // Ignorar la carpeta server para evitar conflictos con Nuxt

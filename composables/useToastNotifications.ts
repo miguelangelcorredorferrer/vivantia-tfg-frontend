@@ -1,7 +1,8 @@
-import { useToast } from 'vue-toastification'
+// Importación compatible con Vercel
+import * as Toastification from 'vue-toastification'
 
 export const useToastNotifications = () => {
-  const toast = useToast()
+  const toast = Toastification.useToast()
 
   // Notificaciones para dispositivos
   const deviceAdded = (deviceName: string) => {
