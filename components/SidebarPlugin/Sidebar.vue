@@ -1,0 +1,122 @@
+<script setup>
+import SidebarItem from './SidebarItem.vue'
+import logoUrl from '~/assets/logovivantia.png'
+
+const userStore = useUserStore()
+</script>
+
+<template>
+  <aside class="bg-gradient-blue-dark h-full rounded-lg shadow-xl overflow-hidden">
+    <!-- Header de la sidebar con logo y nombre de empresa -->
+    <div class="p-6 border-b border-blue-500/20">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden">
+          <img :src="logoUrl" alt="Vivantia Logo" class="w-10 h-10 object-contain rounded-full" />
+        </div>
+        <div>
+          <h2 class="text-white font-bold text-lg">VIVANTIA</h2>
+          <p class="text-blue-200 text-xs">IoT Solutions</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Separador -->
+    <div class="px-6 py-4">
+      <div class="h-px bg-gradient-to-r from-transparent via-blue-300/30 to-transparent"></div>
+    </div>
+    
+    <!-- Navegación principal -->
+    <nav class="px-3">
+      <!-- Menú para usuarios normales -->
+      <div v-if="!userStore.isAdmin" class="space-y-2">
+        <SidebarItem 
+          icon="dashboard" 
+          label="Dashboard" 
+          to="/dashboard" 
+          :active="$route.path === '/dashboard'"
+        />
+        
+        <SidebarItem 
+          icon="devices" 
+          label="Dispositivos" 
+          to="/dispositivos" 
+          :active="$route.path === '/dispositivos'"
+        />
+        
+        <SidebarItem 
+          icon="plant" 
+          label="Cultivos" 
+          to="/cultivos" 
+          :active="$route.path.startsWith('/cultivos')"
+        />
+        
+        <SidebarItem 
+          icon="watering" 
+          label="Modos de Riego" 
+          to="/modo" 
+          :active="$route.path.startsWith('/modo')"
+        />
+        
+        <SidebarItem 
+          icon="alerts" 
+          label="Alertas" 
+          to="/alertas" 
+          :active="$route.path === '/alertas'"
+        />
+      </div>
+
+      <!-- Menú para administradores -->
+      <div v-else class="space-y-2">
+        <SidebarItem 
+          icon="users" 
+          label="Gestión de Usuarios" 
+          to="/admin/usuarios" 
+          :active="$route.path === '/admin/usuarios'"
+        />
+        
+        <SidebarItem 
+          icon="plant" 
+          label="Gestión de Cultivos" 
+          to="/admin/cultivos" 
+          :active="$route.path === '/admin/cultivos'"
+        />
+        
+        <SidebarItem 
+          icon="devices" 
+          label="Gestión de Dispositivos" 
+          to="/admin/dispositivos" 
+          :active="$route.path === '/admin/dispositivos'"
+        />
+        
+        <SidebarItem 
+          icon="logs" 
+          label="Logs del Sistema" 
+          to="/admin/logs" 
+          :active="$route.path === '/admin/logs'"
+        />
+      </div>
+    </nav>
+
+    
+  </aside>
+</template>
+
+<style scoped>
+.bg-gradient-blue-dark {
+  background: linear-gradient(180deg, #4A5DB8 0%, #2A3B7A 100%);
+}
+
+/* Animación para el indicador de estado */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
