@@ -20,6 +20,9 @@ export function useSensorData() {
     humidityMax: 80     // %
   })
 
+  // Estado local del riego para seguimiento más preciso
+  const localIrrigationStatus = ref('inactive')
+
   // Datos reactivos para las gráficas
   const temperatureData = ref({
     labels: [],
@@ -143,10 +146,18 @@ export function useSensorData() {
 
   // Función para evaluar automáticamente las condiciones de riego
   const evaluateAutomaticConditions = async () => {
-    if (userStore.isDemoMode) return
+    console.log('🚀 [AUTO] Iniciando evaluación automática...')
+    
+    if (userStore.isDemoMode) {
+      console.log('⏸️ [AUTO] Modo demo, saltando evaluación')
+      return
+    }
     
     // Solo evaluar si hay modo automático activo
-    if (irrigationStore.activeMode !== 'automatic') return
+    if (irrigationStore.activeMode !== 'automatic') {
+      console.log('⏸️ [AUTO] Modo no automático, saltando evaluación')
+      return
+    }
     
     // Evitar ejecuciones múltiples
     if (isEvaluatingAutomatic.value) {
@@ -184,65 +195,100 @@ export function useSensorData() {
         return
       }
       
-      // Si ya está activa, solo evaluar para desactivar
-      const isCurrentlyActive = automaticConfig.is_active && automaticConfig.pump_status === 'active'
+      // Verificar estado del riego de manera más robusta
+      // Usar estado local si está disponible, sino usar la configuración de la BD
+      const isCurrentlyActive = localIrrigationStatus.value === 'active' || 
+                               (automaticConfig.is_active && automaticConfig.pump_status === 'active')
       
-      // Obtener umbrales del cultivo seleccionado
+      console.log('🔍 [AUTO] Estado actual del riego:', {
+        isActive: isCurrentlyActive,
+        config: automaticConfig,
+        pumpStatus: automaticConfig.pump_status,
+        isActiveConfig: automaticConfig.is_active
+      })
+      
+      // Obtener SOLO los umbrales de humedad del suelo (único parámetro que importa)
       const thresholds = {
-        maxTemperature: selectedCrop.temperature_max,
         minSoilHumidity: selectedCrop.soil_humidity_min,
-        maxSoilHumidity: selectedCrop.soil_humidity_max,
-        minAirHumidity: selectedCrop.air_humidity_min,
-        maxAirHumidity: selectedCrop.air_humidity_max
+        maxSoilHumidity: selectedCrop.soil_humidity_max
       }
+      
+      console.log('📊 [AUTO] Umbrales de humedad del suelo:', thresholds)
+      console.log('📊 [AUTO] Valor actual del sensor de suelo:', {
+        soilHumidity: currentSoilHumidity.value
+      })
       
       if (!isCurrentlyActive) {
         // EVALUAR ACTIVACIÓN (solo si NO está activo)
-        const tempHigh = currentTemperature.value > thresholds.maxTemperature
+        // ÚNICA CONDICIÓN: humedad del suelo inferior al mínimo
         const soilLow = currentSoilHumidity.value <= thresholds.minSoilHumidity
-        const airLow = currentAirHumidity.value < thresholds.minAirHumidity
         
-        const shouldActivate = tempHigh || soilLow || airLow
+        const shouldActivate = soilLow
         
         console.log('🤖 [AUTO] Evaluando ACTIVACIÓN:', {
-          temp: `${currentTemperature.value}°C > ${thresholds.maxTemperature}°C = ${tempHigh}`,
           soil: `${currentSoilHumidity.value}% <= ${thresholds.minSoilHumidity}% = ${soilLow}`,
-          air: `${currentAirHumidity.value}% < ${thresholds.minAirHumidity}% = ${airLow}`,
           shouldActivate,
           currentlyActive: false
         })
         
         if (shouldActivate) {
-          console.log('🚨 [AUTO] ¡Condiciones de riego cumplidas detectadas!')
-          console.log('ℹ️ [AUTO] La activación será manejada por el backend automático vía TTN webhook')
-          // NOTA: No enviamos comando desde frontend para evitar duplicados
-          // El backend automático se encarga de ambos ON y OFF cuando llegan datos via webhook
+          console.log('🚨 [AUTO] ¡Humedad del suelo baja detectada! Activando riego...')
+          
+          try {
+            // Enviar comando de activación al backend
+            const activationResponse = await IrrigationAPI.activateIrrigationConfig(automaticConfig.id)
+            if (activationResponse.success) {
+              console.log('✅ [AUTO] Comando de activación enviado exitosamente')
+              // Marcar localmente que el riego está activo para la próxima evaluación
+              localIrrigationStatus.value = 'active'
+            } else {
+              console.log('⚠️ [AUTO] Error al enviar comando de activación:', activationResponse.message)
+            }
+          } catch (error) {
+            console.error('❌ [AUTO] Error enviando comando de activación:', error)
+          }
         }
+      }
+      
+      // EVALUAR DESACTIVACIÓN (solo si está activo)
+      if (isCurrentlyActive) {
+        const soilHumidityInRange = currentSoilHumidity.value >= thresholds.minSoilHumidity && 
+                                   currentSoilHumidity.value <= thresholds.maxSoilHumidity
+        const soilHumidityTooHigh = currentSoilHumidity.value > thresholds.maxSoilHumidity
         
-      } else {
-        // EVALUAR DESACTIVACIÓN (solo si SÍ está activo)
-        // Condiciones para desactivar: todas las condiciones deben estar en rango seguro
-        const temperatureOk = currentTemperature.value <= thresholds.maxTemperature
-        const soilHumidityOk = currentSoilHumidity.value >= thresholds.minSoilHumidity && 
-                              currentSoilHumidity.value <= thresholds.maxSoilHumidity
-        const airHumidityOk = currentAirHumidity.value >= thresholds.minAirHumidity
-        
-        // Desactivar cuando TODAS las condiciones estén OK (o al menos el suelo esté en rango aceptable)
-        const shouldDeactivate = temperatureOk && soilHumidityOk && airHumidityOk
+        // Desactivar cuando el suelo esté en rango óptimo O cuando esté demasiado húmedo
+        const shouldDeactivate = soilHumidityInRange || soilHumidityTooHigh
         
         console.log('🤖 [AUTO] Evaluando DESACTIVACIÓN:', {
-          temperature: `${currentTemperature.value}°C <= ${thresholds.maxTemperature}°C = ${temperatureOk}`,
-          soil: `${currentSoilHumidity.value}% (${thresholds.minSoilHumidity}%-${thresholds.maxSoilHumidity}%) = ${soilHumidityOk}`,
-          air: `${currentAirHumidity.value}% >= ${thresholds.minAirHumidity}% = ${airHumidityOk}`,
+          currentSoilHumidity: currentSoilHumidity.value,
+          minThreshold: thresholds.minSoilHumidity,
+          maxThreshold: thresholds.maxSoilHumidity,
+          soilInRange: soilHumidityInRange,
+          soilTooHigh: soilHumidityTooHigh,
           shouldDeactivate: shouldDeactivate,
-          currentlyActive: true
+          currentlyActive: isCurrentlyActive
         })
         
         if (shouldDeactivate) {
-          console.log('🔴 [AUTO] ¡Todas las condiciones son óptimas detectadas!')
-          console.log('ℹ️ [AUTO] La desactivación será manejada por el backend automático vía TTN webhook')
-          // NOTA: El backend automático se encarga de la desactivación cuando llegan datos via webhook
-          // Solo mantenemos la cancelación de configuración como respaldo si fuera necesario
+          if (soilHumidityTooHigh) {
+            console.log('🔴 [AUTO] ¡Humedad del suelo demasiado alta! Desactivando riego...')
+          } else {
+            console.log('🔴 [AUTO] ¡Humedad del suelo en rango óptimo! Desactivando riego...')
+          }
+          
+          try {
+            // Enviar comando de desactivación al backend
+            const deactivationResponse = await IrrigationAPI.deactivateIrrigationConfig(automaticConfig.id)
+            if (deactivationResponse.success) {
+              console.log('✅ [AUTO] Comando de desactivación enviado exitosamente')
+              // Marcar localmente que el riego está inactivo para la próxima evaluación
+              localIrrigationStatus.value = 'inactive'
+            } else {
+              console.log('⚠️ [AUTO] Error al enviar comando de desactivación:', deactivationResponse.message)
+            }
+          } catch (error) {
+            console.error('❌ [AUTO] Error enviando comando de desactivación:', error)
+          }
         }
       }
       
@@ -495,9 +541,19 @@ export function useSensorData() {
             realDataPoints.value.shift()
           }
           
+          // 🤖 EVALUAR CONDICIONES AUTOMÁTICAS después de actualizar datos
+          console.log('🚀 [AUTO] Llamando a evaluateAutomaticConditions después de nuevos datos...')
+          console.log('📊 [AUTO] Datos del nuevo punto:', {
+            temperature: newReading.temperature,
+            soilHumidity: newReading.soil_humidity,
+            airHumidity: newReading.air_humidity,
+            receivedAt: newReading.received_at
+          })
+          
+          // Primero actualizar los valores de los sensores
           updateChartsWithRealData(realDataPoints.value)
           
-          // 🤖 EVALUAR CONDICIONES AUTOMÁTICAS después de actualizar datos
+          // Luego evaluar las condiciones automáticas con los valores actualizados
           await evaluateAutomaticConditions()
         }
       }
@@ -764,6 +820,7 @@ export function useSensorData() {
       
       // Verificar nuevos datos cada 5 segundos
       interval = setInterval(() => {
+        console.log('⏰ [INTERVAL] Verificando nuevos datos...')
         checkForNewRealData()
       }, 5000)
       

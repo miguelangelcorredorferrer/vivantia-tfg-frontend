@@ -180,10 +180,10 @@
         <div class="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4">
           <h3 class="font-semibold text-purple-300 mb-2">¿Cómo funciona el modo automático?</h3>
           <ul class="text-sm text-purple-200 space-y-1">
-            <li>• Monitorea parámetros de temperatura y humedad en tiempo real</li>
-            <li>• Activa el riego cuando se cumplen los umbrales configurados</li>
-            <li>• Evita el desperdicio de agua</li>
-            <li>• Ideal para una gestión inteligente del cultivo</li>
+            <li>• Monitorea la humedad del suelo en tiempo real</li>
+            <li>• Activa el riego solo cuando el suelo está seco (bajo del umbral mínimo)</li>
+            <li>• Desactiva el riego cuando el suelo alcanza humedad óptima o se satura</li>
+            <li>• Evita el desperdicio de agua con precisión máxima</li>
           </ul>
         </div>
         
@@ -263,19 +263,9 @@
                 <h4 class="font-medium text-red-300">¿Cuándo se ACTIVA el riego?</h4>
               </div>
               <p class="text-sm text-red-200 mb-3">
-                El riego se inicia automáticamente cuando se cumple <strong>UNA</strong> de estas condiciones:
+                El riego se inicia automáticamente cuando se cumple <strong>UNA</strong> condición:
               </p>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div class="bg-red-800/30 border border-red-600/50 rounded-lg p-3">
-                  <div class="flex items-center space-x-2 mb-2">
-                    
-                    <span class="text-xs font-semibold text-red-300">Temperatura Alta</span>
-                  </div>
-                  <p class="text-xs text-red-200">
-                    Cuando la temperatura supera los <strong>{{ thresholds.maxTemperature }}°C</strong>
-                  </p>
-                </div>
-                
+              <div class="grid grid-cols-1 gap-3">
                 <div class="bg-red-800/30 border border-red-600/50 rounded-lg p-3">
                   <div class="flex items-center space-x-2 mb-2">
                     
@@ -283,16 +273,6 @@
                   </div>
                   <p class="text-xs text-red-200">
                     Cuando la humedad del suelo baja de <strong>{{ thresholds.minSoilHumidity }}%</strong>
-                  </p>
-                </div>
-                
-                <div class="bg-red-800/30 border border-red-600/50 rounded-lg p-3">
-                  <div class="flex items-center space-x-2 mb-2">
-                    
-                    <span class="text-xs font-semibold text-red-300">Ambiente Seco</span>
-                  </div>
-                  <p class="text-xs text-red-200">
-                    Cuando la humedad del aire baja de <strong>{{ thresholds.minAirHumidity }}%</strong>
                   </p>
                 </div>
               </div>
@@ -307,23 +287,13 @@
                 <h4 class="font-medium text-green-300">¿Cuándo se DESACTIVA el riego?</h4>
               </div>
               <p class="text-sm text-green-200 mb-3">
-                El riego se detiene automáticamente cuando <strong>TODAS</strong> las condiciones están óptimas:
+                El riego se detiene automáticamente cuando <strong>UNA</strong> de estas condiciones:
               </p>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="bg-green-800/30 border border-green-600/50 rounded-lg p-3">
                   <div class="flex items-center space-x-2 mb-2">
                     
-                    <span class="text-xs font-semibold text-green-300">Temperatura Óptima</span>
-                  </div>
-                  <p class="text-xs text-green-200">
-                    Cuando la temperatura es menor o igual a <strong>{{ thresholds.maxTemperature }}°C</strong>
-                  </p>
-                </div>
-                
-                <div class="bg-green-800/30 border border-green-600/50 rounded-lg p-3">
-                  <div class="flex items-center space-x-2 mb-2">
-                    
-                    <span class="text-xs font-semibold text-green-300">Suelo Húmedo</span>
+                    <span class="text-xs font-semibold text-green-300">Suelo en Rango Óptimo</span>
                   </div>
                   <p class="text-xs text-green-200">
                     Cuando la humedad está entre <strong>{{ thresholds.minSoilHumidity }}%</strong> y <strong>{{ thresholds.maxSoilHumidity }}%</strong>
@@ -333,10 +303,10 @@
                 <div class="bg-green-800/30 border border-green-600/50 rounded-lg p-3">
                   <div class="flex items-center space-x-2 mb-2">
                     
-                    <span class="text-xs font-semibold text-green-300">Ambiente Húmedo</span>
+                    <span class="text-xs font-semibold text-green-300">Suelo Demasiado Húmedo</span>
                   </div>
                   <p class="text-xs text-green-200">
-                    Cuando la humedad del aire es mayor o igual que <strong>{{ thresholds.minAirHumidity }}%</strong>
+                    Cuando la humedad supera <strong>{{ thresholds.maxSoilHumidity }}%</strong>
                   </p>
                 </div>
               </div>

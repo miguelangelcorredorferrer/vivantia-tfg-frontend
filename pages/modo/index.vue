@@ -243,7 +243,7 @@
                           <AutomaticModeIcon />
             </div>
             <h3 class="text-xl font-bold text-white mb-2">Automático</h3>
-            <p class="text-purple-300 text-sm">Riego basado en sensores de humedad y temperatura</p>
+            <p class="text-purple-300 text-sm">Riego basado únicamente en humedad del suelo</p>
           </div>
         </div>
       </div>

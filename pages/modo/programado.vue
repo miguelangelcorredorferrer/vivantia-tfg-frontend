@@ -1,71 +1,71 @@
 <template>
   <div class="space-y-8">
     <div class="max-w-2xl mx-auto">
-      <!-- Widget de control cuando el riego programado está activo (regando) -->
-      <div v-if="irrigationStore.isProgrammedWatering" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <h2 class="text-xl font-bold text-white mb-6">Riego Programado Activo</h2>
-        
-        <div class="text-center space-y-6">
-          <!-- Estado visual -->
-          <div class="flex justify-center">
-            <div class="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-              <WateringIcon />
-            </div>
-          </div>
-          
-          <!-- Información del riego activo -->
-          <div class="bg-blue-900/30 border border-blue-700/50 rounded-lg p-4">
-            <h3 class="font-semibold text-blue-300 mb-3">Estado del Riego</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p class="text-gray-400">Estado:</p>
-                <p class="font-bold text-white">
-                  {{ irrigationStore.isPaused ? 'Pausado' : 'Regando' }}
-                </p>
-              </div>
-              <div>
-                <p class="text-gray-400">Tiempo Restante:</p>
-                <p class="font-bold text-blue-400">{{ irrigationStore.remainingTime || 'Calculando...' }}</p>
-              </div>
-              <div>
-                <p class="text-gray-400">Duración Total:</p>
-                <p class="font-bold text-white">{{ getDurationFromConfig() }}</p>
-              </div>
-              <div>
-                <p class="text-gray-400">Modo:</p>
-                <p class="font-bold text-white">Programado</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Botones de control -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Pausar/Reanudar -->
-            <button
-              v-if="!irrigationStore.isPaused"
-              @click="pauseProgrammedWatering"
-              class="px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold rounded-lg hover:from-yellow-600 hover:to-yellow-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              ⏸️ Pausar Riego
-            </button>
-            <button
-              v-else
-              @click="resumeProgrammedWatering"
-              class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              ▶️ Reanudar Riego
-            </button>
-            
-            <!-- Cancelar -->
-            <button
-              @click="showCancelActiveModal = true"
-              class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              🛑 Cancelar Riego
-            </button>
-          </div>
-        </div>
-      </div>
+             <!-- Widget: Riego Programado Activo (Regando) -->
+       <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
+         <h2 class="text-xl font-bold text-white mb-6">Riego Programado Activo</h2>
+         
+         <div class="text-center space-y-6">
+           <!-- Estado visual -->
+           <div class="flex justify-center">
+             <div class="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+               <WaterDropIcon />
+             </div>
+           </div>
+           
+           <!-- Información del riego activo -->
+           <div class="bg-blue-900/30 border border-blue-700/50 rounded-lg p-4">
+             <h3 class="font-semibold text-blue-300 mb-3">Estado del Riego</h3>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+               <div>
+                 <p class="text-gray-400">Estado:</p>
+                 <p class="font-bold text-white">
+                   {{ irrigationStore.isPaused ? 'Pausado' : 'Regando' }}
+                 </p>
+               </div>
+               <div>
+                 <p class="text-gray-400">Tiempo Restante:</p>
+                 <p class="font-bold text-blue-400">{{ irrigationStore.remainingTime || 'Calculando...' }}</p>
+               </div>
+               <div>
+                 <p class="text-gray-400">Duración Total:</p>
+                 <p class="font-bold text-white">{{ getDurationFromConfig() }}</p>
+               </div>
+               <div>
+                 <p class="text-gray-400">Modo:</p>
+                 <p class="font-bold text-white">Programado</p>
+               </div>
+             </div>
+           </div>
+           
+           <!-- Botones de control -->
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <!-- Pausar/Reanudar -->
+             <button
+               v-if="!irrigationStore.isPaused"
+               @click="pauseProgrammedWatering"
+               class="px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold rounded-lg hover:from-yellow-600 hover:to-yellow-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+             >
+               ⏸️ Pausar Riego
+             </button>
+             <button
+               v-else
+               @click="resumeProgrammedWatering"
+               class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+             >
+               ▶️ Reanudar Riego
+             </button>
+             
+             <!-- Cancelar -->
+             <button
+               @click="showCancelActiveModal = true"
+               class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+             >
+               🛑 Cancelar Riego
+             </button>
+           </div>
+         </div>
+       </div>
 
       <!-- Widget de estado programado cuando está activo (solo cuando está configurado pero no regando ni pausado) -->
       <div v-if="irrigationStore.isProgrammedActive && !irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
@@ -124,54 +124,7 @@
         </div>
       </div>
 
-      <!-- Widget de riego activo cuando está regando -->
-      <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-
-        <h2 class="text-xl font-bold text-white mb-6">Riego Programado Activo</h2>
-        
-        <div class="text-center space-y-6">
-          <!-- Estado visual -->
-          <div class="flex justify-center">
-            <div class="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-              <WaterDropIcon />
-            </div>
-          </div>
-          
-          <!-- Información del riego -->
-          <div class="bg-green-900/30 border border-green-700/50 rounded-lg p-4">
-            <h3 class="font-semibold text-green-300 mb-3">Información del Riego</h3>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p class="text-gray-400">Estado:</p>
-                <p class="font-bold text-white">Bomba Activa</p>
-              </div>
-              <div>
-                <p class="text-gray-400">Tiempo Restante:</p>
-                <p class="font-bold text-white">{{ irrigationStore.remainingTime || 'Calculando...' }}</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Botones de control -->
-          <div class="space-y-3">
-            <!-- Botón de parada de emergencia -->
-            <button
-              @click="pauseIrrigation"
-              class="w-full px-6 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold text-lg rounded-lg hover:from-yellow-600 hover:to-yellow-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              ⏸️ Parada de Emergencia
-            </button>
-            
-            <!-- Botón de cancelar -->
-            <button
-              @click="showCancelModal = true"
-              class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              🛑 Cancelar Riego Programado
-            </button>
-          </div>
-        </div>
-      </div>
+      
 
       <!-- Widget de riego pausado -->
       <div v-if="irrigationStore.isProgrammedActive && irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
