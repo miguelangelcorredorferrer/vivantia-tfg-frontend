@@ -76,7 +76,7 @@ const formatTotalDuration = () => {
 
 const calculateVolume = () => {
   const totalMinutes = (duration.value.minutes || 0) + (duration.value.seconds || 0) / 60
-  const flowRate = 2.5 // L/min
+  const flowRate = 0.4 // L/min
   return (totalMinutes * flowRate).toFixed(1)
 }
 
@@ -421,14 +421,7 @@ useHead({
       <div v-if="!irrigationStore.hasActiveMode" class="bg-gray-900/60 border border-gray-600/30 rounded-xl shadow-lg p-6 hover:bg-gray-900/80 transition-colors">
         <h2 class="text-xl font-bold text-white mb-6">Configurar Riego Manual</h2>
         
-        <!-- Información sobre reutilización -->
-        <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 mb-6">
-          <h3 class="font-semibold text-blue-400 mb-2">💡 Información Importante</h3>
-          <p class="text-sm text-blue-300">
-            Si ya has configurado un riego manual para este cultivo, la configuración se actualizará con los nuevos valores. 
-            Esto te permite hacer múltiples riegos con diferentes duraciones sin crear configuraciones duplicadas.
-          </p>
-        </div>
+        
         
         <form @submit.prevent="confirmConfiguration" class="space-y-6">
           <!-- Duración del riego -->
@@ -517,7 +510,7 @@ useHead({
             <div class="text-sm text-yellow-300 space-y-1">
               <p><strong>Duración:</strong> {{ formatTotalDuration() }}</p>
               <p><strong>Inicio:</strong> Inmediato al confirmar</p>
-              <p><strong>Caudal estimado:</strong> 2.5 L/min</p>
+              <p><strong>Caudal estimado:</strong> 0.4 L/min</p>
               <p><strong>Volumen total:</strong> {{ calculateVolume() }} L</p>
             </div>
           </div>

@@ -147,7 +147,7 @@ const confirmDeleteAllAlerts = async () => {
   try {
     const response = await AlertAPI.deleteAllSystemAlerts()
     await loadSystemAlerts()
-    toast.success(`${response.count || 0} alertas eliminadas del sistema`)
+    toast.success(`Alertas eliminadas del sistema`)
   } catch (error) {
     console.error('Error al eliminar todas las alertas:', error)
     toast.error('Error al eliminar todas las alertas del sistema')

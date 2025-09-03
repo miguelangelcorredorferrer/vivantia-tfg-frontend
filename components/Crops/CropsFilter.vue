@@ -70,7 +70,7 @@
         <!-- Humedad del Suelo Mínima -->
         <div>
           <label for="min-soil-humidity-filter" class="block text-sm font-medium text-blue-300 mb-2">
-            🌱 Humedad Suelo Mín. (%)
+            Humedad Suelo Mín. (%)
           </label>
           <input
             id="min-soil-humidity-filter"
@@ -87,7 +87,7 @@
         <!-- Humedad del Suelo Máxima -->
         <div>
           <label for="max-soil-humidity-filter" class="block text-sm font-medium text-blue-300 mb-2">
-            🌱 Humedad Suelo Máx. (%)
+            Humedad Suelo Máx. (%)
           </label>
           <input
             id="max-soil-humidity-filter"
@@ -107,7 +107,7 @@
         <!-- Humedad del Aire Mínima -->
         <div>
           <label for="min-air-humidity-filter" class="block text-sm font-medium text-cyan-300 mb-2">
-            💨 Humedad Aire Mín. (%)
+            Humedad Aire Mín. (%)
           </label>
           <input
             id="min-air-humidity-filter"
@@ -124,7 +124,7 @@
         <!-- Humedad del Aire Máxima -->
         <div>
           <label for="max-air-humidity-filter" class="block text-sm font-medium text-cyan-300 mb-2">
-            💨 Humedad Aire Máx. (%)
+            Humedad Aire Máx. (%)
           </label>
           <input
             id="max-air-humidity-filter"
@@ -144,7 +144,7 @@
         <!-- Temperatura Máxima -->
         <div>
           <label for="max-temp-filter" class="block text-sm font-medium text-red-300 mb-2">
-            🌡️ Temp. Máx. (°C)
+            Temp. Máx. (°C)
           </label>
           <input
             id="max-temp-filter"

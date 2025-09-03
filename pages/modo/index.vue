@@ -312,7 +312,7 @@ const isLoadingLastIrrigation = ref(false)
 
 // Estados locales
 const currentCrop = ref('Tomate Cherry')
-const flowRate = ref(2.5)
+const flowRate = ref(0.4)
 const lastWatering = ref('Ayer 15:30')
 const nextWatering = ref(null)
 

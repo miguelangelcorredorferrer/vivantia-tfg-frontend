@@ -227,7 +227,7 @@ const confirmCleanOldAlerts = async (days) => {
     const response = await AlertAPI.deleteMyOldAlerts()
     console.log(`[DEBUG] Respuesta del servidor:`, response)
     await loadAlerts()
-    toast.success(`${response.count || 0} alertas eliminadas`)
+    toast.success(`Alertas eliminadas`)
   } catch (error) {
     console.error('[DEBUG] Error completo al eliminar alertas:', error)
     console.error('[DEBUG] Error message:', error.message)

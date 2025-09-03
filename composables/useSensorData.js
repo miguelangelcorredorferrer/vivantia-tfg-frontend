@@ -197,7 +197,7 @@ export function useSensorData() {
       }
       
       if (!isCurrentlyActive) {
-        // 🟢 EVALUAR ACTIVACIÓN (solo si NO está activo)
+        // EVALUAR ACTIVACIÓN (solo si NO está activo)
         const tempHigh = currentTemperature.value > thresholds.maxTemperature
         const soilLow = currentSoilHumidity.value <= thresholds.minSoilHumidity
         const airLow = currentAirHumidity.value < thresholds.minAirHumidity
@@ -220,7 +220,7 @@ export function useSensorData() {
         }
         
       } else {
-        // 🔴 EVALUAR DESACTIVACIÓN (solo si SÍ está activo)
+        // EVALUAR DESACTIVACIÓN (solo si SÍ está activo)
         // Condiciones para desactivar: todas las condiciones deben estar en rango seguro
         const temperatureOk = currentTemperature.value <= thresholds.maxTemperature
         const soilHumidityOk = currentSoilHumidity.value >= thresholds.minSoilHumidity && 

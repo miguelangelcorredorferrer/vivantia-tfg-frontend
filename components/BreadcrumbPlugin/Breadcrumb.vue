@@ -22,7 +22,7 @@
             <!-- Icono -->
             <component 
               :is="item.icon" 
-              class="w-4 h-4 flex-shrink-0"
+              class="w-5 h-5 flex-shrink-0"
               v-if="item.icon"
             />
             
@@ -37,7 +37,7 @@
             <!-- Icono -->
             <component 
               :is="item.icon" 
-              class="w-4 h-4 flex-shrink-0"
+              class="w-5 h-5 flex-shrink-0"
               v-if="item.icon"
             />
             

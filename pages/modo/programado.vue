@@ -103,13 +103,24 @@
             </div>
           </div>
           
-          <!-- Botón de deshacer configuración -->
-          <button
-            @click="showCancelModal = true"
-            class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-          >
-            🗑️ Deshacer Configuración
-          </button>
+          <!-- Botones de acción -->
+          <div class="space-y-3">
+            <!-- Botón de deshacer configuración -->
+            <button
+              @click="showCancelModal = true"
+              class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              🗑️ Deshacer Configuración
+            </button>
+            
+            <!-- Botón de volver -->
+            <button
+              @click="goBack"
+              class="w-full px-6 py-4 bg-gray-600 text-gray-300 font-bold text-lg rounded-lg hover:bg-gray-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              ← Volver a Modos de Riego
+            </button>
+          </div>
         </div>
       </div>
 
@@ -243,7 +254,7 @@
       </div>
 
       <!-- Formulario de configuración -->
-      <div v-if="!irrigationStore.isProgrammedWaiting && !irrigationStore.isWatering && !irrigationStore.isPaused" class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
+      <div v-if="!irrigationStore.isProgrammedActive" class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
         <h2 class="text-xl font-bold text-white mb-6">Configurar Riego Programado</h2>
         
         <form @submit.prevent="confirmConfiguration" class="space-y-6">
@@ -549,7 +560,7 @@
               <p><strong>Fecha y hora programada:</strong> {{ formatScheduledDateTime() }}</p>
               <p><strong>Duración:</strong> {{ formatDuration() }}</p>
               <p><strong>Frecuencia:</strong> {{ getFrequencyText() }}</p>
-              <p><strong>Caudal estimado:</strong> 2.5 L/min</p>
+              <p><strong>Caudal estimado:</strong> 0.4 L/min</p>
               <p><strong>Volumen total:</strong> {{ calculateVolume() }} L</p>
             </div>
           </div>
@@ -575,7 +586,7 @@
       </div>
 
       <!-- Mensaje cuando hay un modo activo -->
-      <div v-else class="bg-orange-900/60 border border-orange-500/30 rounded-xl shadow-lg p-6">
+      <div v-if="irrigationStore.hasActiveMode && irrigationStore.activeMode !== 'programmed'" class="bg-orange-900/60 border border-orange-500/30 rounded-xl shadow-lg p-6">
         <div class="text-center">
           <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <WarningIcon />
@@ -600,7 +611,7 @@
     </div>
 
     <!-- Mensaje cuando otros modos están activos -->
-    <div v-if="irrigationStore.hasActiveMode && !irrigationStore.isProgrammedActive" class="max-w-2xl mx-auto">
+    <div v-if="irrigationStore.hasActiveMode && irrigationStore.activeMode !== 'programmed'" class="max-w-2xl mx-auto">
       <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
         <div class="text-center space-y-4">
           <div class="text-4xl">⚠️</div>
@@ -886,7 +897,7 @@ const formatDuration = () => {
 
 const calculateVolume = () => {
   const totalMinutes = (duration.value.minutes || 0)
-  const flowRate = 2.5 // L/min
+  const flowRate = 0.4 // L/min
   return (totalMinutes * flowRate).toFixed(1)
 }
 

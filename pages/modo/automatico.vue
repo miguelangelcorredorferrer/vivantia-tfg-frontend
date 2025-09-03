@@ -244,170 +244,105 @@
         <h2 class="text-xl font-bold text-white mb-6">Configurar Umbrales Automáticos</h2>
         
         <form @submit.prevent="confirmConfiguration" class="space-y-6">
-          <!-- Configuración de temperatura -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-4">
-              Umbrales de Temperatura
-            </label>
-            
-            <div class="bg-red-900/30 border border-red-700/50 rounded-lg p-4 mb-4">
-              <h4 class="font-medium text-red-300 mb-3">Temperatura Máxima</h4>
-              <div class="flex items-center space-x-4">
-                <input 
-                  v-model.number="thresholds.maxTemperature"
-                  type="number" 
-                  min="15" 
-                  max="45"
-                  step="0.5"
-                  class="w-24 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-                >
-                <span class="text-sm text-gray-300">°C</span>
-                <div class="flex-1">
-                  <input 
-                    v-model.number="thresholds.maxTemperature"
-                    type="range" 
-                    min="15" 
-                    max="45"
-                    step="0.5"
-                    class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-                  >
-                </div>
-              </div>
-              <p class="text-xs text-red-300 mt-2">Se activará el riego cuando la temperatura supere este valor</p>
-            </div>
-          </div>
-
-          <!-- Configuración de humedad del suelo -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-4">
-              Umbrales de Humedad del Suelo
-            </label>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Humedad del suelo mínima -->
-              <div class="bg-blue-900/30 border border-blue-700/50 rounded-lg p-4">
-                <h4 class="font-medium text-blue-300 mb-3">Humedad Suelo Mínima</h4>
-                <div class="flex items-center space-x-4">
-                  <input 
-                    v-model.number="thresholds.minSoilHumidity"
-                    type="number" 
-                    min="0" 
-                    max="100"
-                    class="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-                  >
-                  <span class="text-sm text-gray-300">%</span>
-                </div>
-                <input 
-                  v-model.number="thresholds.minSoilHumidity"
-                  type="range" 
-                  min="0" 
-                  max="100"
-                  class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider mt-2"
-                >
-                <p class="text-xs text-blue-300 mt-2">Se activará el riego cuando baje de este valor</p>
-              </div>
-
-              <!-- Humedad del suelo máxima -->
-              <div class="bg-cyan-900/30 border border-cyan-700/50 rounded-lg p-4">
-                <h4 class="font-medium text-cyan-300 mb-3">Humedad Suelo Máxima</h4>
-                <div class="flex items-center space-x-4">
-                  <input 
-                    v-model.number="thresholds.maxSoilHumidity"
-                    type="number" 
-                    min="0" 
-                    max="100"
-                    class="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-                  >
-                  <span class="text-sm text-gray-300">%</span>
-                </div>
-                <input 
-                  v-model.number="thresholds.maxSoilHumidity"
-                  type="range" 
-                  min="0" 
-                  max="100"
-                  class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider mt-2"
-                >
-                <p class="text-xs text-cyan-300 mt-2">Se detendrá el riego al alcanzar este valor</p>
-              </div>
-            </div>
-          </div>
           
-          <!-- Configuración de humedad del aire -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-4">
-              Umbrales de Humedad del Aire
-            </label>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Humedad del aire mínima -->
-              <div class="bg-teal-900/30 border border-teal-700/50 rounded-lg p-4">
-                <h4 class="font-medium text-teal-300 mb-3">Humedad Aire Mínima</h4>
-                <div class="flex items-center space-x-4">
-                  <input 
-                    v-model.number="thresholds.minAirHumidity"
-                    type="number" 
-                    min="0" 
-                    max="100"
-                    class="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-                  >
-                  <span class="text-sm text-gray-300">%</span>
-                </div>
-                <input 
-                  v-model.number="thresholds.minAirHumidity"
-                  type="range" 
-                  min="0" 
-                  max="100"
-                  class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider mt-2"
-                >
-                <p class="text-xs text-teal-300 mt-2">Se activará el riego cuando baje de este valor</p>
-              </div>
 
-              <!-- Humedad del aire máxima -->
-              <div class="bg-emerald-900/30 border border-emerald-700/50 rounded-lg p-4">
-                <h4 class="font-medium text-emerald-300 mb-3">Humedad Aire Máxima</h4>
-                <div class="flex items-center space-x-4">
-                  <input 
-                    v-model.number="thresholds.maxAirHumidity"
-                    type="number" 
-                    min="0" 
-                    max="100"
-                    class="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-                  >
-                  <span class="text-sm text-gray-300">%</span>
-                </div>
-                <input 
-                  v-model.number="thresholds.maxAirHumidity"
-                  type="range" 
-                  min="0" 
-                  max="100"
-                  class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider mt-2"
-                >
-                <p class="text-xs text-emerald-300 mt-2">Útil para control adicional basado en humedad ambiental</p>
-              </div>
-            </div>
-          </div>
+          
 
           <!-- Información de funcionamiento automático -->
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
               Funcionamiento Automático
             </label>
-            <div class="bg-green-900/30 border border-green-700/50 rounded-lg p-4">
+            
+            <!-- Condiciones de Activación -->
+            <div class="bg-red-900/30 border border-red-700/50 rounded-lg p-4 mb-4">
+              <div class="flex items-center space-x-3 mb-3">
+                <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                  <span class="text-white text-lg">🚨</span>
+                </div>
+                <h4 class="font-medium text-red-300">¿Cuándo se ACTIVA el riego?</h4>
+              </div>
+              <p class="text-sm text-red-200 mb-3">
+                El riego se inicia automáticamente cuando se cumple <strong>UNA</strong> de estas condiciones:
+              </p>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-red-800/30 border border-red-600/50 rounded-lg p-3">
+                  <div class="flex items-center space-x-2 mb-2">
+                    
+                    <span class="text-xs font-semibold text-red-300">Temperatura Alta</span>
+                  </div>
+                  <p class="text-xs text-red-200">
+                    Cuando la temperatura supera los <strong>{{ thresholds.maxTemperature }}°C</strong>
+                  </p>
+                </div>
+                
+                <div class="bg-red-800/30 border border-red-600/50 rounded-lg p-3">
+                  <div class="flex items-center space-x-2 mb-2">
+                    
+                    <span class="text-xs font-semibold text-red-300">Suelo Seco</span>
+                  </div>
+                  <p class="text-xs text-red-200">
+                    Cuando la humedad del suelo baja de <strong>{{ thresholds.minSoilHumidity }}%</strong>
+                  </p>
+                </div>
+                
+                <div class="bg-red-800/30 border border-red-600/50 rounded-lg p-3">
+                  <div class="flex items-center space-x-2 mb-2">
+                    
+                    <span class="text-xs font-semibold text-red-300">Ambiente Seco</span>
+                  </div>
+                  <p class="text-xs text-red-200">
+                    Cuando la humedad del aire baja de <strong>{{ thresholds.minAirHumidity }}%</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Condiciones de Desactivación -->
+            <div class="bg-green-900/30 border border-green-700/50 rounded-lg p-4 mb-4">
               <div class="flex items-center space-x-3 mb-3">
                 <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckIcon class="w-5 h-5 text-white" />
+                  <span class="text-white text-lg">✅</span>
                 </div>
-                <h4 class="font-medium text-green-300">Riego Inteligente</h4>
-                </div>
-              <p class="text-sm text-green-200 mb-2">
-                El sistema activará y desactivará el riego automáticamente basándose en:
+                <h4 class="font-medium text-green-300">¿Cuándo se DESACTIVA el riego?</h4>
+              </div>
+              <p class="text-sm text-green-200 mb-3">
+                El riego se detiene automáticamente cuando <strong>TODAS</strong> las condiciones están óptimas:
               </p>
-              <ul class="text-xs text-green-300 space-y-1">
-                <li>• <strong>Activación:</strong> Temperatura alta + (Humedad suelo baja O Humedad aire baja)</li>
-                <li>• <strong>Desactivación:</strong> Humedad del suelo alcanza el nivel óptimo</li>
-                <li>• <strong>Sin duración fija:</strong> El riego se ajusta a las condiciones reales</li>
-              </ul>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-green-800/30 border border-green-600/50 rounded-lg p-3">
+                  <div class="flex items-center space-x-2 mb-2">
+                    
+                    <span class="text-xs font-semibold text-green-300">Temperatura Óptima</span>
+                  </div>
+                  <p class="text-xs text-green-200">
+                    Cuando la temperatura es menor o igual a <strong>{{ thresholds.maxTemperature }}°C</strong>
+                  </p>
+                </div>
+                
+                <div class="bg-green-800/30 border border-green-600/50 rounded-lg p-3">
+                  <div class="flex items-center space-x-2 mb-2">
+                    
+                    <span class="text-xs font-semibold text-green-300">Suelo Húmedo</span>
+                  </div>
+                  <p class="text-xs text-green-200">
+                    Cuando la humedad está entre <strong>{{ thresholds.minSoilHumidity }}%</strong> y <strong>{{ thresholds.maxSoilHumidity }}%</strong>
+                  </p>
+                </div>
+                
+                <div class="bg-green-800/30 border border-green-600/50 rounded-lg p-3">
+                  <div class="flex items-center space-x-2 mb-2">
+                    
+                    <span class="text-xs font-semibold text-green-300">Ambiente Húmedo</span>
+                  </div>
+                  <p class="text-xs text-green-200">
+                    Cuando la humedad del aire es mayor o igual que <strong>{{ thresholds.minAirHumidity }}%</strong>
+                  </p>
+                </div>
+              </div>
             </div>
+
+            
           </div>
 
 
