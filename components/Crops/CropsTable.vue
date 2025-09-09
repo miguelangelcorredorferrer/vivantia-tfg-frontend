@@ -117,16 +117,21 @@
             <td class="px-6 py-4 text-center">
               <div class="flex items-center justify-center">
                 <div 
-                  class="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium"
-                  :class="crop.waterPumpActive 
-                    ? 'bg-blue-900/30 text-blue-400 border border-blue-500/30' 
-                    : 'bg-gray-700 text-gray-400 border border-gray-600'"
+                  class="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium border"
+                  :class="[
+                    getPumpStatus(crop).bgClass,
+                    getPumpStatus(crop).textClass,
+                    getPumpStatus(crop).borderClass
+                  ]"
                 >
                   <div 
                     class="w-2 h-2 rounded-full"
-                    :class="crop.waterPumpActive ? 'bg-blue-400 animate-pulse' : 'bg-gray-500'"
+                    :class="[
+                      getPumpStatus(crop).dotClass,
+                      getPumpStatus(crop).isActive ? 'animate-pulse' : ''
+                    ]"
                   ></div>
-                  <span>{{ crop.waterPumpActive ? 'Activa' : 'Inactiva' }}</span>
+                  <span>{{ getPumpStatus(crop).status }}</span>
                 </div>
               </div>
             </td>
@@ -203,9 +208,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToastNotifications } from '~/composables/useToastNotifications'
+import { useIrrigationStore } from '~/stores/irrigation'
 import { getIcon } from '~/assets/icons'
 import BaseCard from '../Cards/BaseCard.vue'
 import CropSwitch from './CropSwitch.vue'
@@ -222,6 +228,7 @@ const emit = defineEmits(['toggle-selection', 'delete-crop'])
 
 const router = useRouter()
 const toast = useToastNotifications()
+const irrigationStore = useIrrigationStore()
 
 // Estado del modal de eliminación
 const showDeleteModal = ref(false)
@@ -235,6 +242,60 @@ const selectedCrop = computed(() => {
 // Computed para verificar si hay un cultivo seleccionado
 const hasSelectedCrop = computed(() => {
   return !!selectedCrop.value
+})
+
+// Función para obtener el estado de la bomba de manera reactiva
+const getPumpStatus = (crop) => {
+  // Acceder al computed reactivo para forzar la reactividad
+  const irrigationState = pumpStatusReactive.value
+  
+  // Si el cultivo está seleccionado, usar el estado real del store de irrigación
+  if (crop.selected) {
+    if (irrigationState.isWatering) {
+      return {
+        isActive: true,
+        isPaused: irrigationState.isPaused,
+        status: irrigationState.isPaused ? 'Pausada' : 'Activa',
+        bgClass: irrigationState.isPaused ? 'bg-yellow-900/30' : 'bg-blue-900/30',
+        textClass: irrigationState.isPaused ? 'text-yellow-400' : 'text-blue-400',
+        borderClass: irrigationState.isPaused ? 'border-yellow-500/30' : 'border-blue-500/30',
+        dotClass: irrigationState.isPaused ? 'bg-yellow-400' : 'bg-blue-400'
+      }
+    } else {
+      return {
+        isActive: false,
+        isPaused: false,
+        status: 'Inactiva',
+        bgClass: 'bg-gray-700',
+        textClass: 'text-gray-400',
+        borderClass: 'border-gray-600',
+        dotClass: 'bg-gray-500'
+      }
+    }
+  } else {
+    // Si el cultivo no está seleccionado, siempre mostrar inactiva
+    return {
+      isActive: false,
+      isPaused: false,
+      status: 'Inactiva',
+      bgClass: 'bg-gray-700',
+      textClass: 'text-gray-400',
+      borderClass: 'border-gray-600',
+      dotClass: 'bg-gray-500'
+    }
+  }
+}
+
+// Computed para forzar la reactividad del estado de la bomba
+const pumpStatusReactive = computed(() => {
+  // Forzar la reactividad accediendo a los valores del store
+  const isWatering = irrigationStore.isWatering
+  const isPaused = irrigationStore.isPaused
+  
+  return {
+    isWatering,
+    isPaused
+  }
 })
 
 // Función para manejar la selección de cultivos
@@ -291,6 +352,34 @@ const cancelDelete = () => {
   showDeleteModal.value = false
   cropToDelete.value = null
 }
+
+// Watcher para actualizar automáticamente cuando cambie el estado de irrigación
+watch(() => irrigationStore.isWatering, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    console.log('🔄 CropsTable: Estado de riego cambió:', { 
+      isWatering: newValue, 
+      isPaused: irrigationStore.isPaused 
+    })
+    // Forzar la reactividad accediendo al computed
+    pumpStatusReactive.value
+  }
+}, { immediate: true })
+
+watch(() => irrigationStore.isPaused, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    console.log('🔄 CropsTable: Estado de pausa cambió:', { 
+      isWatering: irrigationStore.isWatering, 
+      isPaused: newValue 
+    })
+    // Forzar la reactividad accediendo al computed
+    pumpStatusReactive.value
+  }
+}, { immediate: true })
+
+// Watcher adicional para forzar la reactividad del computed
+watch(pumpStatusReactive, (newValue, oldValue) => {
+  console.log('🔄 CropsTable: Computed de irrigación actualizado:', newValue)
+}, { deep: true })
 </script>
 
 <style scoped>

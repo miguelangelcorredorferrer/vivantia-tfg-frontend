@@ -13,11 +13,11 @@ export const useToastNotifications = () => {
   }
 
   const deviceActivated = (deviceName: string) => {
-    toast.info(`📡 Dispositivo "${deviceName}" está enviando información a la base de datos`)
+    toast.info(`Dispositivo "${deviceName}" está enviando información a la base de datos`)
   }
 
   const deviceDeactivated = (deviceName: string) => {
-    toast.warning(`⏹️ Dispositivo "${deviceName}" ha dejado de enviar información a la base de datos`)
+    toast.warning(`Dispositivo "${deviceName}" ha dejado de enviar información a la base de datos`)
   }
 
   // Notificaciones para AppKey

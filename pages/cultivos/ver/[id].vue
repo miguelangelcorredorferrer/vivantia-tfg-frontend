@@ -197,12 +197,15 @@
                   <div class="flex items-center space-x-3">
                     <div 
                       class="w-4 h-4 rounded-full"
-                      :class="crop.waterPumpActive ? 'bg-blue-500 animate-pulse' : 'bg-gray-500'"
+                      :class="[
+                        pumpStatus.bgClass,
+                        pumpStatus.isActive ? 'animate-pulse' : ''
+                      ]"
                     ></div>
                     <span class="text-gray-300">Bomba de Agua</span>
                   </div>
-                  <span class="text-sm font-medium" :class="crop.waterPumpActive ? 'text-blue-400' : 'text-gray-500'">
-                    {{ crop.waterPumpActive ? 'Activa' : 'Inactiva' }}
+                  <span class="text-sm font-medium" :class="pumpStatus.textClass">
+                    {{ pumpStatus.status }}
                   </span>
                 </div>
 
@@ -264,7 +267,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToastNotifications } from '~/composables/useToastNotifications'
 import { useCropStore } from '~/stores/crop'
@@ -299,6 +302,7 @@ const router = useRouter()
 const { toast } = useToastNotifications()
 const cropStore = useCropStore()
 const userStore = useUserStore()
+const irrigationStore = useIrrigationStore()
 
 // Estado reactivo
 const crop = ref(null)
@@ -308,6 +312,41 @@ const error = ref(null)
 // Computed para determinar si es el cultivo del usuario
 const isUserCrop = computed(() => {
   return crop.value && userStore.user && crop.value.user_id === userStore.user.id
+})
+
+// Computed para obtener el estado de la bomba de manera reactiva
+const pumpStatus = computed(() => {
+  if (!crop.value || !crop.value.selected) {
+    return {
+      isActive: false,
+      isPaused: false,
+      status: 'Inactiva',
+      bgClass: 'bg-gray-500',
+      textClass: 'text-gray-500'
+    }
+  }
+  
+  // Acceder directamente a los valores del store para forzar la reactividad
+  const isWatering = irrigationStore.isWatering
+  const isPaused = irrigationStore.isPaused
+  
+  if (isWatering) {
+    return {
+      isActive: true,
+      isPaused: isPaused,
+      status: isPaused ? 'Pausada' : 'Activa',
+      bgClass: isPaused ? 'bg-yellow-500' : 'bg-blue-500',
+      textClass: isPaused ? 'text-yellow-400' : 'text-blue-400'
+    }
+  } else {
+    return {
+      isActive: false,
+      isPaused: false,
+      status: 'Inactiva',
+      bgClass: 'bg-gray-500',
+      textClass: 'text-gray-500'
+    }
+  }
 })
 
 // Cargar información del cultivo
@@ -374,9 +413,47 @@ const toggleSelection = async () => {
   }
 }
 
+// Watchers para actualizar automáticamente cuando cambie el estado de irrigación
+watch(() => irrigationStore.isWatering, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    console.log('🔄 Ver Cultivo: Estado de riego cambió:', { 
+      isWatering: newValue, 
+      isPaused: irrigationStore.isPaused 
+    })
+    // Forzar la reactividad accediendo al computed
+    pumpStatus.value
+  }
+}, { immediate: true })
+
+watch(() => irrigationStore.isPaused, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    console.log('🔄 Ver Cultivo: Estado de pausa cambió:', { 
+      isWatering: irrigationStore.isWatering, 
+      isPaused: newValue 
+    })
+    // Forzar la reactividad accediendo al computed
+    pumpStatus.value
+  }
+}, { immediate: true })
+
+// Watcher adicional para forzar la reactividad del computed
+watch(pumpStatus, (newValue, oldValue) => {
+  console.log('🔄 Ver Cultivo: Computed de bomba actualizado:', newValue)
+}, { deep: true })
+
 // Cargar datos al montar el componente
-onMounted(() => {
-  loadCrop()
+onMounted(async () => {
+  await loadCrop()
+  
+  // Cargar estado de irrigación si el cultivo está seleccionado
+  if (crop.value?.selected) {
+    try {
+      await irrigationStore.loadActiveConfiguration()
+      console.log('✅ Ver Cultivo: Estado de irrigación cargado')
+    } catch (error) {
+      console.log('ℹ️ Ver Cultivo: No hay configuración de riego activa')
+    }
+  }
 })
 </script>
 

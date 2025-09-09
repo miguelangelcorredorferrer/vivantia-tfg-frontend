@@ -42,17 +42,6 @@
       </div>
       
       <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
-        <div class="flex items-center space-x-2">
-          <Icon name="heroicons:beaker" class="w-5 h-5 text-blue-400" />
-          <span class="text-gray-300 font-medium">Estado de la Bomba:</span>
-        </div>
-        <div class="flex items-center space-x-2">
-          <div class="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-          <span class="text-blue-400 font-bold text-lg">ACTIVA</span>
-        </div>
-      </div>
-      
-      <div class="flex justify-between items-center p-4 bg-gray-900/60 border border-gray-600/30 rounded-lg hover:bg-gray-900/80 transition-colors">
         <span class="text-gray-300 font-medium">Días de Crecimiento:</span>
         <span class="text-white font-bold text-lg">{{ currentCrop.growth_days }} días</span>
       </div>

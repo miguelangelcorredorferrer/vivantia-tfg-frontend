@@ -93,8 +93,8 @@ const breadcrumbItems = computed(() => {
   // Mapear rutas a iconos
   const routeIcons = {
     'dashboard': 'home',
-    'dispositivos': 'device',
-    'devices': 'device',
+    'dispositivos': 'devices',
+    'devices': 'devices',
     'cultivos': 'plant',
     'crops': 'plant',
     'modo': 'watering',

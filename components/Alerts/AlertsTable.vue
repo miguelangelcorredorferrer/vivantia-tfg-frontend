@@ -172,9 +172,9 @@ import {
   UserIcon,
   ThermometerIcon,
   DeviceIcon,
-  PlantIcon,
   WateringIcon,
-  CheckIcon
+  CheckIcon,
+  getIcon
 } from '~/assets/icons'
 import BaseCard from '../Cards/BaseCard.vue'
 
@@ -291,8 +291,8 @@ const getAlertIcon = (category) => {
   const icons = {
     user: UserIcon,
     environmental: ThermometerIcon,
-    device: DeviceIcon,
-    crop: PlantIcon,
+    device: getIcon('devices'),
+    crop: getIcon('plant'),
     irrigation: WateringIcon
   }
   return icons[category] || AlertsIcon

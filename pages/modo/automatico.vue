@@ -54,13 +54,24 @@
           </div>
           
           
-          <!-- Botón de deshacer configuración -->
-          <button
-            @click="showCancelModal = true"
-            class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
-          >
-            🗑️ Deshacer Configuración
-          </button>
+          <!-- Botones de acción -->
+          <div class="space-y-3">
+            <!-- Botón de deshacer configuración -->
+            <button
+              @click="showCancelModal = true"
+              class="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-lg hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              🗑️ Deshacer Configuración
+            </button>
+            
+            <!-- Botón de volver -->
+            <button
+              @click="goBack"
+              class="w-full px-6 py-4 bg-gray-600 text-gray-300 font-bold text-lg rounded-lg hover:bg-gray-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              ← Volver a Modos de Riego
+            </button>
+          </div>
         </div>
       </div>
 
@@ -240,7 +251,7 @@
       </div>
 
       <!-- Formulario de configuración -->
-      <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
+      <div v-if="!automaticConfig" class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
         <h2 class="text-xl font-bold text-white mb-6">Configurar Umbrales Automáticos</h2>
         
         <form @submit.prevent="confirmConfiguration" class="space-y-6">
@@ -686,6 +697,11 @@ const saveAutomaticConfiguration = async () => {
       showSuccess('Modo automático configurado exitosamente')
       console.log('✅ Configuración automática guardada y otros modos bloqueados:', response.data)
       console.log('🔒 Modo automático activo en store - otros modos bloqueados')
+      
+      // Hacer scroll hacia arriba para mostrar el widget de configuración
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }, 100)
       
     } else {
       showError(response.message || 'Error al guardar configuración automática')

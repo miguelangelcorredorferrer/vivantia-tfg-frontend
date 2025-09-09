@@ -1053,10 +1053,10 @@ const saveScheduledWatering = async () => {
       }
     }, 500)
     
-    // Redirigir a la página principal después de un breve delay
+    // Hacer scroll hacia arriba para mostrar el widget de configuración
     setTimeout(() => {
-      router.push('/modo')
-    }, 1500)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, 100)
   }
 }
 

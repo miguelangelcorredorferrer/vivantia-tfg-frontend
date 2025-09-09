@@ -25,6 +25,7 @@ const { toast } = useToastNotifications()
 // Filtros
 const filters = ref({
   category: '',
+  subcategory: '',
   severity: '',
   user: '',
   status: '',
@@ -58,6 +59,30 @@ const loadSystemAlerts = async () => {
 }
 
 // Computed properties
+const availableSubcategories = computed(() => {
+  const subcategoryMap = {
+    'user': [
+      { value: 'user_actions', label: 'Acciones de Usuario' }
+    ],
+    'environmental': [
+      { value: 'temperature', label: 'Temperatura' },
+      { value: 'humidity', label: 'Humedad Ambiental' },
+      { value: 'moisture', label: 'Humedad del Suelo' }
+    ],
+    'device': [
+      { value: 'device_status', label: 'Estado del Dispositivo' }
+    ],
+    'crop': [
+      { value: 'crop_management', label: 'Gestión de Cultivos' }
+    ],
+    'irrigation': [
+      { value: 'irrigation_control', label: 'Control de Riego' }
+    ]
+  }
+  
+  return subcategoryMap[filters.value.category] || []
+})
+
 const filteredAlerts = computed(() => {
   let filtered = alerts.value
 
@@ -66,9 +91,31 @@ const filteredAlerts = computed(() => {
     filtered = filtered.filter(alert => alert.alert_type === filters.value.category)
   }
 
+  // Filtro por subcategoría
+  if (filters.value.subcategory) {
+    filtered = filtered.filter(alert => {
+      // Mapear los valores del select a los valores reales de alert_subtype
+      const subcategoryMap = {
+        'temperature': ['temperature_max_threshold'],
+        'humidity': ['air_humidity_min_threshold', 'air_humidity_max_threshold'],
+        'moisture': ['soil_humidity_min_threshold', 'soil_humidity_max_threshold'],
+        'device_status': ['device_offline', 'device_online', 'device_added', 'device_deleted', 'device_edited', 'system_online', 'system_offline'],
+        'irrigation_control': ['manual_started', 'emergency_stop', 'manual_cancelled', 'programmed_saved', 'programmed_reminder', 'programmed_schedule', 'programmed_cancelled', 'automatic_saved', 'automatic_activated_temperature', 'automatic_activated_soil_humidity', 'automatic_activated_air_humidity', 'automatic_deactivated_optimal_conditions', 'automatic_deactivated_soil_optimal', 'automatic_cancelled', 'irrigation_started', 'irrigation_ended', 'irrigation_cancelled', 'irrigation_paused', 'irrigation_resumed'],
+        'user_actions': ['user_registered', 'user_logged_in', 'username_changed', 'password_changed', 'session_closed', 'api_key_copied'],
+        'crop_management': ['crop_selected', 'crop_deselected', 'crop_edited', 'crop_deleted', 'crop_added']
+      }
+      
+      const targetSubtypes = subcategoryMap[filters.value.subcategory] || []
+      return targetSubtypes.includes(alert.alert_subtype)
+    })
+  }
+
   // Filtro por severidad
   if (filters.value.severity) {
-    filtered = filtered.filter(alert => alert.severity === filters.value.severity)
+    filtered = filtered.filter(alert => {
+      // Asegurar que la comparación sea exacta
+      return alert.severity && alert.severity.toLowerCase() === filters.value.severity.toLowerCase()
+    })
   }
 
   // Filtro por usuario
@@ -132,6 +179,7 @@ const usersWithAlerts = computed(() => {
 const clearFilters = () => {
   filters.value = {
     category: '',
+    subcategory: '',
     severity: '',
     user: '',
     status: '',
@@ -199,6 +247,11 @@ const cancelDeleteAlert = () => {
   alertToDelete.value = null
 }
 
+// Watcher para limpiar subcategoría cuando cambie la categoría
+watch(() => filters.value.category, () => {
+  filters.value.subcategory = ''
+})
+
 onMounted(() => {
   loadSystemAlerts()
 })
@@ -208,122 +261,243 @@ onMounted(() => {
   <div class="space-y-8">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
-      <div class="bg-gradient-to-r from-red-800 to-red-900 rounded-xl shadow-lg p-6 mb-8 border border-red-700">
+      <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+            <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
               <AlertsIcon />
             </div>
             <div>
               <h1 class="text-2xl font-bold text-white">Logs del Sistema</h1>
-              <p class="text-red-100">Panel de administración - Gestión completa de alertas del sistema</p>
+              <p class="text-gray-300">Panel de administración - Gestión completa de alertas del sistema</p>
             </div>
           </div>
           
-          <!-- Estadísticas del sistema -->
+          <!-- Estadísticas rápidas -->
           <div class="flex items-center space-x-6">
             <div class="text-center">
               <div class="text-2xl font-bold text-white">{{ totalSystemAlerts }}</div>
-              <div class="text-sm text-red-200">Total Sistema</div>
+              <div class="text-sm text-gray-400">Total Sistema</div>
             </div>
             <div class="text-center">
               <div class="text-2xl font-bold text-orange-400">{{ unreadAlertsCount }}</div>
-              <div class="text-sm text-red-200">Sin Resolver</div>
+              <div class="text-sm text-gray-400">Sin Resolver</div>
             </div>
             <div class="text-center">
-              <div class="text-2xl font-bold text-red-300">{{ criticalAlertsCount }}</div>
-              <div class="text-sm text-red-200">Críticas</div>
+              <div class="text-2xl font-bold text-red-400">{{ criticalAlertsCount }}</div>
+              <div class="text-sm text-gray-400">Críticas</div>
             </div>
             <div class="text-center">
               <div class="text-2xl font-bold text-blue-300">{{ usersWithAlerts }}</div>
-              <div class="text-sm text-red-200">Usuarios</div>
+              <div class="text-sm text-gray-400">Usuarios</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Filtros de Administrador -->
+      <!-- Filtros -->
       <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-700">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-white">Filtros Avanzados</h2>
-          <div class="flex items-center space-x-2">
-            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-            <span class="text-sm text-gray-400">Panel de Administrador</span>
-          </div>
-        </div>
+        <h2 class="text-lg font-semibold text-white mb-4">Filtros Avanzados</h2>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- Filtro por categoría -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Categoría</label>
-            <select 
-              v-model="filters.category"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-white"
-            >
-              <option value="">Todas las categorías</option>
-              <option value="user">Usuario</option>
-              <option value="environmental">Ambiental</option>
-              <option value="device">Dispositivo</option>
-              <option value="crop">Cultivo</option>
-              <option value="irrigation">Riego</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <div class="flex items-center space-x-2">
+                <span>Categoría</span>
+                <div class="flex items-center space-x-1">
+                  <div class="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                  <span class="text-xs text-blue-400 font-medium">Filtro principal</span>
+                </div>
+              </div>
+            </label>
+            <div class="relative">
+              <select 
+                v-model="filters.category"
+                class="w-full px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 text-white transition-all duration-200 appearance-none border-gray-600 hover:border-gray-500 hover:from-gray-600 hover:to-gray-700"
+              >
+                <option value="" class="bg-gray-800 text-white">Todas las categorías</option>
+                <option value="user" class="bg-gray-800 text-white hover:bg-gray-700">Usuario</option>
+                <option value="environmental" class="bg-gray-800 text-white hover:bg-gray-700">Ambiental</option>
+                <option value="device" class="bg-gray-800 text-white hover:bg-gray-700">Dispositivo</option>
+                <option value="crop" class="bg-gray-800 text-white hover:bg-gray-700">Cultivo</option>
+                <option value="irrigation" class="bg-gray-800 text-white hover:bg-gray-700">Riego</option>
+              </select>
+              <!-- Icono personalizado -->
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg 
+                  class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+              <!-- Indicador de estado -->
+              <div v-if="filters.category" class="absolute -top-1 -right-1">
+                <div class="w-3 h-3 bg-blue-400 rounded-full border-2 border-gray-800"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtro por subcategoría -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <div class="flex items-center space-x-2">
+                <span>Subcategoría</span>
+                <div v-if="!filters.category" class="flex items-center space-x-1">
+                  <div class="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse"></div>
+                  <span class="text-xs text-orange-400 font-medium">Selecciona categoría</span>
+                </div>
+              </div>
+            </label>
+            <div class="relative">
+              <select 
+                v-model="filters.subcategory"
+                class="w-full px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 text-white transition-all duration-200 appearance-none"
+                :class="{ 
+                  'opacity-60 cursor-not-allowed border-gray-500': !filters.category,
+                  'border-gray-600 hover:border-gray-500 hover:from-gray-600 hover:to-gray-700': filters.category
+                }"
+                :disabled="!filters.category"
+              >
+                <option value="" class="bg-gray-800 text-white">
+                  {{ filters.category ? 'Todas las subcategorías' : 'Selecciona una categoría primero' }}
+                </option>
+                <option 
+                  v-for="subcategory in availableSubcategories" 
+                  :key="subcategory.value" 
+                  :value="subcategory.value"
+                  class="bg-gray-800 text-white hover:bg-gray-700"
+                >
+                  {{ subcategory.label }}
+                </option>
+              </select>
+              <!-- Icono personalizado -->
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg 
+                  class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                  :class="{ 'rotate-180': filters.category }"
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+              <!-- Indicador de estado -->
+              <div v-if="filters.category" class="absolute -top-1 -right-1">
+                <div class="w-3 h-3 bg-green-400 rounded-full border-2 border-gray-800 animate-pulse"></div>
+              </div>
+            </div>
           </div>
 
           <!-- Filtro por severidad -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Severidad</label>
-            <select 
-              v-model="filters.severity"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-white"
-            >
-              <option value="">Todas las severidades</option>
-              <option value="info">Información</option>
-              <option value="success">Éxito</option>
-              <option value="warning">Advertencia</option>
-              <option value="error">Error</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <div class="flex items-center space-x-2">
+                <span>Severidad</span>
+                <div class="flex items-center space-x-1">
+                  <div class="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
+                  <span class="text-xs text-red-400 font-medium">Nivel de urgencia</span>
+                </div>
+              </div>
+            </label>
+            <div class="relative">
+              <select 
+                v-model="filters.severity"
+                class="w-full px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 text-white transition-all duration-200 appearance-none border-gray-600 hover:border-gray-500 hover:from-gray-600 hover:to-gray-700"
+              >
+                <option value="" class="bg-gray-800 text-white">Todas las severidades</option>
+                <option value="info" class="bg-gray-800 text-white hover:bg-gray-700">Información</option>
+                <option value="success" class="bg-gray-800 text-white hover:bg-gray-700">Éxito</option>
+                <option value="warning" class="bg-gray-800 text-white hover:bg-gray-700">Advertencia</option>
+                <option value="error" class="bg-gray-800 text-white hover:bg-gray-700">Error</option>
+              </select>
+              <!-- Icono personalizado -->
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg 
+                  class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+              <!-- Indicador de estado -->
+              <div v-if="filters.severity" class="absolute -top-1 -right-1">
+                <div class="w-3 h-3 bg-red-400 rounded-full border-2 border-gray-800"></div>
+              </div>
+            </div>
           </div>
 
           <!-- Filtro por usuario -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Usuario</label>
-            <input
-              v-model="filters.user"
-              type="text"
-              placeholder="Buscar por nombre o email..."
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-white placeholder-gray-400"
-            >
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <div class="flex items-center space-x-2">
+                <span>Usuario</span>
+                <div class="flex items-center space-x-1">
+                  <div class="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+                  <span class="text-xs text-purple-400 font-medium">Búsqueda</span>
+                </div>
+              </div>
+            </label>
+            <div class="relative">
+              <input
+                v-model="filters.user"
+                type="text"
+                placeholder="Buscar por nombre o email..."
+                class="w-full px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 text-white transition-all duration-200 border-gray-600 hover:border-gray-500 hover:from-gray-600 hover:to-gray-700 placeholder-gray-400"
+              >
+              <!-- Indicador de estado -->
+              <div v-if="filters.user" class="absolute -top-1 -right-1">
+                <div class="w-3 h-3 bg-purple-400 rounded-full border-2 border-gray-800"></div>
+              </div>
+            </div>
           </div>
 
           <!-- Filtro por estado -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Estado</label>
-            <select 
-              v-model="filters.status"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-white"
-            >
-              <option value="">Todos los estados</option>
-              <option value="unread">Sin Resolver</option>
-              <option value="read">Resueltas</option>
-            </select>
-          </div>
-
-          <!-- Filtro por fecha -->
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Período</label>
-            <select 
-              v-model="filters.period"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-white"
-            >
-              <option value="all">Todo el tiempo</option>
-              <option value="today">Hoy</option>
-              <option value="week">Esta semana</option>
-              <option value="month">Este mes</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <div class="flex items-center space-x-2">
+                <span>Estado</span>
+                <div class="flex items-center space-x-1">
+                  <div class="w-1.5 h-1.5 bg-cyan-400 rounded-full"></div>
+                  <span class="text-xs text-cyan-400 font-medium">Estado de lectura</span>
+                </div>
+              </div>
+            </label>
+            <div class="relative">
+              <select 
+                v-model="filters.status"
+                class="w-full px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 text-white transition-all duration-200 appearance-none border-gray-600 hover:border-gray-500 hover:from-gray-600 hover:to-gray-700"
+              >
+                <option value="" class="bg-gray-800 text-white">Todos los estados</option>
+                <option value="unread" class="bg-gray-800 text-white hover:bg-gray-700">Sin Resolver</option>
+                <option value="read" class="bg-gray-800 text-white hover:bg-gray-700">Resueltas</option>
+              </select>
+              <!-- Icono personalizado -->
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg 
+                  class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+              <!-- Indicador de estado -->
+              <div v-if="filters.status" class="absolute -top-1 -right-1">
+                <div class="w-3 h-3 bg-cyan-400 rounded-full border-2 border-gray-800"></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Botones de acción de administrador -->
+        <!-- Botones de acción -->
         <div class="flex items-center justify-between mt-6">
           <div class="flex items-center space-x-3">
             <button
@@ -390,4 +564,63 @@ onMounted(() => {
       @cancel="cancelDeleteAllAlerts"
     />
   </div>
-</template> 
+</template>
+
+<style scoped>
+/* Estilos personalizados para los filtros */
+select {
+  background-image: none !important;
+  background-color: #374151 !important;
+}
+
+select option {
+  background-color: #1f2937 !important;
+  color: white !important;
+}
+
+select option:hover {
+  background-color: #374151 !important;
+}
+
+/* Animación para los indicadores de estado */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 15px currentColor, 0 0 25px currentColor;
+  }
+}
+
+/* Efecto hover para los selects */
+select:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Animación para el icono de flecha */
+select:focus + div svg {
+  transform: rotate(180deg);
+}
+
+/* Estilos para los indicadores de estado */
+.absolute.-top-1.-right-1 > div {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Efecto de transición suave para todos los elementos */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Estilo especial para el filtro de subcategoría cuando está deshabilitado */
+select:disabled {
+  background: linear-gradient(135deg, #374151 0%, #4B5563 100%);
+  cursor: not-allowed;
+}
+
+select:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+</style> 
