@@ -1,6 +1,7 @@
 <script setup>
 import { useAdminStore } from '~/stores/admin'
 import { useToastNotifications } from '~/composables/useToastNotifications'
+import { CropAPI } from '~/api'
 
 // Configurar middleware
 definePageMeta({
